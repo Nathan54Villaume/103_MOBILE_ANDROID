@@ -1,0 +1,18 @@
+# Ignorer les dossiers système et temporaires
+.vs/
+*.user
+*.suo
+*.log
+bin/
+obj/
+*.pdb
+
+# Ignorer les fichiers sensibles ou spécifiques à l’environnement
+*.env
+*.db
+*.sqlite
+
+# Ignorer le dossier de build
+*.dll
+*.exe
+*.cache
