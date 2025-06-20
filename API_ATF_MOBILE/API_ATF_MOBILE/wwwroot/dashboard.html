@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard ATS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Rubik', sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            min-height: 100vh;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .dashboard-box {
+            background-color: #006E63;
+            padding: 24px;
+            border-radius: 14px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+        }
+
+        .dashboard-box h2 {
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .info {
+            margin: 10px 0;
+            font-size: 15px;
+        }
+
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 10px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-box">
+        <h2>Bienvenue <span id="nom">...</span></h2>
+        <p class="info">Matricule : <span id="matricule">...</span></p>
+        <p class="info">Rôle : <span id="role">...</span></p>
+        <button onclick="logout()">Déconnexion</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const user = JSON.parse(localStorage.getItem("user"));
+            if (!user) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("nom").textContent = user.NOM || user.nom || "Inconnu";
+            document.getElementById("matricule").textContent = user.MATRICULE || user.matricule || "Inconnu";
+            document.getElementById("role").textContent = user.ROLE || user.role || "Inconnu";
+        });
+
+        function logout() {
+            localStorage.removeItem("user");
+            window.location.href = "index.html";
+        }
+    </script>
+</body>
+</html>
