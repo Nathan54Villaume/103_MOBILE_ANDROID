@@ -2,11 +2,24 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ? Ouvre l'API sur toutes les interfaces réseau (Android, PC, tablette, etc.)
+// 1) Ouvre l'API sur toutes les interfaces réseau (Android, PC, tablette, etc.)
 builder.WebHost.UseUrls("http://0.0.0.0:8088");
 
-// ? Services API + CORS + Swagger
+// 2) Déclaration des services
 builder.Services.AddControllers();
+
+// CORS – on autorise tout (uniquement pour DEV / test mobile)
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -18,35 +31,34 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ? Autoriser tous les accès (test/dev mobile/web)
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
 var app = builder.Build();
 
-// ? Middleware pour Swagger
+// 3) Pipeline HTTP
+
+// (Optionnel) .UseHttpsRedirection(); si vous configurez un certificat
+
+// **Route matching**
+app.UseRouting();
+
+// CORS
+app.UseCors();
+
+// Auth (aucun [Authorize] pour l’instant, mais l’ordre est important)
+app.UseAuthorization();
+
+// Swagger — accessible sur ‘/swagger’
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API_ATF_MOBILE v1");
-    c.RoutePrefix = "swagger"; // accessible via /swagger
+    c.RoutePrefix = "swagger";
 });
 
-// ? Middleware pour les fichiers statiques (HTML/JS/CSS dans wwwroot/)
-app.UseDefaultFiles(); // sert index.html automatiquement
-app.UseStaticFiles();  // permet de charger CSS / JS
+// Fichiers statiques (wwwroot/index.html, CSS, JS…)
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
-// ? CORS + Auth + Routes API
-app.UseCors();
-app.UseAuthorization();
+// Mappe vos contrôleurs [ApiController]
 app.MapControllers();
 
-// ? Lancer l'application
 app.Run();

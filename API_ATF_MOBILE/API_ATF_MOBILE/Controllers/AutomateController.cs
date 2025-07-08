@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using API_ATF_MOBILE.Services;
+using System.Linq;
 
 namespace API_ATF_MOBILE.Controllers
 {
@@ -129,7 +130,26 @@ namespace API_ATF_MOBILE.Controllers
                 {
                     try
                     {
-                        results[address] = _s7.ReadRaw(address);
+                        // Récupère le suffixe après le dernier point, ex. "DBD10", "DBW4", "DBB2", "DBX0.1"
+                        var suffix = address
+                            .Substring(address.LastIndexOf('.') + 1)
+                            .ToUpperInvariant();
+
+                        // Isole la partie lettre ("DBD", "DBW", "DBB" ou "DBX")
+                        var fieldType = new string(suffix
+                            .TakeWhile(char.IsLetter)
+                            .ToArray());
+
+                        object val = fieldType switch
+                        {
+                            "DBD" => _s7.ReadFloat(address),
+                            "DBW" => _s7.ReadInt16(address),
+                            "DBB" => _s7.ReadByte(address),
+                            "DBX" => _s7.ReadBool(address),
+                            _ => _s7.ReadInt32(address)  // DINT brut si non reconnu
+                        };
+
+                        results[address] = val;
                     }
                     catch (Exception e)
                     {
