@@ -1,5 +1,5 @@
-﻿// file: API_ATF_MOBILE/Models/EtapeDto.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace API_ATF_MOBILE.Models
@@ -27,8 +27,9 @@ namespace API_ATF_MOBILE.Models
         [JsonPropertyName("description_etape")]
         public string? Description_Etape { get; set; }
 
-        [JsonPropertyName("etat_etape")]
-        public string? Etat_Etape { get; set; }
+        // Tous les états par opérateur
+        [JsonPropertyName("etat_par_role")]
+        public Dictionary<string, string> EtatParRole { get; set; } = new();
 
         [JsonPropertyName("temps_reel_etape")]
         public int? Temps_Reel_Etape { get; set; }
@@ -41,5 +42,17 @@ namespace API_ATF_MOBILE.Models
 
         [JsonPropertyName("successeurs")]
         public List<EtapeLienDto> Successeurs { get; set; } = new List<EtapeLienDto>();
+
+        [JsonPropertyName("conditions_a_valider")]
+        public string? Conditions_A_Valider { get; set; }
+
+        // Indique si tous les opérateurs attendus ont validé cette étape
+        [JsonPropertyName("est_entierement_valide")]
+        public bool EstEntierementValide
+            => EtatParRole.Values.All(v => v == "VALIDE");
+
+        // Indique si tous les prédécesseurs sont entièrement validés
+        [JsonPropertyName("predecesseurs_valides")]
+        public bool PredecesseursValides { get; set; }
     }
 }

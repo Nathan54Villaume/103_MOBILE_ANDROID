@@ -1,5 +1,4 @@
-﻿// file: API_ATF_MOBILE/Controllers/EtapesController.cs
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Dapper;
@@ -22,30 +21,48 @@ namespace API_ATF_MOBILE.Controllers
         [HttpGet]
         public async Task<IActionResult> GetEtapes()
         {
-            const string sql = @"
+            const string sqlEtapes = @"
                 SELECT
-                  id_etape            AS Id_Etape,
-                  libelle_etape       AS Libelle_Etape,
-                  affectation_etape   AS Affectation_Etape,
-                  role_log            AS Role_Log,
-                  phase_etape         AS Phase_Etape,
-                  duree_etape         AS Duree_Etape,
-                  description_etape   AS Description_Etape,
-                  etat_etape          AS Etat_Etape,
-                  temps_reel_etape    AS Temps_Reel_Etape,
-                  commentaire_etape_1 AS Commentaire_Etape_1,
-                  predecesseur_etape  AS Predecesseur_Etape,
-                  successeur_etape    AS Successeur_Etape
+                  id_etape, libelle_etape, affectation_etape, predecesseur_etape,
+                  successeur_etape, conditions_a_valider, role_log, phase_etape,
+                  duree_etape, description_etape, temps_reel_etape, commentaire_etape_1
                 FROM [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES]
                 ORDER BY id_etape;";
+
+            const string sqlStates = @"
+                SELECT id_etape AS EtapeId, operateur, etat
+                FROM [AI_ATS].[dbo].[EtapeRoleState];";
 
             try
             {
                 using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var raw = await conn.QueryAsync<Etape>(sql);
+                await conn.OpenAsync();
 
-                var list = raw
-                    .Select(e => new EtapeDto
+                var etapes = (await conn.QueryAsync<Etape>(sqlEtapes)).ToList();
+                var states = await conn.QueryAsync<EtapeRoleState>(sqlStates);
+
+                var statesByEtape = states
+                    .GroupBy(s => s.EtapeId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var dtos = etapes.Select(e =>
+                {
+                    statesByEtape.TryGetValue(e.Id_Etape, out var lst);
+                    var roleStates = lst ?? new List<EtapeRoleState>();
+
+                    var tempDict = roleStates
+                        .GroupBy(s => s.Operateur)
+                        .ToDictionary(g => g.Key, g => g.Last().Etat);
+
+                    var operators = (e.Affectation_Etape ?? "")
+                        .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s => s.Trim());
+
+                    var fullDict = operators
+                        .ToDictionary(op => op,
+                                      op => tempDict.TryGetValue(op, out var s) ? s : "EN_ATTENTE");
+
+                    return new EtapeDto
                     {
                         Id_Etape = e.Id_Etape,
                         Libelle_Etape = e.Libelle_Etape,
@@ -54,15 +71,30 @@ namespace API_ATF_MOBILE.Controllers
                         Phase_Etape = e.Phase_Etape,
                         Duree_Etape = e.Duree_Etape,
                         Description_Etape = e.Description_Etape,
-                        Etat_Etape = e.Etat_Etape,
+                        EtatParRole = fullDict,
                         Temps_Reel_Etape = e.Temps_Reel_Etape,
                         Commentaire_Etape_1 = e.Commentaire_Etape_1,
                         Predecesseurs = ParseLiens(e.Affectation_Etape, e.Predecesseur_Etape),
-                        Successeurs = ParseLiens(e.Affectation_Etape, e.Successeur_Etape)
-                    })
-                    .ToList();
+                        Successeurs = ParseLiens(e.Affectation_Etape, e.Successeur_Etape),
+                        Conditions_A_Valider = e.Conditions_A_Valider
+                    };
+                }).ToList();
 
-                return Ok(list);
+                foreach (var dto in dtos)
+                {
+                    var predIds = dto.Predecesseurs
+                        .SelectMany(l => l.Ids)
+                        .Where(id => id != 0)
+                        .Distinct();
+
+                    dto.PredecesseursValides = predIds.All(predId =>
+                    {
+                        var predDto = dtos.FirstOrDefault(d => d.Id_Etape == predId);
+                        return predDto == null || predDto.EstEntierementValide;
+                    });
+                }
+
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
@@ -74,29 +106,40 @@ namespace API_ATF_MOBILE.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetEtape(int id)
         {
-            const string sql = @"
+            const string sqlEtape = @"
                 SELECT
-                  id_etape            AS Id_Etape,
-                  libelle_etape       AS Libelle_Etape,
-                  affectation_etape   AS Affectation_Etape,
-                  role_log            AS Role_Log,
-                  phase_etape         AS Phase_Etape,
-                  duree_etape         AS Duree_Etape,
-                  description_etape   AS Description_Etape,
-                  etat_etape          AS Etat_Etape,
-                  temps_reel_etape    AS Temps_Reel_Etape,
-                  commentaire_etape_1 AS Commentaire_Etape_1,
-                  predecesseur_etape  AS Predecesseur_Etape,
-                  successeur_etape    AS Successeur_Etape
+                  id_etape, libelle_etape, affectation_etape, predecesseur_etape,
+                  successeur_etape, conditions_a_valider, role_log, phase_etape,
+                  duree_etape, description_etape, temps_reel_etape, commentaire_etape_1
                 FROM [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES]
+                WHERE id_etape = @Id;";
+
+            const string sqlStates = @"
+                SELECT id_etape AS EtapeId, operateur, etat
+                FROM [AI_ATS].[dbo].[EtapeRoleState]
                 WHERE id_etape = @Id;";
 
             try
             {
                 using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var e = await conn.QuerySingleOrDefaultAsync<Etape>(sql, new { Id = id });
-                if (e == null)
-                    return NotFound();
+                await conn.OpenAsync();
+
+                var e = await conn.QuerySingleOrDefaultAsync<Etape>(sqlEtape, new { Id = id });
+                if (e == null) return NotFound();
+
+                var states = (await conn.QueryAsync<EtapeRoleState>(sqlStates, new { Id = id })).ToList();
+
+                var tempDict = states
+                    .GroupBy(s => s.Operateur)
+                    .ToDictionary(g => g.Key, g => g.Last().Etat);
+
+                var operators = (e.Affectation_Etape ?? "")
+                    .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim());
+
+                var fullDict = operators
+                    .ToDictionary(op => op,
+                                  op => tempDict.TryGetValue(op, out var s) ? s : "EN_ATTENTE");
 
                 var dto = new EtapeDto
                 {
@@ -107,11 +150,12 @@ namespace API_ATF_MOBILE.Controllers
                     Phase_Etape = e.Phase_Etape,
                     Duree_Etape = e.Duree_Etape,
                     Description_Etape = e.Description_Etape,
-                    Etat_Etape = e.Etat_Etape,
+                    EtatParRole = fullDict,
                     Temps_Reel_Etape = e.Temps_Reel_Etape,
                     Commentaire_Etape_1 = e.Commentaire_Etape_1,
                     Predecesseurs = ParseLiens(e.Affectation_Etape, e.Predecesseur_Etape),
-                    Successeurs = ParseLiens(e.Affectation_Etape, e.Successeur_Etape)
+                    Successeurs = ParseLiens(e.Affectation_Etape, e.Successeur_Etape),
+                    Conditions_A_Valider = e.Conditions_A_Valider
                 };
 
                 return Ok(dto);
@@ -122,125 +166,79 @@ namespace API_ATF_MOBILE.Controllers
             }
         }
 
-        // POST /api/Etapes
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] EtapeCreateDto dto)
-        {
-            const string getMaxId = @"SELECT ISNULL(MAX(id_etape),0) FROM [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES];";
-            const string insert = @"
-                INSERT INTO [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES]
-                  (id_etape, libelle_etape, affectation_etape, role_log, phase_etape,
-                   duree_etape, description_etape, etat_etape, temps_reel_etape,
-                   commentaire_etape_1, predecesseur_etape, successeur_etape)
-                VALUES
-                  (@Id,      @Libelle,          @Affect,           @Role,    @Phase,
-                   @Duree,   @Desc,             @Etat,             @TempsReel, @Comment,
-                   @Pred,    @Succ);";
-
-            try
-            {
-                using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var maxId = await conn.ExecuteScalarAsync<int>(getMaxId);
-                var newId = maxId + 1;
-
-                var p = new
-                {
-                    Id = newId,
-                    Libelle = dto.Libelle_Etape,
-                    Affect = dto.Affectation_Etape,
-                    Role = dto.Role_Log,
-                    Phase = dto.Phase_Etape,
-                    Duree = dto.Duree_Etape,
-                    Desc = dto.Description_Etape,
-                    Etat = dto.Etat_Etape,
-                    TempsReel = dto.Temps_Reel_Etape,
-                    Comment = dto.Commentaire_Etape_1,
-                    Pred = dto.Predecesseur_Etape,
-                    Succ = dto.Successeur_Etape
-                };
-
-                await conn.ExecuteAsync(insert, p);
-                return CreatedAtAction(nameof(GetEtape), new { id = newId }, null);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erreur CREATE : {ex.Message}");
-            }
-        }
-
-        // PUT /api/Etapes/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] EtapeUpdateDto dto)
-        {
-            const string sql = @"
-                UPDATE [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES]
-                SET
-                  libelle_etape       = @Libelle,
-                  affectation_etape   = @Affect,
-                  role_log            = @Role,
-                  phase_etape         = @Phase,
-                  duree_etape         = @Duree,
-                  description_etape   = @Desc,
-                  etat_etape          = @Etat,
-                  temps_reel_etape    = @TempsReel,
-                  commentaire_etape_1 = @Comment,
-                  predecesseur_etape  = @Pred,
-                  successeur_etape    = @Succ
-                WHERE id_etape = @Id;";
-
-            try
-            {
-                using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var rows = await conn.ExecuteAsync(sql, new
-                {
-                    Id = id,
-                    Libelle = dto.Libelle_Etape,
-                    Affect = dto.Affectation_Etape,
-                    Role = dto.Role_Log,
-                    Phase = dto.Phase_Etape,
-                    Duree = dto.Duree_Etape,
-                    Desc = dto.Description_Etape,
-                    Etat = dto.Etat_Etape,
-                    TempsReel = dto.Temps_Reel_Etape,
-                    Comment = dto.Commentaire_Etape_1,
-                    Pred = dto.Predecesseur_Etape,
-                    Succ = dto.Successeur_Etape
-                });
-                return rows == 0 ? NotFound() : NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erreur UPDATE : {ex.Message}");
-            }
-        }
+        // ▼▼▼ MÉTHODES DE VALIDATION CORRIGÉES ▼▼▼
 
         // POST /api/Etapes/valider
         [HttpPost("valider")]
-        public async Task<IActionResult> ValiderEtape([FromBody] EtapeValidationDto dto)
+        public Task<IActionResult> ValiderEtape([FromBody] EtapeValidationDto dto)
         {
-            const string sql = @"
-                UPDATE [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES]
-                SET
-                  commentaire_etape_1 = @Comment,
-                  description_etape   = @Desc,
-                  etat_etape          = 'VALIDE',
-                  temps_reel_etape    = ISNULL(@TempsReel, temps_reel_etape)
+            // Fait appel à la méthode centrale de mise à jour d'état
+            return ChangeEtapeState(dto);
+        }
+
+        // POST /api/Etapes/devalider
+        [HttpPost("devalider")]
+        public Task<IActionResult> DevaliderEtape([FromBody] EtapeValidationDto dto)
+        {
+            // Fait appel à la même méthode, car le client envoie l'état désiré ('EN ATTENTE')
+            return ChangeEtapeState(dto);
+        }
+
+        /// <summary>
+        /// Méthode centrale et robuste pour changer l'état d'une étape pour un opérateur.
+        /// Met à jour l'étape et l'état, puis retourne l'objet étape complet.
+        /// </summary>
+        private async Task<IActionResult> ChangeEtapeState(EtapeValidationDto dto)
+        {
+            // Validation de la requête
+            if (string.IsNullOrWhiteSpace(dto.Role_Log) || dto.EtatParRole == null || !dto.EtatParRole.ContainsKey(dto.Role_Log))
+            {
+                return BadRequest("Le rôle de l'opérateur (role_log) et l'état (EtatParRole) sont requis.");
+            }
+
+            var nouvelEtat = dto.EtatParRole[dto.Role_Log];
+
+            // Requêtes SQL
+            const string sqlUpdateEtape = @"
+                UPDATE [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES] SET
+                    commentaire_etape_1 = @Comment,
+                    description_etape   = @Desc,
+                    temps_reel_etape    = ISNULL(@TempsReel, temps_reel_etape)
                 WHERE id_etape = @Id;";
+
+            const string sqlDeleteOldState = @"
+                DELETE FROM [AI_ATS].[dbo].[EtapeRoleState]
+                WHERE id_etape = @Id AND operateur = @RoleLog;";
+
+            const string sqlInsertNewState = @"
+                INSERT INTO [AI_ATS].[dbo].[EtapeRoleState] (id_etape, operateur, etat)
+                VALUES (@Id, @RoleLog, @Etat);";
 
             try
             {
                 using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var rows = await conn.ExecuteAsync(sql, new
+                await conn.OpenAsync();
+                using var tx = conn.BeginTransaction();
+
+                // 1. Mettre à jour les champs de l'étape
+                await conn.ExecuteAsync(sqlUpdateEtape, new
                 {
                     Id = dto.Id_Etape,
                     Comment = dto.Commentaire,
                     Desc = dto.Description,
                     TempsReel = dto.TempsReel
-                });
+                }, transaction: tx);
 
-                return rows == 0
-                    ? NotFound(new { success = false, message = "Étape introuvable" })
-                    : Ok(new { success = true, message = "Étape validée" });
+                // 2. Supprimer l'ancien état pour éviter les doublons
+                await conn.ExecuteAsync(sqlDeleteOldState, new { Id = dto.Id_Etape, RoleLog = dto.Role_Log }, transaction: tx);
+
+                // 3. Insérer le nouvel état
+                await conn.ExecuteAsync(sqlInsertNewState, new { Id = dto.Id_Etape, RoleLog = dto.Role_Log, Etat = nouvelEtat }, transaction: tx);
+
+                await tx.CommitAsync();
+
+                // 4. Retourner l'objet étape complet et mis à jour pour le client
+                return await GetEtape(dto.Id_Etape);
             }
             catch (Exception ex)
             {
@@ -248,22 +246,31 @@ namespace API_ATF_MOBILE.Controllers
             }
         }
 
-        // POST /api/Etapes/devalider
-        [HttpPost("devalider")]
-        public async Task<IActionResult> DevaliderEtape([FromBody] EtapeValidationDto dto)
-        {
-            const string sql = @"
-                UPDATE [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES]
-                SET etat_etape = NULL
-                WHERE id_etape = @Id;";
 
+        // POST /api/Etapes/reset-session
+        [HttpPost("reset-session")]
+        public async Task<IActionResult> ResetSession()
+        {
             try
             {
                 using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-                var rows = await conn.ExecuteAsync(sql, new { Id = dto.Id_Etape });
-                return rows == 0
-                    ? NotFound(new { success = false, message = "Étape introuvable" })
-                    : Ok(new { success = true, message = "Étape dévalidée" });
+                await conn.OpenAsync();
+                using var tx = conn.BeginTransaction();
+
+                const string sqlEtapes = @"
+                    UPDATE [AI_ATS].[dbo].[ETAPES_CHANG_GAMMES]
+                    SET temps_reel_etape = 0, commentaire_etape_1 = '', description_etape = '';";
+                var rowsEtapes = await conn.ExecuteAsync(sqlEtapes, transaction: tx);
+
+                const string sqlStates = @"DELETE FROM [AI_ATS].[dbo].[EtapeRoleState];";
+                var rowsStates = await conn.ExecuteAsync(sqlStates, transaction: tx);
+
+                await tx.CommitAsync();
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Session réinitialisée. Étapes mises à jour : {rowsEtapes}, états supprimés : {rowsStates}"
+                });
             }
             catch (Exception ex)
             {
@@ -271,7 +278,7 @@ namespace API_ATF_MOBILE.Controllers
             }
         }
 
-        // Helpers to parse operator→IDs strings like "9!7!11" or "71!71 ou 72"
+        // Helpers (inchangés)
         private List<EtapeLienDto> ParseLiens(string? affectation, string? liens)
         {
             var operateurs = (affectation ?? "")
@@ -285,7 +292,6 @@ namespace API_ATF_MOBILE.Controllers
                 .ToArray();
 
             var result = new List<EtapeLienDto>();
-
             if (operateurs.Length == segments.Length)
             {
                 for (int i = 0; i < operateurs.Length; i++)
@@ -300,9 +306,11 @@ namespace API_ATF_MOBILE.Controllers
             else
             {
                 var allIds = segments.SelectMany(ParseIds).Distinct().ToList();
-                result.Add(new EtapeLienDto { Operateur = operateurs.FirstOrDefault() ?? "", Ids = allIds });
+                if (operateurs.Any())
+                {
+                    result.Add(new EtapeLienDto { Operateur = operateurs.First(), Ids = allIds });
+                }
             }
-
             return result;
         }
 

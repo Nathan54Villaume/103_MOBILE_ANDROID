@@ -1,25 +1,40 @@
+// file : Program.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using API_ATF_MOBILE.Data; // <— ajustez si votre namespace est différent
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) Ouvre l'API sur toutes les interfaces réseau (Android, PC, tablette, etc.)
-builder.WebHost.UseUrls("http://0.0.0.0:8088");
+// 1) Charger la chaîne de connexion depuis appsettings.json
+//    Dans appsettings.json, ajoutez sous "ConnectionStrings" :
+//    "DefaultConnection": "Server=.;Database=VotreBase;User Id=sa;Password=VotreMdp;"
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("La chaîne de connexion 'DefaultConnection' est introuvable dans appsettings.json");
+}
 
-// 2) Déclaration des services
+// 2) Enregistrer le DbContext EF Core avec SQL Server
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString)
+);
+
+// 3) Déclarations des services métier
 builder.Services.AddControllers();
 
-// CORS – on autorise tout (uniquement pour DEV / test mobile)
+// CORS – autorise tout (pour DEV / tests mobiles uniquement !)
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
-// Swagger/OpenAPI
+// 4) Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -31,22 +46,25 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// 5) (Optionnel) Forcer Kestrel à écouter sur 0.0.0.0:8088
+builder.WebHost
+       .UseKestrel()
+       .UseUrls("http://0.0.0.0:8088");
+
 var app = builder.Build();
 
-// 3) Pipeline HTTP
+// — Pipeline HTTP —
 
-// (Optionnel) .UseHttpsRedirection(); si vous configurez un certificat
-
-// **Route matching**
-app.UseRouting();
-
-// CORS
+// a) CORS (doit venir avant UseRouting si vous utilisez [EnableCors])
 app.UseCors();
 
-// Auth (aucun [Authorize] pour l’instant, mais l’ordre est important)
+// b) (Optionnel) HTTPS redirection si configuré
+// app.UseHttpsRedirection();
+
+// c) Auth (le cas échéant, pour [Authorize])
 app.UseAuthorization();
 
-// Swagger — accessible sur ‘/swagger’
+// d) Swagger UI
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -54,11 +72,12 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-// Fichiers statiques (wwwroot/index.html, CSS, JS…)
+// e) Fichiers statiques (wwwroot)
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Mappe vos contrôleurs [ApiController]
+// f) Enregistrement des routes vers les contrôleurs
 app.MapControllers();
 
+// g) Démarrage de l’application
 app.Run();
