@@ -14,6 +14,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("La chaîne de connexion 'DefaultConnection' est introuvable dans appsettings.json");
 }
 
+
 // 2) Enregistrer le DbContext EF Core avec SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString)
