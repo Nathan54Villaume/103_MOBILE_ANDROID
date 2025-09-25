@@ -47,12 +47,24 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddCors(o =>
+{
+    o.AddPolicy("AllowLocal", p => p
+        .WithOrigins("http://localhost:5500")
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
+
+
 // 5) (Optionnel) Forcer Kestrel à écouter sur 0.0.0.0:8088
 builder.WebHost
        .UseKestrel()
        .UseUrls("http://0.0.0.0:8088");
 
 var app = builder.Build();
+
+app.UseCors("AllowLocal");
 
 // — Pipeline HTTP —
 
