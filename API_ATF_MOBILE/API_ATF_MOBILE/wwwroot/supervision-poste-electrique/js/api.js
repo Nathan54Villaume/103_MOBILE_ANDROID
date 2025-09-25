@@ -38,6 +38,7 @@ function normalizeSeriesDto(dto) {
     };
     return {
         p_kw: pick('p_kw'),
+        pf: pick('pf'),
         u12_v: pick('u12_v'),
         u23_v: pick('u23_v'),
         u31_v: pick('u31_v'),
@@ -72,22 +73,23 @@ function resampleZOH(series, cadenceSec) {
 export async function loadSeries(trId) {
     const pKey = trId === 1 ? 'win_p1' : 'win_p2';
     const uKey = trId === 1 ? 'win_u1' : 'win_u2';
+    const pfKey = trId === 1 ? 'win_pf1' : 'win_pf2';
+
     const pMin = Number(localStorage.getItem(pKey) || 15);
     const uMin = Number(localStorage.getItem(uKey) || 15);
+    const pfMin = Number(localStorage.getItem(pfKey) || 15);
 
-    const winMin = Math.max(pMin, uMin);
+    const winMin = Math.max(pMin, uMin, pfMin);
     const cadenceSec =
         (winMin <= 15) ? 1 :
             (winMin <= 60) ? 4 :
                 (winMin <= 240) ? 10 :
                     (winMin <= 1440) ? 15 : 20;
 
-    // API : second seulement pour ≤15, sinon minute
     const agg = (winMin <= 15) ? 'second' : 'minute';
 
     const url = new URL(`${state.apiBase}/tr${trId}/series`);
     url.searchParams.set('minutes', String(winMin));
-    //url.searchParams.set('agg', agg);
     if (agg === 'second') {
         url.searchParams.set('maxPoints', String(winMin * 60 + 60));
     } else {
@@ -100,25 +102,28 @@ export async function loadSeries(trId) {
 
     const align = (arr) => {
         if (!arr || !arr.length) return [];
-        if (agg === 'second') return arr;    // 15 min : pas de modif
-        return resampleZOH(arr, cadenceSec); // >15 min : ZOH vers cadence live
+        if (agg === 'second') return arr;
+        return resampleZOH(arr, cadenceSec);
     };
 
     const pkw = align(s.p_kw);
     const u12 = align(s.u12_v);
     const u23 = align(s.u23_v);
     const u31 = align(s.u31_v);
+    const pf = align(s.pf);
 
     if (trId === 1) {
         bufs.p1 = pkw;
         bufs.u1_12 = u12;
         bufs.u1_23 = u23;
         bufs.u1_31 = u31;
+        bufs.pf1 = pf;
     } else {
         bufs.p2 = pkw;
         bufs.u2_12 = u12;
         bufs.u2_23 = u23;
         bufs.u2_31 = u31;
+        bufs.pf2 = pf;
     }
 }
 

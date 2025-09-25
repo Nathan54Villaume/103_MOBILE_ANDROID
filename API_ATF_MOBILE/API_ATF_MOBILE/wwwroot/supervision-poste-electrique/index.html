@@ -4,13 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Supervision — Poste Électrique</title>
-
-    <!-- Tailwind + Chart.js (+ adapter dates) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
-
-    <!-- Styles locaux -->
     <link rel="stylesheet" href="./style.css" />
 </head>
 <body class="bg-gray-900 text-white">
@@ -20,13 +16,16 @@
     <div class="max-w-7xl mx-auto p-6 space-y-10">
         <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-bold">Supervision — Poste Électrique</h1>
+                <h1 class="text-2xl font-bold">TRANCANNAGE — Poste Électrique n° 8</h1>
                 <p class="text-sm text-white/60">2 Transformateurs — Supervision détaillée</p>
             </div>
-            <div class="flex items-center gap-3">
-                <span id="conn-led" class="led" style="color:#ef4444" title="État connexion"></span>
-                <span id="conn-text" class="text-white/70 text-sm">Déconnecté</span>
-                <button id="btn-settings" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-sm">Paramètres</button>
+            <div class="flex items-center gap-4">
+                <span id="welcome-message" class="text-lg"></span>
+                <div class="flex items-center gap-3">
+                    <span id="conn-led" class="led" style="color:#ef4444" title="État connexion"></span>
+                    <span id="conn-text" class="text-white/70 text-sm">Déconnecté</span>
+                    <button id="btn-settings" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-sm">Paramètres</button>
+                </div>
             </div>
         </header>
 
@@ -38,7 +37,7 @@
                         <span class="text-sm text-white/70">API Base URL</span>
                         <input id="api-base" type="text"
                                class="w-full mt-1 rounded-xl bg-gray-900 border border-white/10 px-3 py-2 outline-none focus:border-indigo-500"
-                               placeholder="http://localhost:8010/proxy/api/energy" />
+                               placeholder="http://10.250.13.4:8088/api/energy" />
                     </label>
                 </div>
                 <div class="flex items-center justify-end gap-2 pt-2">
@@ -48,7 +47,6 @@
             </form>
         </dialog>
 
-        <!-- TR1 -->
         <section class="space-y-6">
             <h2 class="text-xl font-semibold">Transformateur 1</h2>
             <div class="grid-auto">
@@ -83,11 +81,11 @@
                             <option value="60">1 h</option>
                             <option value="240">4 h</option>
                             <option value="1440">24 h</option>
-                            <option value="2880">48 h</option>
+                            
                         </select>
                     </label>
                 </div>
-                <canvas id="chartP1"></canvas>
+                <div class="card-body"><canvas id="chartP1"></canvas></div>
             </div>
             <div class="card">
                 <div class="card-head">
@@ -99,15 +97,30 @@
                             <option value="60">1 h</option>
                             <option value="240">4 h</option>
                             <option value="1440">24 h</option>
-                            <option value="2880">48 h</option>
+                            
                         </select>
                     </label>
                 </div>
-                <canvas id="chartU1"></canvas>
+                <div class="card-body"><canvas id="chartU1"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-head">
+                    <h3 class="text-lg font-semibold">Facteur de Puissance — TR1</h3>
+                    <label class="text-xs text-white/70 flex items-center gap-2">
+                        Base de temps
+                        <select id="win-pf1" class="sel">
+                            <option value="15">15 min</option>
+                            <option value="60">1 h</option>
+                            <option value="240">4 h</option>
+                            <option value="1440">24 h</option>
+                            
+                        </select>
+                    </label>
+                </div>
+                <div class="card-body"><canvas id="chartPF1"></canvas></div>
             </div>
         </section>
 
-        <!-- TR2 -->
         <section class="space-y-6">
             <h2 class="text-xl font-semibold">Transformateur 2</h2>
             <div class="grid-auto">
@@ -142,11 +155,11 @@
                             <option value="60">1 h</option>
                             <option value="240">4 h</option>
                             <option value="1440">24 h</option>
-                            <option value="2880">48 h</option>
+                            
                         </select>
                     </label>
                 </div>
-                <canvas id="chartP2"></canvas>
+                <div class="card-body"><canvas id="chartP2"></canvas></div>
             </div>
             <div class="card">
                 <div class="card-head">
@@ -158,19 +171,32 @@
                             <option value="60">1 h</option>
                             <option value="240">4 h</option>
                             <option value="1440">24 h</option>
-                            <option value="2880">48 h</option>
+                            
                         </select>
                     </label>
                 </div>
-                <canvas id="chartU2"></canvas>
+                <div class="card-body"><canvas id="chartU2"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-head">
+                    <h3 class="text-lg font-semibold">Facteur de Puissance — TR2</h3>
+                    <label class="text-xs text-white/70 flex items-center gap-2">
+                        Base de temps
+                        <select id="win-pf2" class="sel">
+                            <option value="15">15 min</option>
+                            <option value="60">1 h</option>
+                            <option value="240">4 h</option>
+                            <option value="1440">24 h</option>
+                            
+                        </select>
+                    </label>
+                </div>
+                <div class="card-body"><canvas id="chartPF2"></canvas></div>
             </div>
         </section>
 
         <footer class="pt-2 text-xs text-white/50">Dernière mise à jour : <span id="last-update">—</span></footer>
     </div>
-
-    <!-- Script applicatif (modules ES6) -->
     <script type="module" src="./js/main.js"></script>
-
 </body>
 </html>

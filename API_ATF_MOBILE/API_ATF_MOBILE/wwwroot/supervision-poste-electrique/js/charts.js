@@ -47,6 +47,7 @@ export const chartU1 = new Chart($('#chartU1').getContext('2d'), {
         }
     }
 });
+export const chartPF1 = makeChart($('#chartPF1').getContext('2d'), 'Facteur Puissance TR1', '', 'rgb(22, 163, 74)', state.win.pf1);
 
 export const chartP2 = makeChart($('#chartP2').getContext('2d'), 'P TR2 (kW)', 'kW', 'rgb(239,68,68)', state.win.p2);
 export const chartU2 = new Chart($('#chartU2').getContext('2d'), {
@@ -67,6 +68,7 @@ export const chartU2 = new Chart($('#chartU2').getContext('2d'), {
         }
     }
 });
+export const chartPF2 = makeChart($('#chartPF2').getContext('2d'), 'Facteur Puissance TR2', '', 'rgb(217, 119, 6)', state.win.pf2);
 
 export function refreshCharts() {
     const chartData = {
@@ -74,21 +76,26 @@ export function refreshCharts() {
         u1_12: downsample(filt(bufs.u1_12, state.win.u1), CHART_POINT_THRESHOLD),
         u1_23: downsample(filt(bufs.u1_23, state.win.u1), CHART_POINT_THRESHOLD),
         u1_31: downsample(filt(bufs.u1_31, state.win.u1), CHART_POINT_THRESHOLD),
+        pf1: downsample(filt(bufs.pf1, state.win.pf1), CHART_POINT_THRESHOLD),
         p2: downsample(filt(bufs.p2, state.win.p2), CHART_POINT_THRESHOLD),
         u2_12: downsample(filt(bufs.u2_12, state.win.u2), CHART_POINT_THRESHOLD),
         u2_23: downsample(filt(bufs.u2_23, state.win.u2), CHART_POINT_THRESHOLD),
         u2_31: downsample(filt(bufs.u2_31, state.win.u2), CHART_POINT_THRESHOLD),
+        pf2: downsample(filt(bufs.pf2, state.win.pf2), CHART_POINT_THRESHOLD),
     };
 
     chartP1.data.datasets[0].data = chartData.p1;
     chartU1.data.datasets[0].data = chartData.u1_12;
     chartU1.data.datasets[1].data = chartData.u1_23;
     chartU1.data.datasets[2].data = chartData.u1_31;
+    chartPF1.data.datasets[0].data = chartData.pf1;
 
     chartP2.data.datasets[0].data = chartData.p2;
     chartU2.data.datasets[0].data = chartData.u2_12;
     chartU2.data.datasets[1].data = chartData.u2_23;
     chartU2.data.datasets[2].data = chartData.u2_31;
+    chartPF2.data.datasets[0].data = chartData.pf2;
 
-    chartP1.update('none'); chartU1.update('none'); chartP2.update('none'); chartU2.update('none');
+    chartP1.update('none'); chartU1.update('none'); chartPF1.update('none');
+    chartP2.update('none'); chartU2.update('none'); chartPF2.update('none');
 }

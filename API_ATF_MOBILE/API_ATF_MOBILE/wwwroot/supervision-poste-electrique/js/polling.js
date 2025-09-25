@@ -53,12 +53,14 @@ function applySnapshotToBuffers(tr, d, tms) {
         appendUnique(bufs.u1_12, t, d.u12_v ?? null);
         appendUnique(bufs.u1_23, t, d.u23_v ?? null);
         appendUnique(bufs.u1_31, t, d.u31_v ?? null);
+        appendUnique(bufs.pf1, t, d.pf ?? null); // Ajout pour le graphique PF
         updateKPIs({ t1_p_kw: d.p_kw, t1_q_kvar: d.q_kvar, t1_pf: d.pf, t1_u12_v: d.u12_v, t1_u23_v: d.u23_v, t1_u31_v: d.u31_v, t1_i1_a: d.i1_a, t1_i2_a: d.i2_a, t1_i3_a: d.i3_a, t1_e_kwh: d.e_kwh });
     } else {
         appendUnique(bufs.p2, t, d.p_kw ?? null);
         appendUnique(bufs.u2_12, t, d.u12_v ?? null);
         appendUnique(bufs.u2_23, t, d.u23_v ?? null);
         appendUnique(bufs.u2_31, t, d.u31_v ?? null);
+        appendUnique(bufs.pf2, t, d.pf ?? null); // Ajout pour le graphique PF
         updateKPIs({ t2_p_kw: d.p_kw, t2_q_kvar: d.q_kvar, t2_pf: d.pf, t2_u12_v: d.u12_v, t2_u23_v: d.u23_v, t2_u31_v: d.u31_v, t2_i1_a: d.i1_a, t2_i2_a: d.i2_a, t2_i3_a: d.i3_a, t2_e_kwh: d.e_kwh });
     }
 }
@@ -74,7 +76,7 @@ function pollSecsForWindow(mins) {
 
 export function recomputeAdaptivePolling() {
     const w = state.win;
-    const mins = Math.min(w.p1, w.u1, w.p2, w.u2);
+    const mins = Math.min(w.p1, w.u1, w.pf1, w.p2, w.u2, w.pf2);
     const secs = pollSecsForWindow(mins);
     const wanted = secs * 1000;
     if (state.pollMs !== wanted) {
@@ -124,15 +126,28 @@ export async function startPolling() {
 
     recomputeAdaptivePolling();
 
-    $('#loader').style.display = 'block';
-    state.initialLoad = true;
+    if (state.initialLoad) {
+        $('#loader').style.display = 'block';
+    }
 
     stopPolling();
-    $('#loader').style.display = 'none';
-    state.initialLoad = false;
+
+    if (state.initialLoad) {
+        try {
+            await Promise.all([loadSeries(1), loadSeries(2)]);
+            refreshCharts();
+        } catch (e) {
+            console.error("Erreur chargement historique", e);
+            setConn(false, "Erreur historique");
+        } finally {
+            hideLoader();
+        }
+    }
 
     scheduleNextPoll();
-    pollOnce();
+    if (!state.initialLoad) {
+        pollOnce();
+    }
 }
 
 // Visibilité onglet
@@ -141,14 +156,9 @@ export function attachVisibilityHandler() {
         if (document.hidden) {
             stopPolling();
         } else {
-            try {
-                await Promise.all([loadSeries(1), loadSeries(2)]);
-                refreshCharts();
-            } finally {
-                recomputeAdaptivePolling();
-                stopPolling(); scheduleNextPoll();
-                pollOnce();
-            }
+            // Re-sync complet au retour sur l'onglet
+            state.initialLoad = true;
+            await startPolling();
         }
     });
 }

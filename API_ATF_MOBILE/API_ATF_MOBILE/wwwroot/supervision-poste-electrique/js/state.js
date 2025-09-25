@@ -6,16 +6,18 @@ export const state = {
     win: {
         p1: Number(localStorage.getItem('win_p1') || 15),
         u1: Number(localStorage.getItem('win_u1') || 15),
+        pf1: Number(localStorage.getItem('win_pf1') || 15),
         p2: Number(localStorage.getItem('win_p2') || 15),
         u2: Number(localStorage.getItem('win_u2') || 15),
+        pf2: Number(localStorage.getItem('win_pf2') || 15),
     }
 };
 
 export const MAX_MIN = 2880;
 
 export const bufs = {
-    p1: [], u1_12: [], u1_23: [], u1_31: [],
-    p2: [], u2_12: [], u2_23: [], u2_31: []
+    p1: [], u1_12: [], u1_23: [], u1_31: [], pf1: [],
+    p2: [], u2_12: [], u2_23: [], u2_31: [], pf2: [],
 };
 
 export function cutoffTs(m) { return Date.now() - m * 60 * 1000; }
