@@ -39,9 +39,14 @@ canvas {
     }
 
     .kpi .value {
-        font-size: 1.1rem;
+        font-size: 2rem; 
         font-weight: bold;
+        line-height: 1.1;
     }
+
+        .kpi .value span {
+            font-size: inherit; 
+        }
 
 .grid-auto {
     display: grid;

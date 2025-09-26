@@ -1,0 +1,617 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Supervision — Poste Électrique</title>
+
+    <!-- Tailwind + Chart.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+
+    <!-- GridStack (grille invisible, anti-chevauchement) -->
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-extra.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
+
+    <!-- (optionnel) ton CSS -->
+    <link rel="stylesheet" href="./style.css" />
+
+    <style>
+        /* ================= Réglages rapides (modifiable facilement) ================= */
+        :root {
+            --card-bg: rgba(255,255,255,0.03);
+            --card-bd: rgba(255,255,255,0.06);
+            --radius: 1rem;
+            --pad: 0.75rem;
+            --title-size: 1.125rem; /* ~text-lg */
+            --kpi-min-h: 150px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-bd);
+            border-radius: var(--radius);
+            padding: var(--pad);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            padding: .75rem .85rem;
+            border-bottom: 1px solid var(--card-bd);
+        }
+
+            .card-head .title {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+                font-size: var(--title-size);
+            }
+
+        .card-body {
+            padding: .75rem;
+        }
+
+        .sel {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: .6rem;
+            padding: .25rem .5rem;
+        }
+
+        .led {
+            width: 10px;
+            height: 10px;
+            border-radius: 9999px;
+            background: #ef4444;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .kpi {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: var(--kpi-min-h);
+            padding: var(--pad);
+        }
+
+            .kpi .value {
+                text-align: center;
+            }
+
+        .icon {
+            width: 18px;
+            height: 18px;
+            display: inline-block;
+        }
+
+            .icon.stroke {
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.6;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .icon.fill {
+                fill: currentColor;
+            }
+
+            .icon.lg {
+                width: 22px;
+                height: 22px;
+            }
+
+        .btn-icon {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        /* ====== GridStack rendu "invisible" (pas de bordures visibles) ====== */
+        .grid-stack {
+            margin-top: 0.75rem;
+        }
+
+            .grid-stack .grid-stack-item-content {
+                background: transparent;
+            }
+        /* Poignée de drag (discrète) sur l'entête des cards principales */
+        .gs-handle {
+            cursor: move;
+            opacity: .7;
+            user-select: none;
+        }
+        /* Handles de resize (désactivé par défaut) */
+        .grid-stack .gs-resize-handle {
+            background: #37415133;
+        }
+
+        /* Barre de groupe (TR1 / TR2) cliquable pour ouvrir/fermer (capsule) */
+        .group-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            padding: .6rem .85rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--card-bd);
+            background: rgba(255,255,255,0.04);
+            cursor: pointer;
+        }
+
+            .group-bar .label {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+                font-weight: 600;
+            }
+
+        /* Pendant drag: éviter que les canvas interceptent les événements */
+        .dragging canvas {
+            pointer-events: none !important;
+        }
+
+        /* ===== Nested grid (KPI) : poignée n'importe où dans la carte KPI ===== */
+        .kpi-draggable {
+            cursor: grab;
+        }
+
+            .kpi-draggable:active {
+                cursor: grabbing;
+            }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- ===== SPRITE SVG (icônes) ===== -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <symbol id="i-cog" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3.25" class="stroke" />
+            <path class="stroke" d="M19.4 15a7.9 7.9 0 0 0 .09-1l1.86-1.07-1.2-2.08-2.12.5a7.9 7.9 0 0 0-.7-.7l.5-2.12-2.08-1.2L15 4.51a7.9 7.9 0 0 0-1-.09l-1.07-1.86h-1.86L9.94 4.42a7.9 7.9 0 0 0-1 .09L7.86 2.65 5.78 3.86l.5 2.12c-.24.22-.47.45-.7.7l-2.12-.5-1.2 2.08L3.12 10c-.03.33-.03.67 0 1l-1.86 1.07 1.2 2.08 2.12-.5c.22.25.45.48.7.7l-.5 2.12 2.08 1.2L9 19.49c.33.03.67.03 1 0l1.07 1.86h1.86L14 19.58c.33-.03.67-.07 1-.17l1.13 1.79 2.08-1.21-.5-2.12c.25-.22.48-.45.7-.7l2.12.5 1.2-2.08L19.4 15Z" />
+        </symbol>
+        <symbol id="i-plug" viewBox="0 0 24 24">
+            <path class="stroke" d="M7 7h10v4a5 5 0 1 1-10 0V7Z" />
+            <path class="stroke" d="M9 3v4M15 3v4M12 16v5" />
+        </symbol>
+        <symbol id="i-bolt" viewBox="0 0 24 24">
+            <polygon points="13,2 4,13.5 10,13.5 9,22 20,9 14,9 13,2" class="fill" />
+        </symbol>
+        <symbol id="i-wave" viewBox="0 0 24 24">
+            <path class="stroke" d="M2 12c3-6 5-6 8 0s5 6 8 0 3-6 4-6" />
+        </symbol>
+        <symbol id="i-gauge" viewBox="0 0 24 24">
+            <path class="stroke" d="M4 16a8 8 0 1 1 16 0" />
+            <path class="stroke" d="M12 12l4 4" />
+            <circle cx="12" cy="12" r="1.4" class="fill" />
+        </symbol>
+        <symbol id="i-battery" viewBox="0 0 24 24">
+            <rect x="3" y="8" width="16" height="8" rx="2" class="stroke" />
+            <rect x="5" y="10" width="8" height="4" class="fill" />
+            <rect x="19" y="10" width="2" height="4" class="fill" />
+        </symbol>
+        <symbol id="i-link" viewBox="0 0 24 24">
+            <path class="stroke" d="M10.5 13.5l3-3M8 14.5l-1.5 1.5a3.5 3.5 0 1 1-5-5L3 9.5a3.5 3.5 0 0 1 5 0" />
+            <path class="stroke" d="M16 9.5l1.5-1.5a3.5 3.5 0 1 1 5 5L21 14.5a3.5 3.5 0 0 1-5 0" />
+        </symbol>
+        <symbol id="i-pf" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="8" class="stroke" />
+            <path class="stroke" d="M12 12l5-2M6 12h6" />
+        </symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24">
+            <path class="stroke" d="M8 10l4 4 4-4" />
+        </symbol>
+    </svg>
+    <!-- ===== fin sprite ===== -->
+
+    <div id="loader"></div>
+
+    <div class="max-w-7xl mx-auto p-6 space-y-6">
+        <!-- ===== En-tête ===== -->
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <svg class="icon stroke lg"><use href="#i-plug" /></svg>
+                <div>
+                    <h1 class="text-2xl font-bold">TRANCANNAGE — Poste Électrique n° 8</h1>
+                    <p class="text-sm text-white/60">2 Transformateurs — Supervision détaillée</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <span id="welcome-message" class="text-lg"></span>
+                <div class="flex items-center gap-2">
+                    <span id="conn-led" class="led" title="État connexion"></span>
+                    <span id="conn-text" class="text-white/70 text-sm">Déconnecté</span>
+
+                    <button id="btn-settings" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-sm btn-icon">
+                        <svg class="icon stroke"><use href="#i-cog" /></svg>
+                        <span>Paramètres</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== Paramètres ===== -->
+        <dialog id="settings" class="backdrop:bg-black/60 rounded-2xl w-full max-w-xl text-white">
+            <form method="dialog" class="rounded-2xl bg-gray-800 border border-white/10 p-5 space-y-4">
+                <h2 class="text-xl font-semibold flex items-center gap-2">
+                    <svg class="icon stroke"><use href="#i-cog" /></svg> Paramètres
+                </h2>
+                <div class="grid grid-cols-1 gap-4">
+                    <label class="block">
+                        <span class="text-sm text-white/70">API Base URL</span>
+                        <input id="api-base" type="text"
+                               class="w-full mt-1 rounded-xl bg-gray-900 border border-white/10 px-3 py-2 outline-none focus:border-indigo-500"
+                               placeholder="http://10.250.13.4:8088/api/energy" />
+                    </label>
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2">Fermer</button>
+                    <button id="save-settings" type="button" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 btn-icon">
+                        <svg class="icon stroke"><use href="#i-link" /></svg>
+                        <span>Enregistrer</span>
+                    </button>
+                </div>
+            </form>
+        </dialog>
+
+        <!-- ===== Capsules (onglets) TR1 / TR2 ===== -->
+        <div class="space-y-3">
+            <div class="group-bar" data-group-toggle="TR1">
+                <div class="label"><svg class="icon stroke"><use href="#i-plug" /></svg> Transformateur 1</div>
+                <div class="text-xs text-white/60">Clique pour ouvrir/fermer</div>
+            </div>
+            <div class="group-bar" data-group-toggle="TR2">
+                <div class="label"><svg class="icon stroke"><use href="#i-plug" /></svg> Transformateur 2</div>
+                <div class="text-xs text-white/60">Clique pour ouvrir/fermer</div>
+            </div>
+        </div>
+
+        <!-- ===== Grille modulaire principale ===== -->
+        <div class="grid-stack" id="layout">
+            <!-- ===== TR1 : les 4 blocs sont déplaçables (3 courbes + bloc KPI qui lui-même contient une grille imbriquée) ===== -->
+            <div class="grid-stack-item" gs-id="tr1-kpis-wrap" gs-w="6" gs-h="2" gs-x="0" gs-y="0" data-group="TR1">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span> KPI — TR1 (déplaçables individuellement)</div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Grille imbriquée pour KPI TR1 (chaque KPI sera transformé en item drag) -->
+                        <div id="tr1-kpis" class="grid-stack" data-nested="true"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-id="tr1-p" gs-w="6" gs-h="3" gs-x="6" gs-y="0" data-group="TR1">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon fill"><use href="#i-bolt" /></svg> Puissance active — TR1</div>
+                        <label class="text-xs text-white/70 flex items-center gap-2">
+                            Base de temps
+                            <select id="win-p1" class="sel">
+                                <option value="15">15 min</option>
+                                <option value="60">1 h</option>
+                                <option value="240">4 h</option>
+                                <option value="1440">24 h</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="card-body"><canvas id="chartP1"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-id="tr1-u" gs-w="6" gs-h="3" gs-x="0" gs-y="2" data-group="TR1">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-wave" /></svg> Tensions de phase — TR1</div>
+                        <label class="text-xs text-white/70 flex items-center gap-2">
+                            Base de temps
+                            <select id="win-u1" class="sel">
+                                <option value="15">15 min</option>
+                                <option value="60">1 h</option>
+                                <option value="240">4 h</option>
+                                <option value="1440">24 h</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="card-body"><canvas id="chartU1"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-id="tr1-pf" gs-w="6" gs-h="3" gs-x="6" gs-y="2" data-group="TR1">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-pf" /></svg> Facteur de Puissance — TR1</div>
+                        <label class="text-xs text-white/70 flex items-center gap-2">
+                            Base de temps
+                            <select id="win-pf1" class="sel">
+                                <option value="15">15 min</option>
+                                <option value="60">1 h</option>
+                                <option value="240">4 h</option>
+                                <option value="1440">24 h</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="card-body"><canvas id="chartPF1"></canvas></div>
+                </div>
+            </div>
+
+            <!-- ===== TR2 : même principe ===== -->
+            <div class="grid-stack-item" gs-id="tr2-kpis-wrap" gs-w="6" gs-h="2" gs-x="0" gs-y="5" data-group="TR2">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span> KPI — TR2 (déplaçables individuellement)</div>
+                    </div>
+                    <div class="card-body">
+                        <div id="tr2-kpis" class="grid-stack" data-nested="true"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-id="tr2-p" gs-w="6" gs-h="3" gs-x="6" gs-y="5" data-group="TR2">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon fill"><use href="#i-bolt" /></svg> Puissance active — TR2</div>
+                        <label class="text-xs text-white/70 flex items-center gap-2">
+                            Base de temps
+                            <select id="win-p2" class="sel">
+                                <option value="15">15 min</option>
+                                <option value="60">1 h</option>
+                                <option value="240">4 h</option>
+                                <option value="1440">24 h</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="card-body"><canvas id="chartP2"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-id="tr2-u" gs-w="6" gs-h="3" gs-x="0" gs-y="7" data-group="TR2">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-wave" /></svg> Tensions de phase — TR2</div>
+                        <label class="text-xs text-white/70 flex items-center gap-2">
+                            Base de temps
+                            <select id="win-u2" class="sel">
+                                <option value="15">15 min</option>
+                                <option value="60">1 h</option>
+                                <option value="240">4 h</option>
+                                <option value="1440">24 h</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="card-body"><canvas id="chartU2"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid-stack-item" gs-id="tr2-pf" gs-w="6" gs-h="3" gs-x="6" gs-y="7" data-group="TR2">
+                <div class="grid-stack-item-content card">
+                    <div class="card-head">
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-pf" /></svg> Facteur de Puissance — TR2</div>
+                        <label class="text-xs text-white/70 flex items-center gap-2">
+                            Base de temps
+                            <select id="win-pf2" class="sel">
+                                <option value="15">15 min</option>
+                                <option value="60">1 h</option>
+                                <option value="240">4 h</option>
+                                <option value="1440">24 h</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="card-body"><canvas id="chartPF2"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="pt-2 text-xs text-white/50">
+            Auteur : N.Villaume  &nbsp;•&nbsp; Dernière mise à jour : <span id="last-update">—</span>
+        </footer>
+    </div>
+
+    <!-- JS principal de tes données (inchangé) -->
+    <script type="module" src="./js/main.js"></script>
+
+    <!-- Script d'encapsulation Grid + nested grids KPI + persistance auto + capsules TR1/TR2 -->
+    <script>
+      (function(){
+        const STORAGE_KEY = 'layout-v2'; // nouvelle version pour éviter conflit ancien format
+        let mainGrid;
+        const nestedGrids = new Map(); // par id (#tr1-kpis, #tr2-kpis)
+
+        document.addEventListener('DOMContentLoaded', () => {
+          if (typeof window.GridStack !== 'function') {
+            console.error('GridStack non chargé');
+            return;
+          }
+
+          // 1) Grille principale (drag only)
+          mainGrid = GridStack.init({
+            column: 12,
+            cellHeight: 100,
+            margin: 6,
+            float: true,
+            disableResize: true, // drag only
+            draggable: { handle: '.gs-handle' }
+          }, document.getElementById('layout'));
+
+          mainGrid.on('dragstart', () => document.body.classList.add('dragging'));
+          mainGrid.on('dragstop',  () => document.body.classList.remove('dragging'));
+
+          // 2) Initialiser les grilles imbriquées KPI (drag sur toute la carte KPI)
+          initNested('#tr1-kpis', {columns:5});
+          initNested('#tr2-kpis', {columns:5});
+
+          // 3) Chargement layout (positions principales + nested + groupes)
+          const saved = loadLayout();
+          if (saved) applyLayout(saved);
+
+          // 4) Persistance auto
+          mainGrid.on('change', saveLayout);
+          // écouter chaque nested grid
+          nestedGrids.forEach(g => g.on('change', saveLayout));
+
+          // 5) Capsules (onglets) clic sur le titre pour plier/déplier
+          document.querySelectorAll('[data-group-toggle]').forEach(bar => {
+            bar.addEventListener('click', () => {
+              const group = bar.getAttribute('data-group-toggle');
+              setGroupCollapsed(group, !isGroupCollapsed(group));
+              saveLayout();
+            });
+          });
+
+          // 6) Restaure l'état des groupes (ouverts par défaut si pas de stockage)
+          restoreGroups();
+        });
+
+        /* ====== Nested KPI helpers ====== */
+        function initNested(selector, opts){
+          const container = document.querySelector(selector);
+          if (!container) return;
+
+          // Si des KPI existent déjà (injectés par main.js), on les transforme en items grid-stack
+          wrapChildrenAsItems(container);
+
+          const grid = GridStack.init({
+            column: opts?.columns || 5,
+            cellHeight: 110,
+            margin: 6,
+            float: true,
+            disableResize: true, // drag only
+            dragIn: undefined,
+            dragInOptions: undefined,
+            draggable: { handle: null }, // handle null -> toute la carte est draggable
+          }, container);
+
+          // Style poignée KPI (facultatif)
+          container.querySelectorAll('.card.kpi').forEach(el => el.classList.add('kpi-draggable'));
+
+          // Observer les ajouts dynamiques de KPI (si main.js en ajoute ensuite)
+          const mo = new MutationObserver(muts => {
+            let changed = false;
+            muts.forEach(m => {
+              m.addedNodes.forEach(node => {
+                if (node.nodeType === 1) { // élément
+                  if (!node.closest('.grid-stack-item')) changed = true;
+                }
+              });
+            });
+            if (changed) {
+              wrapChildrenAsItems(container);
+              grid.engine.nodes.forEach(()=>{}); // no-op pour stabiliser
+              saveLayout();
+            }
+          });
+          mo.observe(container, { childList:true });
+
+          nestedGrids.set(selector, grid);
+        }
+
+        // Enveloppe chaque enfant direct en grid-stack-item si nécessaire
+        function wrapChildrenAsItems(container){
+          const children = Array.from(container.children);
+          children.forEach((child, idx) => {
+            if (child.classList.contains('grid-stack-item')) return; // déjà item
+            const wrapper = document.createElement('div');
+            wrapper.className = 'grid-stack-item';
+            wrapper.setAttribute('gs-id', `${container.id}-kpi-${idx}`);
+            wrapper.setAttribute('gs-w', '1');
+            wrapper.setAttribute('gs-h', '1');
+            const content = document.createElement('div');
+            content.className = 'grid-stack-item-content';
+            container.insertBefore(wrapper, child);
+            wrapper.appendChild(content);
+            content.appendChild(child);
+          });
+        }
+
+        /* ====== Persistence ====== */
+        function currentLayout(){
+          const payload = { main: [], nested:{}, groups: readGroupsState() };
+          // main grid
+          mainGrid.engine.nodes.forEach(n => {
+            payload.main.push({ id: n.el.getAttribute('gs-id'), x:n.x, y:n.y, w:n.w, h:n.h });
+          });
+          // nested grids
+          nestedGrids.forEach((g, sel) => {
+            const arr = [];
+            g.engine.nodes.forEach(n => {
+              arr.push({ id: n.el.getAttribute('gs-id'), x:n.x, y:n.y, w:n.w, h:n.h });
+            });
+            payload.nested[sel] = arr;
+          });
+          return payload;
+        }
+        function saveLayout(){
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLayout()));
+        }
+        function loadLayout(){
+          try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; }
+        }
+        function applyLayout(saved){
+          // main
+          if (saved.main?.length){
+            const map = new Map(saved.main.map(it => [it.id, it]));
+            mainGrid.engine.nodes.forEach(n => {
+              const id = n.el.getAttribute('gs-id');
+              const s = map.get(id);
+              if (s) mainGrid.update(n.el, {x:s.x, y:s.y, w:s.w, h:s.h});
+            });
+          }
+          // nested
+          if (saved.nested){
+            Object.entries(saved.nested).forEach(([sel, items]) => {
+              const g = nestedGrids.get(sel);
+              if (!g || !items) return;
+              const map = new Map(items.map(it => [it.id, it]));
+              g.engine.nodes.forEach(n => {
+                const id = n.el.getAttribute('gs-id');
+                const s = map.get(id);
+                if (s) g.update(n.el, {x:s.x, y:s.y, w:s.w, h:s.h});
+              });
+            });
+          }
+          // groups
+          if (saved.groups) Object.entries(saved.groups).forEach(([g,c]) => setGroupCollapsed(g, !!c));
+        }
+
+        /* ====== Capsules (groupes TR1/TR2) ====== */
+        function isGroupCollapsed(group){
+          const bar = document.querySelector(`[data-group-toggle="${group}"]`);
+          return bar?.getAttribute('data-collapsed') === '1';
+        }
+        function setGroupCollapsed(group, collapsed){
+          document.querySelectorAll(`[data-group="${group}"]`).forEach(el => {
+            el.style.display = collapsed ? 'none' : '';
+          });
+          const bar = document.querySelector(`[data-group-toggle="${group}"]`);
+          if (bar) bar.setAttribute('data-collapsed', collapsed ? '1' : '0');
+        }
+        function readGroupsState(){
+          const out = {}; document.querySelectorAll('[data-group-toggle]').forEach(bar => {
+            const g = bar.getAttribute('data-group-toggle'); out[g] = bar.getAttribute('data-collapsed') === '1';
+          }); return out;
+        }
+        function restoreGroups(){
+          const saved = loadLayout();
+          // par défaut : OUVERTS (si pas de stockage)
+          if (!saved || !saved.groups) { setGroupCollapsed('TR1', false); setGroupCollapsed('TR2', false); return; }
+          Object.entries(saved.groups).forEach(([g,c]) => setGroupCollapsed(g, !!c));
+        }
+      })();
+    </script>
+
+    <!-- Exemple d’utilisation côté JS pour une carte KPI :
+        const icon = '<svg class="icon stroke"><use href="#i-battery"/></svg>';
+        // insérer icon dans l’entête ou près de la valeur KPI
+    -->
+</body>
+</html>

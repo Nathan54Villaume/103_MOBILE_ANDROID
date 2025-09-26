@@ -18,6 +18,7 @@
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.06);
             border-radius: 1rem;
+            padding: 0.75rem;
         }
 
         .card-head {
@@ -25,12 +26,18 @@
             align-items: center;
             justify-content: space-between;
             gap: .75rem;
-            padding: .9rem 1rem;
+            padding: .75rem .85rem;
             border-bottom: 1px solid rgba(255,255,255,.06);
         }
 
+            .card-head .title {
+                display: flex;
+                align-items: center;
+                gap: .5rem;
+            }
+
         .card-body {
-            padding: 1rem;
+            padding: .75rem;
         }
 
         .sel {
@@ -54,37 +61,130 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 180px;
+            min-height: 150px;
+            padding: 0.75rem;
         }
 
             .kpi .value {
                 text-align: center;
             }
+
+        /* Icônes sprite */
+        .icon {
+            width: 18px;
+            height: 18px;
+            display: inline-block;
+        }
+
+            .icon.stroke {
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1.6;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .icon.fill {
+                fill: currentColor;
+            }
+
+            .icon.lg {
+                width: 22px;
+                height: 22px;
+            }
+
+        .btn-icon {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
+
+    <!-- ===== SPRITE SVG (icônes rétablies) ===== -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <!-- Engrenage (Paramètres) -->
+        <symbol id="i-cog" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3.25" class="stroke" />
+            <path class="stroke" d="M19.4 15a7.9 7.9 0 0 0 .09-1l1.86-1.07-1.2-2.08-2.12.5a7.9 7.9 0 0 0-.7-.7l.5-2.12-2.08-1.2L15 4.51a7.9 7.9 0 0 0-1-.09l-1.07-1.86h-1.86L9.94 4.42a7.9 7.9 0 0 0-1 .09L7.86 2.65 5.78 3.86l.5 2.12c-.24.22-.47.45-.7.7l-2.12-.5-1.2 2.08L3.12 10c-.03.33-.03.67 0 1l-1.86 1.07 1.2 2.08 2.12-.5c.22.25.45.48.7.7l-.5 2.12 2.08 1.2L9 19.49c.33.03.67.03 1 0l1.07 1.86h1.86L14 19.58c.33-.03.67-.07 1-.17l1.13 1.79 2.08-1.21-.5-2.12c.25-.22.48-.45.7-.7l2.12.5 1.2-2.08L19.4 15Z" />
+        </symbol>
+
+        <!-- Prise / Transformateur -->
+        <symbol id="i-plug" viewBox="0 0 24 24">
+            <path class="stroke" d="M7 7h10v4a5 5 0 1 1-10 0V7Z" />
+            <path class="stroke" d="M9 3v4M15 3v4M12 16v5" />
+        </symbol>
+
+        <!-- Éclair (Puissance active) -->
+        <symbol id="i-bolt" viewBox="0 0 24 24">
+            <polygon points="13,2 4,13.5 10,13.5 9,22 20,9 14,9 13,2" class="fill" />
+        </symbol>
+
+        <!-- Onde (Tensions de phase) -->
+        <symbol id="i-wave" viewBox="0 0 24 24">
+            <path class="stroke" d="M2 12c3-6 5-6 8 0s5 6 8 0 3-6 4-6" />
+        </symbol>
+
+        <!-- Jauge (FP / indicateurs) -->
+        <symbol id="i-gauge" viewBox="0 0 24 24">
+            <path class="stroke" d="M4 16a8 8 0 1 1 16 0" />
+            <path class="stroke" d="M12 12l4 4" />
+            <circle cx="12" cy="12" r="1.4" class="fill" />
+        </symbol>
+
+        <!-- Batterie (Énergie) -->
+        <symbol id="i-battery" viewBox="0 0 24 24">
+            <rect x="3" y="8" width="16" height="8" rx="2" class="stroke" />
+            <rect x="5" y="10" width="8" height="4" class="fill" />
+            <rect x="19" y="10" width="2" height="4" class="fill" />
+        </symbol>
+
+        <!-- Chaîne (Lien / Connexion) -->
+        <symbol id="i-link" viewBox="0 0 24 24">
+            <path class="stroke" d="M10.5 13.5l3-3M8 14.5l-1.5 1.5a3.5 3.5 0 1 1-5-5L3 9.5a3.5 3.5 0 0 1 5 0" />
+            <path class="stroke" d="M16 9.5l1.5-1.5a3.5 3.5 0 1 1 5 5L21 14.5a3.5 3.5 0 0 1-5 0" />
+        </symbol>
+
+        <!-- PF (cos φ) simplifié -->
+        <symbol id="i-pf" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="8" class="stroke" />
+            <path class="stroke" d="M12 12l5-2M6 12h6" />
+        </symbol>
+    </svg>
+    <!-- ===== fin sprite ===== -->
 
     <div id="loader"></div>
 
     <div class="max-w-7xl mx-auto p-6 space-y-10">
         <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold">TRANCANNAGE — Poste Électrique n° 8</h1>
-                <p class="text-sm text-white/60">2 Transformateurs — Supervision détaillée</p>
+            <div class="flex items-center gap-2">
+                <svg class="icon stroke lg"><use href="#i-plug" /></svg>
+                <div>
+                    <h1 class="text-2xl font-bold">TRANCANNAGE — Poste Électrique n° 8</h1>
+                    <p class="text-sm text-white/60">2 Transformateurs — Supervision détaillée</p>
+                </div>
             </div>
+
             <div class="flex items-center gap-4">
                 <span id="welcome-message" class="text-lg"></span>
                 <div class="flex items-center gap-2">
                     <span id="conn-led" class="led" title="État connexion"></span>
                     <span id="conn-text" class="text-white/70 text-sm">Déconnecté</span>
-                    <button id="btn-settings" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-sm">Paramètres</button>
+
+                    <button id="btn-settings" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-sm btn-icon">
+                        <svg class="icon stroke"><use href="#i-cog" /></svg>
+                        <span>Paramètres</span>
+                    </button>
                 </div>
             </div>
         </header>
 
         <dialog id="settings" class="backdrop:bg-black/60 rounded-2xl w-full max-w-xl text-white">
             <form method="dialog" class="rounded-2xl bg-gray-800 border border-white/10 p-5 space-y-4">
-                <h2 class="text-xl font-semibold">Paramètres</h2>
+                <h2 class="text-xl font-semibold flex items-center gap-2">
+                    <svg class="icon stroke"><use href="#i-cog" /></svg> Paramètres
+                </h2>
                 <div class="grid grid-cols-1 gap-4">
                     <label class="block">
                         <span class="text-sm text-white/70">API Base URL</span>
@@ -95,21 +195,29 @@
                 </div>
                 <div class="flex items-center justify-end gap-2 pt-2">
                     <button class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2">Fermer</button>
-                    <button id="save-settings" type="button" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2">Enregistrer</button>
+                    <button id="save-settings" type="button" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 btn-icon">
+                        <svg class="icon stroke"><use href="#i-link" /></svg>
+                        <span>Enregistrer</span>
+                    </button>
                 </div>
             </form>
         </dialog>
 
         <!-- ================= TR1 ================= -->
         <section class="space-y-6">
-            <h2 class="text-xl font-semibold">Transformateur 1</h2>
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <svg class="icon stroke"><use href="#i-plug" /></svg> Transformateur 1
+            </h2>
 
-            <!-- Grille KPI TR1 : 10 cartes -->
+            <!-- Grille KPI TR1 : 10 cartes (remplies via JS ; tu peux y injecter des <svg><use href="#…"/></svg>) -->
             <div id="tr1-kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch"></div>
 
             <div class="card">
                 <div class="card-head">
-                    <h3 class="text-lg font-semibold">Puissance active — TR1</h3>
+                    <h3 class="text-lg font-semibold title">
+                        <svg class="icon fill"><use href="#i-bolt" /></svg>
+                        Puissance active — TR1
+                    </h3>
                     <label class="text-xs text-white/70 flex items-center gap-2">
                         Base de temps
                         <select id="win-p1" class="sel">
@@ -125,7 +233,10 @@
 
             <div class="card">
                 <div class="card-head">
-                    <h3 class="text-lg font-semibold">Tensions de phase — TR1</h3>
+                    <h3 class="text-lg font-semibold title">
+                        <svg class="icon stroke"><use href="#i-wave" /></svg>
+                        Tensions de phase — TR1
+                    </h3>
                     <label class="text-xs text-white/70 flex items-center gap-2">
                         Base de temps
                         <select id="win-u1" class="sel">
@@ -141,7 +252,10 @@
 
             <div class="card">
                 <div class="card-head">
-                    <h3 class="text-lg font-semibold">Facteur de Puissance — TR1</h3>
+                    <h3 class="text-lg font-semibold title">
+                        <svg class="icon stroke"><use href="#i-pf" /></svg>
+                        Facteur de Puissance — TR1
+                    </h3>
                     <label class="text-xs text-white/70 flex items-center gap-2">
                         Base de temps
                         <select id="win-pf1" class="sel">
@@ -158,14 +272,19 @@
 
         <!-- ================= TR2 ================= -->
         <section class="space-y-6">
-            <h2 class="text-xl font-semibold">Transformateur 2</h2>
+            <h2 class="text-xl font-semibold flex items-center gap-2">
+                <svg class="icon stroke"><use href="#i-plug" /></svg> Transformateur 2
+            </h2>
 
             <!-- Grille KPI TR2 : 10 cartes -->
             <div id="tr2-kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch"></div>
 
             <div class="card">
                 <div class="card-head">
-                    <h3 class="text-lg font-semibold">Puissance active — TR2</h3>
+                    <h3 class="text-lg font-semibold title">
+                        <svg class="icon fill"><use href="#i-bolt" /></svg>
+                        Puissance active — TR2
+                    </h3>
                     <label class="text-xs text-white/70 flex items-center gap-2">
                         Base de temps
                         <select id="win-p2" class="sel">
@@ -181,7 +300,10 @@
 
             <div class="card">
                 <div class="card-head">
-                    <h3 class="text-lg font-semibold">Tensions de phase — TR2</h3>
+                    <h3 class="text-lg font-semibold title">
+                        <svg class="icon stroke"><use href="#i-wave" /></svg>
+                        Tensions de phase — TR2
+                    </h3>
                     <label class="text-xs text-white/70 flex items-center gap-2">
                         Base de temps
                         <select id="win-u2" class="sel">
@@ -197,7 +319,10 @@
 
             <div class="card">
                 <div class="card-head">
-                    <h3 class="text-lg font-semibold">Facteur de Puissance — TR2</h3>
+                    <h3 class="text-lg font-semibold title">
+                        <svg class="icon stroke"><use href="#i-pf" /></svg>
+                        Facteur de Puissance — TR2
+                    </h3>
                     <label class="text-xs text-white/70 flex items-center gap-2">
                         Base de temps
                         <select id="win-pf2" class="sel">
@@ -219,5 +344,10 @@
 
     <!-- JS principal -->
     <script type="module" src="./js/main.js"></script>
+
+    <!-- Exemple d’utilisation côté JS pour une carte KPI :
+        const icon = '<svg class="icon stroke"><use href="#i-battery"/></svg>';
+        // insérer icon dans l’entête ou près de la valeur KPI
+    -->
 </body>
 </html>

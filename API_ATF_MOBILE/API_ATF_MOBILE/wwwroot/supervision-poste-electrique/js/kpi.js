@@ -5,13 +5,24 @@ import { fmt as _fmt } from './utils.js';
 const REG = new Map();
 let DETAILS = null;
 
+// Map "kind" -> id du sprite actuel
 const ICON_ID_BY_KIND = {
-    p_kw: 'power',
-    q_kvar: 'reactive',
-    pf: 'pf',
-    u: 'voltage',
-    i: 'current',
-    e: 'energy'
+    p_kw: '#i-bolt',    // Puissance active
+    q_kvar: '#i-gauge',   // Réactive
+    pf: '#i-pf',      // Facteur de puissance
+    u: '#i-wave',    // Tensions
+    i: '#i-gauge',   // Courants
+    e: '#i-battery', // Énergie
+};
+
+// Compat: anciens noms -> sprite actuel
+const NAME_TO_SPRITE = {
+    power: '#i-bolt',
+    reactive: '#i-gauge',
+    pf: '#i-pf',
+    voltage: '#i-wave',
+    current: '#i-gauge',
+    energy: '#i-battery',
 };
 
 function fmt(v, d = 1) {
@@ -56,42 +67,41 @@ function createDetailsDialog() {
     return dlg;
 }
 
-// --- Utilise le sprite <symbol id="ic-...">
-function makeIconFromSprite(id, classes = 'w-4 h-4 text-white/70') {
+// ---- Sprite helper : accepte '#i-xxx' ou 'xxx'
+function makeIconFromSprite(id, classes = 'icon stroke') {
     if (!id) return document.createTextNode('');
+    const iconId = id.startsWith('#') ? id : `#i-${id}`;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', classes);
     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-
-    // Essaye d'abord l'attribut moderne 'href'
-    try { use.setAttribute('href', `#ic-${id}`); } catch { }
-    // Puis xlink:href (compat)
-    try { use.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `#ic-${id}`); } catch { }
-
+    // href moderne
+    try { use.setAttribute('href', iconId); } catch { }
+    // xlink:href compat
+    try { use.setAttributeNS('http://www.w3.org/1999/xlink', 'href', iconId); } catch { }
     svg.appendChild(use);
 
-    // Log utile si le symbole est introuvable
-    if (!document.getElementById(`ic-${id}`)) {
-        console.warn(`[KPI] Icône #ic-${id} introuvable dans le sprite`);
+    if (!document.querySelector(iconId)) {
+        console.warn(`[KPI] Icône ${iconId} introuvable dans le sprite`);
     }
     return svg;
 }
 
 function resolveIconId(def) {
-    if (def.icon) return def.icon; // ex: 'power'
-    const kind = def.kind || '';
-    const normalized =
-        kind.startsWith('u') ? 'u' :
-            kind.startsWith('i') ? 'i' :
-                kind;
+    // Priorité au champ explicite
+    if (def.icon) {
+        if (def.icon.startsWith('#')) return def.icon;         // ex: '#i-wave'
+        if (NAME_TO_SPRITE[def.icon]) return NAME_TO_SPRITE[def.icon]; // ex: 'power'
+        return `#i-${def.icon}`; // fallback
+    }
+
+    // Sinon, basé sur kind / key (avec normalisation u*, i*)
+    const kind = (def.kind || '').toString();
+    const normalized = kind.startsWith('u') ? 'u' : kind.startsWith('i') ? 'i' : kind;
     if (ICON_ID_BY_KIND[normalized]) return ICON_ID_BY_KIND[normalized];
 
-    const suffix = (def.key || '').split('.').pop() || '';
-    const byKey =
-        suffix.startsWith('u') ? 'u' :
-            suffix.startsWith('i') ? 'i' :
-                suffix;
-    return ICON_ID_BY_KIND[byKey] || 'power';
+    const suffix = ((def.key || '').split('.').pop() || '').toString();
+    const byKey = suffix.startsWith('u') ? 'u' : suffix.startsWith('i') ? 'i' : suffix;
+    return ICON_ID_BY_KIND[byKey] || '#i-bolt';
 }
 
 function makeCard(def) {
@@ -99,15 +109,21 @@ function makeCard(def) {
 
     const card = document.createElement('div');
     card.className = 'kpi card p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.07] transition-colors';
+    card.setAttribute('data-key', key || '');
+    if (def.kind) card.setAttribute('data-kind', def.kind);
 
     const head = document.createElement('div');
     head.className = 'w-full flex items-center justify-between gap-3 mb-2';
 
     const hwrap = document.createElement('div');
-    hwrap.className = 'flex items-center gap-2 text-sm text-white/70';
+    hwrap.className = 'kpi-title flex items-center gap-2 text-sm text-white/70';
 
     const iconId = resolveIconId(def);
-    hwrap.appendChild(makeIconFromSprite(iconId));
+    const svg =
+        iconId === '#i-bolt'
+            ? makeIconFromSprite(iconId, 'icon fill')
+            : makeIconFromSprite(iconId, 'icon stroke');
+    hwrap.appendChild(svg);
 
     const h3 = document.createElement('div');
     h3.textContent = title;
@@ -117,7 +133,7 @@ function makeCard(def) {
     card.appendChild(head);
 
     const value = document.createElement('div');
-    value.className = 'value mt-1 text-3xl font-semibold';
+    value.className = 'value mt-1 text-6xl font-semibold text-center';
     value.style.fontVariantNumeric = 'tabular-nums';
     value.textContent = '—';
 
@@ -156,6 +172,7 @@ function makeCard(def) {
         });
     }
 
+
     card.addEventListener('click', () => {
         const dlg = createDetailsDialog();
         const e = REG.get(key); if (!e) return;
@@ -191,13 +208,23 @@ export const Kpi = {
 
         const { value, avg, max, decimals = entry.decimals, unit, ts } = data;
 
+        // valeur principale (premier nœud texte du container 'value')
         entry.value.firstChild.textContent = fmt(value, decimals);
         if (unit !== undefined) entry.unitEl.textContent = unit;
 
         const avgEl = entry.stats.querySelector('[data-role="avg"]');
         const maxEl = entry.stats.querySelector('[data-role="max"]');
-        if (avgEl) avgEl.textContent = fmt(avg, decimals);
-        if (maxEl) maxEl.textContent = fmt(max, decimals);
+
+        // Ajout unité si valeur présente
+        if (avgEl) {
+            const val = fmt(avg, decimals);
+            avgEl.textContent = (val !== '—' ? `${val} ${unit || ''}` : '—');
+        }
+        if (maxEl) {
+            const val = fmt(max, decimals);
+            maxEl.textContent = (val !== '—' ? `${val} ${unit || ''}` : '—');
+        }
+
 
         if (entry.chart && value !== null && value !== undefined && !isNaN(value)) {
             const x = ts ? (typeof ts === 'number' ? ts : new Date(ts).getTime()) : Date.now();
