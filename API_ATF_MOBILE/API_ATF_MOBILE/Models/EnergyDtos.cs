@@ -1,9 +1,12 @@
 ﻿namespace API_ATF_MOBILE.Models
 {
     // Représente un snapshot (photo instantanée)
+    // Enrichi avec les valeurs moyennes et maximales
     public class EnergySnapshotDto
     {
         public DateTime Ts { get; set; }
+
+        // --- Valeurs instantanées ---
         public decimal? P_Kw { get; set; }
         public decimal? Q_Kvar { get; set; }
         public decimal? Pf { get; set; }
@@ -14,9 +17,28 @@
         public decimal? I2_A { get; set; }
         public decimal? I3_A { get; set; }
         public decimal? E_Kwh { get; set; }
+
+        // --- Statistiques (AJOUTÉES) ---
+        public decimal? P_Kw_Avg { get; set; }
+        public decimal? P_Kw_Max { get; set; }
+        public decimal? Q_Kvar_Avg { get; set; }
+        public decimal? Q_Kvar_Max { get; set; }
+        public decimal? U12_V_Avg { get; set; }
+        public decimal? U12_V_Max { get; set; }
+        public decimal? U23_V_Avg { get; set; }
+        public decimal? U23_V_Max { get; set; }
+        public decimal? U31_V_Avg { get; set; }
+        public decimal? U31_V_Max { get; set; }
+        public decimal? I1_A_Avg { get; set; }
+        public decimal? I1_A_Max { get; set; }
+        public decimal? I2_A_Avg { get; set; }
+        public decimal? I2_A_Max { get; set; }
+        public decimal? I3_A_Avg { get; set; }
+        public decimal? I3_A_Max { get; set; }
     }
 
     // Représente un point temporel (courbe)
+    // INCHANGÉ
     public class EnergyPointDto
     {
         public DateTime X { get; set; }   // Timestamp
@@ -24,6 +46,7 @@
     }
 
     // Représente une série temporelle complète
+    // INCHANGÉ
     public class EnergySeriesDto
     {
         public List<EnergyPointDto> P_Kw { get; set; } = new();

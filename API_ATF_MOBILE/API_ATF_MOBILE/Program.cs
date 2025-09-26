@@ -1,41 +1,32 @@
 // file : Program.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using API_ATF_MOBILE.Data; // <— ajustez si votre namespace est différent
+using API_ATF_MOBILE.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) Charger la chaîne de connexion depuis appsettings.json
-//    Dans appsettings.json, ajoutez sous "ConnectionStrings" :
-//    "DefaultConnection": "Server=.;Database=VotreBase;User Id=sa;Password=VotreMdp;"
+// 1) Connexion SQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
-{
     throw new InvalidOperationException("La chaîne de connexion 'DefaultConnection' est introuvable dans appsettings.json");
-}
 
-
-// 2) Enregistrer le DbContext EF Core avec SQL Server
+// 2) EF Core
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString)
-);
+    options.UseSqlServer(connectionString));
 
-// 3) Déclarations des services métier
+// 3) Services
 builder.Services.AddControllers();
 
-// CORS – autorise tout (pour DEV / tests mobiles uniquement !)
+// 4) CORS (DEV : tout autoriser)
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowAll", p =>
+        p.AllowAnyOrigin()
+         .AllowAnyHeader()
+         .AllowAnyMethod());
 });
 
-// 4) Swagger / OpenAPI
+// 5) Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -47,37 +38,19 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddCors(o =>
-{
-    o.AddPolicy("AllowLocal", p => p
-        .WithOrigins("http://localhost:5500")
-        .AllowAnyHeader()
-        .AllowAnyMethod());
-});
-
-
-
-// 5) (Optionnel) Forcer Kestrel à écouter sur 0.0.0.0:8088
+// 6) Kestrel / URL
 builder.WebHost
        .UseKestrel()
        .UseUrls("http://0.0.0.0:8088");
 
 var app = builder.Build();
 
-app.UseCors("AllowLocal");
+// --- Pipeline ---
 
-// — Pipeline HTTP —
+// a) CORS (avant le reste)
+app.UseCors("AllowAll");
 
-// a) CORS (doit venir avant UseRouting si vous utilisez [EnableCors])
-app.UseCors();
-
-// b) (Optionnel) HTTPS redirection si configuré
-// app.UseHttpsRedirection();
-
-// c) Auth (le cas échéant, pour [Authorize])
-app.UseAuthorization();
-
-// d) Swagger UI
+// b) Swagger
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -85,12 +58,40 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-// e) Fichiers statiques (wwwroot)
+// c) Fichiers statiques
 app.UseDefaultFiles();
-app.UseStaticFiles();
 
-// f) Enregistrement des routes vers les contrôleurs
+// d) StaticFiles avec politique de cache fine
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var headers = ctx.Context.Response.Headers;
+        var contentType = ctx.Context.Response.ContentType ?? string.Empty;
+
+        // No-cache strict pour JS / CSS / JSON
+        if (contentType.Contains("javascript", StringComparison.OrdinalIgnoreCase) ||
+            contentType.Contains("css", StringComparison.OrdinalIgnoreCase) ||
+            contentType.Contains("json", StringComparison.OrdinalIgnoreCase))
+        {
+            headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+            headers["Pragma"] = "no-cache";
+            headers["Expires"] = "0";
+        }
+        // Cache long (ex: images) : ici 7 jours
+        else if (contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            headers["Cache-Control"] = "public, max-age=604800"; // 7 jours
+        }
+        // Sinon : laisser le comportement par défaut (pas d'écrasement)
+    }
+});
+
+// e) AuthN/AuthZ (si besoin)
+app.UseAuthorization();
+
+// f) Routes API
 app.MapControllers();
 
-// g) Démarrage de l’application
+// g) Run
 app.Run();

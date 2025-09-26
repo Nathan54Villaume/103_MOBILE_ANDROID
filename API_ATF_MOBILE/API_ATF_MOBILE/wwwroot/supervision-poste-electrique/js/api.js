@@ -1,22 +1,56 @@
 import { lowerKeys, fetchJSON } from './utils.js';
 import { state, bufs } from './state.js';
 
-// ---------- Normalisation snapshot
+// ---------- Normalisation snapshot (instantanés + stats)
 export function normalizeSnapshot(d) {
     const m = lowerKeys(d);
-    return {
+
+    // Instantanés
+    const snap = {
         ts: m.ts ?? m.ts_utc ?? null,
         p_kw: m.p_kw ?? null,
         q_kvar: m.q_kvar ?? null,
         pf: m.pf ?? null,
         e_kwh: m.e_kwh ?? null,
+
+        // U12/U23/U31 — tolère u1_v/u2_v/u3_v
         u12_v: m.u12_v ?? m.u1_v ?? null,
         u23_v: m.u23_v ?? m.u2_v ?? null,
         u31_v: m.u31_v ?? m.u3_v ?? null,
+
         i1_a: m.i1_a ?? null,
         i2_a: m.i2_a ?? null,
         i3_a: m.i3_a ?? null,
     };
+
+    // Statistiques (issues d'ENERGY_SNAPSHOT)
+    // P / Q
+    snap.p_kw_avg = m.p_kw_avg ?? null;
+    snap.p_kw_max = m.p_kw_max ?? null;
+    snap.q_kvar_avg = m.q_kvar_avg ?? null;
+    snap.q_kvar_max = m.q_kvar_max ?? null;
+
+    // U (moy/max sur U12/U23/U31)
+    snap.u12_v_avg = m.u12_v_avg ?? null;
+    snap.u12_v_max = m.u12_v_max ?? null;
+    snap.u23_v_avg = m.u23_v_avg ?? null;
+    snap.u23_v_max = m.u23_v_max ?? null;
+    snap.u31_v_avg = m.u31_v_avg ?? null;
+    snap.u31_v_max = m.u31_v_max ?? null;
+
+    // I (moy/max sur I1/I2/I3)
+    snap.i1_a_avg = m.i1_a_avg ?? null;
+    snap.i1_a_max = m.i1_a_max ?? null;
+    snap.i2_a_avg = m.i2_a_avg ?? null;
+    snap.i2_a_max = m.i2_a_max ?? null;
+    snap.i3_a_avg = m.i3_a_avg ?? null;
+    snap.i3_a_max = m.i3_a_max ?? null;
+
+    // (optionnel) PF si un jour tu l’exposes via l’API ou le calcules côté client
+    snap.pf_avg = m.pf_avg ?? null;
+    snap.pf_min = m.pf_min ?? null;
+
+    return snap;
 }
 
 // ---------- Normalisation séries (X/Y → ms/number)

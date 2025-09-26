@@ -2,11 +2,12 @@ import { $, fmt } from './utils.js';
 import { state, bufs, prune } from './state.js';
 import { fetchJSON, normalizeSnapshot, loadSeries } from './api.js';
 import { refreshCharts } from './charts.js';
+import { Kpi } from './kpi.js';
 
 // État connexion
 export function setConn(connected, message = '') {
     const led = $('#conn-led'), txt = $('#conn-text');
-    led.style.color = connected ? '#10b981' : '#ef4444';
+    led.style.backgroundColor = connected ? '#10b981' : '#ef4444';
     txt.textContent = connected ? 'Connecté' : (message || 'Déconnecté');
     txt.title = connected ? '' : message;
 }
@@ -18,15 +19,38 @@ export function hideLoader() {
     }
 }
 
-// KPIs
+// ===== KPIs (legacy DOM si présent – reste compatible) =====
 export function updateKPIs(patch) {
     const map = [
-        ['t1_p_kw', 't1-p', 1], ['t1_q_kvar', 't1-q', 1], ['t1_pf', 't1-pf', 2],
+        ['t1_p_kw', 't1-p', 1], ['t1_q_kvar', 't1-q', 1], ['t1_pf', 't1-pf', 3],
         ['t1_u12_v', 't1-u12', 0], ['t1_u23_v', 't1-u23', 0], ['t1_u31_v', 't1-u31', 0],
-        ['t1_i1_a', 't1-i1', 0], ['t1_i2_a', 't1-i2', 0], ['t1_i3_a', 't1-i3', 0], ['t1_e_kwh', 't1-e', 0],
-        ['t2_p_kw', 't2-p', 1], ['t2_q_kvar', 't2-q', 1], ['t2_pf', 't2-pf', 2],
+        ['t1_i1_a', 't1-i1', 1], ['t1_i2_a', 't1-i2', 1], ['t1_i3_a', 't1-i3', 1],
+        ['t1_e_kwh', 't1-e', 0],
+        ['t2_p_kw', 't2-p', 1], ['t2_q_kvar', 't2-q', 1], ['t2_pf', 't2-pf', 3],
         ['t2_u12_v', 't2-u12', 0], ['t2_u23_v', 't2-u23', 0], ['t2_u31_v', 't2-u31', 0],
-        ['t2_i1_a', 't2-i1', 0], ['t2_i2_a', 't2-i2', 0], ['t2_i3_a', 't2-i3', 0], ['t2_e_kwh', 't2-e', 0],
+        ['t2_i1_a', 't2-i1', 1], ['t2_i2_a', 't2-i2', 1], ['t2_i3_a', 't2-i3', 1],
+        ['t2_e_kwh', 't2-e', 0],
+
+        ['t1_p_kw_avg', 't1-p-avg', 1], ['t1_p_kw_max', 't1-p-max', 1],
+        ['t1_q_kvar_avg', 't1-q-avg', 1], ['t1_q_kvar_max', 't1-q-max', 1],
+        ['t1_u12_v_avg', 't1-u12-avg', 0], ['t1_u12_v_max', 't1-u12-max', 0],
+        ['t1_u23_v_avg', 't1-u23-avg', 0], ['t1_u23_v_max', 't1-u23-max', 0],
+        ['t1_u31_v_avg', 't1-u31-avg', 0], ['t1_u31_v_max', 't1-u31-max', 0],
+        ['t1_i1_a_avg', 't1-i1-avg', 1], ['t1_i1_a_max', 't1-i1-max', 1],
+        ['t1_i2_a_avg', 't1-i2-avg', 1], ['t1_i2_a_max', 't1-i2-max', 1],
+        ['t1_i3_a_avg', 't1-i3-avg', 1], ['t1_i3_a_max', 't1-i3-max', 1],
+
+        ['t2_p_kw_avg', 't2-p-avg', 1], ['t2_p_kw_max', 't2-p-max', 1],
+        ['t2_q_kvar_avg', 't2-q-avg', 1], ['t2_q_kvar_max', 't2-q-max', 1],
+        ['t2_u12_v_avg', 't2-u12-avg', 0], ['t2_u12_v_max', 't2-u12-max', 0],
+        ['t2_u23_v_avg', 't2-u23-avg', 0], ['t2_u23_v_max', 't2-u23-max', 0],
+        ['t2_u31_v_avg', 't2-u31-avg', 0], ['t2_u31_v_max', 't2-u31-max', 0],
+        ['t2_i1_a_avg', 't2-i1-avg', 1], ['t2_i1_a_max', 't2-i1-max', 1],
+        ['t2_i2_a_avg', 't2-i2-avg', 1], ['t2_i2_a_max', 't2-i2-max', 1],
+        ['t2_i3_a_avg', 't2-i3-avg', 1], ['t2_i3_a_max', 't2-i3-max', 1],
+
+        ['t1_pf_avg', 't1-pf-avg', 3], ['t1_pf_min', 't1-pf-min', 3],
+        ['t2_pf_avg', 't2-pf-avg', 3], ['t2_pf_min', 't2-pf-min', 3],
     ];
     for (const [key, id, dec] of map) {
         if (Object.prototype.hasOwnProperty.call(patch, key)) {
@@ -34,34 +58,92 @@ export function updateKPIs(patch) {
             if (el) el.textContent = fmt(patch[key], dec);
         }
     }
+    if ('t1_pf_avg' in patch || 't1_pf_min' in patch) { const row = document.getElementById('t1-pf-stats'); if (row) row.classList.remove('hidden'); }
+    if ('t2_pf_avg' in patch || 't2_pf_min' in patch) { const row = document.getElementById('t2-pf-stats'); if (row) row.classList.remove('hidden'); }
 }
 
 // Helpers LIVE
 function appendUnique(buf, x, y) {
     const last = buf.length ? buf[buf.length - 1] : null;
-    if (last && x <= last.x) {
-        if (x === last.x) last.y = y;
-        return;
-    }
+    if (last && x <= last.x) { if (x === last.x) last.y = y; return; }
     buf.push({ x, y });
 }
 
 function applySnapshotToBuffers(tr, d, tms) {
     const t = tms ?? (d.ts ? new Date(d.ts).getTime() : Date.now());
+
     if (tr === 'tr1') {
         appendUnique(bufs.p1, t, d.p_kw ?? null);
         appendUnique(bufs.u1_12, t, d.u12_v ?? null);
         appendUnique(bufs.u1_23, t, d.u23_v ?? null);
         appendUnique(bufs.u1_31, t, d.u31_v ?? null);
-        appendUnique(bufs.pf1, t, d.pf ?? null); // Ajout pour le graphique PF
-        updateKPIs({ t1_p_kw: d.p_kw, t1_q_kvar: d.q_kvar, t1_pf: d.pf, t1_u12_v: d.u12_v, t1_u23_v: d.u23_v, t1_u31_v: d.u31_v, t1_i1_a: d.i1_a, t1_i2_a: d.i2_a, t1_i3_a: d.i3_a, t1_e_kwh: d.e_kwh });
+        appendUnique(bufs.pf1, t, d.pf ?? null);
+
+        updateKPIs({
+            t1_p_kw: d.p_kw, t1_q_kvar: d.q_kvar, t1_pf: d.pf,
+            t1_u12_v: d.u12_v, t1_u23_v: d.u23_v, t1_u31_v: d.u31_v,
+            t1_i1_a: d.i1_a, t1_i2_a: d.i2_a, t1_i3_a: d.i3_a,
+            t1_e_kwh: d.e_kwh
+        });
+        updateKPIs({
+            t1_p_kw_avg: d.p_kw_avg, t1_p_kw_max: d.p_kw_max,
+            t1_q_kvar_avg: d.q_kvar_avg, t1_q_kvar_max: d.q_kvar_max,
+            t1_u12_v_avg: d.u12_v_avg, t1_u12_v_max: d.u12_v_max,
+            t1_u23_v_avg: d.u23_v_avg, t1_u23_v_max: d.u23_v_max,
+            t1_u31_v_avg: d.u31_v_avg, t1_u31_v_max: d.u31_v_max,
+            t1_i1_a_avg: d.i1_a_avg, t1_i1_a_max: d.i1_a_max,
+            t1_i2_a_avg: d.i2_a_avg, t1_i2_a_max: d.i2_a_max,
+            t1_i3_a_avg: d.i3_a_avg, t1_i3_a_max: d.i3_a_max,
+            t1_pf_avg: d.pf_avg, t1_pf_min: d.pf_min
+        });
+
+        // KPI cards
+        Kpi.update('tr1.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t });
+        Kpi.update('tr1.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t });
+        Kpi.update('tr1.pf', { value: d.pf, avg: d.pf_avg, min: d.pf_min, ts: t });
+        Kpi.update('tr1.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t });
+        Kpi.update('tr1.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t });
+        Kpi.update('tr1.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t });
+        Kpi.update('tr1.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t });
+        Kpi.update('tr1.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t });
+        Kpi.update('tr1.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t });
+        Kpi.update('tr1.e_kwh', { value: d.e_kwh, ts: t });
+
     } else {
         appendUnique(bufs.p2, t, d.p_kw ?? null);
         appendUnique(bufs.u2_12, t, d.u12_v ?? null);
         appendUnique(bufs.u2_23, t, d.u23_v ?? null);
         appendUnique(bufs.u2_31, t, d.u31_v ?? null);
-        appendUnique(bufs.pf2, t, d.pf ?? null); // Ajout pour le graphique PF
-        updateKPIs({ t2_p_kw: d.p_kw, t2_q_kvar: d.q_kvar, t2_pf: d.pf, t2_u12_v: d.u12_v, t2_u23_v: d.u23_v, t2_u31_v: d.u31_v, t2_i1_a: d.i1_a, t2_i2_a: d.i2_a, t2_i3_a: d.i3_a, t2_e_kwh: d.e_kwh });
+        appendUnique(bufs.pf2, t, d.pf ?? null);
+
+        updateKPIs({
+            t2_p_kw: d.p_kw, t2_q_kvar: d.q_kvar, t2_pf: d.pf,
+            t2_u12_v: d.u12_v, t2_u23_v: d.u23_v, t2_u31_v: d.u31_v,
+            t2_i1_a: d.i1_a, t2_i2_a: d.i2_a, t2_i3_a: d.i3_a,
+            t2_e_kwh: d.e_kwh
+        });
+        updateKPIs({
+            t2_p_kw_avg: d.p_kw_avg, t2_p_kw_max: d.p_kw_max,
+            t2_q_kvar_avg: d.q_kvar_avg, t2_q_kvar_max: d.q_kvar_max,
+            t2_u12_v_avg: d.u12_v_avg, t2_u12_v_max: d.u12_v_max,
+            t2_u23_v_avg: d.u23_v_avg, t2_u23_v_max: d.u23_v_max,
+            t2_u31_v_avg: d.u31_v_avg, t2_u31_v_max: d.u31_v_max,
+            t2_i1_a_avg: d.i1_a_avg, t2_i1_a_max: d.i1_a_max,
+            t2_i2_a_avg: d.i2_a_avg, t2_i2_a_max: d.i2_a_max,
+            t2_i3_a_avg: d.i3_a_avg, t2_i3_a_max: d.i3_a_max,
+            t2_pf_avg: d.pf_avg, t2_pf_min: d.pf_min
+        });
+
+        Kpi.update('tr2.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t });
+        Kpi.update('tr2.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t });
+        Kpi.update('tr2.pf', { value: d.pf, avg: d.pf_avg, min: d.pf_min, ts: t });
+        Kpi.update('tr2.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t });
+        Kpi.update('tr2.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t });
+        Kpi.update('tr2.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t });
+        Kpi.update('tr2.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t });
+        Kpi.update('tr2.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t });
+        Kpi.update('tr2.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t });
+        Kpi.update('tr2.e_kwh', { value: d.e_kwh, ts: t });
     }
 }
 
@@ -126,39 +208,24 @@ export async function startPolling() {
 
     recomputeAdaptivePolling();
 
-    if (state.initialLoad) {
-        $('#loader').style.display = 'block';
-    }
+    if (state.initialLoad) { $('#loader').style.display = 'block'; }
 
     stopPolling();
 
     if (state.initialLoad) {
-        try {
-            await Promise.all([loadSeries(1), loadSeries(2)]);
-            refreshCharts();
-        } catch (e) {
-            console.error("Erreur chargement historique", e);
-            setConn(false, "Erreur historique");
-        } finally {
-            hideLoader();
-        }
+        try { await Promise.all([loadSeries(1), loadSeries(2)]); refreshCharts(); }
+        catch (e) { console.error("Erreur chargement historique", e); setConn(false, "Erreur historique"); }
+        finally { hideLoader(); }
     }
 
     scheduleNextPoll();
-    if (!state.initialLoad) {
-        pollOnce();
-    }
+    if (!state.initialLoad) { pollOnce(); }
 }
 
 // Visibilité onglet
 export function attachVisibilityHandler() {
     document.addEventListener('visibilitychange', async () => {
-        if (document.hidden) {
-            stopPolling();
-        } else {
-            // Re-sync complet au retour sur l'onglet
-            state.initialLoad = true;
-            await startPolling();
-        }
+        if (document.hidden) { stopPolling(); }
+        else { state.initialLoad = true; await startPolling(); }
     });
 }
