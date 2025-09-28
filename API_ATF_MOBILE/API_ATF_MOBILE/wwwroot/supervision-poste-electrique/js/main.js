@@ -3,20 +3,21 @@ import { $ } from './utils.js';
 import { state } from './state.js';
 import { startPolling, attachVisibilityHandler, recomputeAdaptivePolling } from './polling.js';
 import { loadSeries } from './api.js';
-import { refreshCharts } from './charts.js';
-import { Kpi } from './kpi.js';
+import { refreshCharts, initializeCharts } from './charts.js';
+import { Kpi, initKpiCollapsibles } from './kpi.js';
+import { initCollapsibles } from './ui-collapsibles.js';
 
-// --------- Mapping des icônes du sprite ----------
+// --------- Mapping des ic\u00f4nes du sprite ----------
 const ICONS = {
     p_kw: '#i-bolt',     // Puissance active
     u: '#i-wave',        // Tensions de phase
-    pf: '#i-pf',         // Facteur de puissance (cos φ)
-    q_kvar: '#i-gauge',  // Puissance réactive
+    pf: '#i-bolt',       // Facteur de puissance (cos \u03c6)
+    q_kvar: '#i-bolt',   // Puissance r\u00e9active
     i: '#i-gauge',       // Courants
-    e: '#i-battery',     // Énergie
+    e: '#i-battery',     // \u00c9nergie
 };
 
-// Insère une icône <svg><use/></svg> dans un élément donné.
+// Ins\u00e8re une ic\u00f4ne <svg><use/></svg> dans un \u00e9l\u00e9ment donn\u00e9.
 function makeIconSvg(iconId, extraClass = 'icon stroke') {
     const svgNS = 'http://www.w3.org/2000/svg';
     const xlinkNS = 'http://www.w3.org/1999/xlink';
@@ -25,14 +26,14 @@ function makeIconSvg(iconId, extraClass = 'icon stroke') {
     const use = document.createElementNS(svgNS, 'use');
     // href pour navigateurs modernes
     use.setAttributeNS(null, 'href', iconId);
-    // xlink:href pour compat rétro
+    // xlink:href pour compat r\u00e9tro
     use.setAttributeNS(xlinkNS, 'xlink:href', iconId);
     svg.appendChild(use);
     return svg;
 }
 
-// Décorateur de secours : si kpi.js n’affiche pas l’icône passée,
-// on l’injecte dans le titre après rendu.
+// D\u00e9corateur de secours : si kpi.js n'affiche pas l'ic\u00f4ne pass\u00e9e,
+// on l'injecte dans le titre apr\u00e8s rendu.
 function applyKpiIconsFallback(rootIds = ['tr1-kpis', 'tr2-kpis']) {
     try {
         rootIds.forEach(rootId => {
@@ -41,7 +42,7 @@ function applyKpiIconsFallback(rootIds = ['tr1-kpis', 'tr2-kpis']) {
 
             // On vise chaque carte .kpi
             root.querySelectorAll('.kpi').forEach(card => {
-                // Cherche le kind via data-kind (préféré), sinon essaie de le déduire via classes connues
+                // Cherche le kind via data-kind (pr\u00e9f\u00e9r\u00e9), sinon essaie de le d\u00e9duire via classes connues
                 let kind = card.getAttribute('data-kind');
                 if (!kind) {
                     // quelques heuristiques si data-kind absent
@@ -60,15 +61,15 @@ function applyKpiIconsFallback(rootIds = ['tr1-kpis', 'tr2-kpis']) {
 
                 if (!titleEl) return;
 
-                // Déjà une icône ? On ne duplique pas.
+                // D\u00e9j\u00e0 une ic\u00f4ne ? On ne duplique pas.
                 if (titleEl.querySelector('svg')) return;
 
-                // Sélection de l’icône
+                // S\u00e9lection de l'ic\u00f4ne
                 let iconId = '';
                 if (kind && ICONS[kind]) {
                     iconId = ICONS[kind];
                 } else {
-                    // fallback doux si on ne connaît pas le kind : rien
+                    // fallback doux si on ne conna\u00eet pas le kind : rien
                     return;
                 }
 
@@ -78,12 +79,12 @@ function applyKpiIconsFallback(rootIds = ['tr1-kpis', 'tr2-kpis']) {
                         ? makeIconSvg(iconId, 'icon fill')
                         : makeIconSvg(iconId, 'icon stroke');
 
-                // On insère l’icône au début du titre
+                // On ins\u00e8re l'ic\u00f4ne au d\u00e9but du titre
                 titleEl.prepend(svg);
             });
         });
     } catch (e) {
-        console.warn('applyKpiIconsFallback: impossible d’injecter les icônes', e);
+        console.warn("applyKpiIconsFallback: impossible d'injecter les ic\u00f4nes", e);
     }
 }
 
@@ -98,12 +99,36 @@ window.addEventListener('DOMContentLoaded', async () => {
             welcomeEl.innerHTML = `Bonjour <span class="font-bold">${firstName}</span> !`;
         }
     } catch (e) {
-        console.error("Impossible de récupérer l'utilisateur :", e);
+        console.error("Impossible de r\u00e9cup\u00e9rer l'utilisateur :", e);
     }
 
-    // ====== Dialog Paramètres ======
+    // ====== Horloge bandeau top ======
+    const topTimeEl = document.getElementById('top-time');
+    const topDateEl = document.getElementById('top-date');
+    const updateTopClock = () => {
+        const now = new Date();
+        if (topTimeEl) {
+            topTimeEl.textContent = new Intl.DateTimeFormat('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(now);
+        }
+        if (topDateEl) {
+            const formatted = new Intl.DateTimeFormat('fr-FR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            }).format(now);
+            topDateEl.textContent = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+        }
+    };
+    updateTopClock();
+    setInterval(updateTopClock, 30_000);
+
+    // ====== Dialog Param\u00e8tres ======
     const dlg = $('#settings'), btn = $('#btn-settings'), save = $('#save-settings');
-    if (!btn || !dlg || !save) { console.error('Paramètres: éléments introuvables'); return; }
+    if (!btn || !dlg || !save) { console.error('Param\u00e8tres: \u00e9l\u00e9ments introuvables'); return; }
     if (typeof dlg.showModal !== 'function') {
         dlg.showModal = function () { dlg.setAttribute('open', 'open'); };
         dlg.close = function () { dlg.removeAttribute('open'); };
@@ -144,14 +169,15 @@ window.addEventListener('DOMContentLoaded', async () => {
         { key: 'tr1.u31', title: 'U31', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
         { key: 'tr1.pf', title: 'Facteur de Puissance', decimals: 3, showSpark: false, kind: 'pf', icon: ICONS.pf },
 
-        { key: 'tr1.q_kvar', title: 'Réactive', unit: 'kvar', decimals: 1, showSpark: false, kind: 'q_kvar', icon: ICONS.q_kvar },
+        { key: 'tr1.q_kvar', title: 'R\u00e9active', unit: 'kvar', decimals: 1, showSpark: false, kind: 'q_kvar', icon: ICONS.q_kvar },
         { key: 'tr1.i1', title: 'I1', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
         { key: 'tr1.i2', title: 'I2', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
         { key: 'tr1.i3', title: 'I3', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr1.e_kwh', title: 'Énergie', unit: 'kWh', decimals: 0, showSpark: false, kind: 'e', icon: ICONS.e },
+        { key: 'tr1.e_kwh', title: '\u00c9nergie', unit: 'kWh', decimals: 0, showSpark: false, kind: 'e', icon: ICONS.e },
     ]);
+    initKpiCollapsibles(['tr1-kpis']);
 
-    // TR2 : même ordre
+    // TR2 : m\u00eame ordre
     Kpi.create('tr2-kpis', [
         { key: 'tr2.p_kw', title: 'Puissance', unit: 'kW', decimals: 1, showSpark: false, kind: 'p_kw', icon: ICONS.p_kw },
         { key: 'tr2.u12', title: 'U12', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
@@ -159,19 +185,27 @@ window.addEventListener('DOMContentLoaded', async () => {
         { key: 'tr2.u31', title: 'U31', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
         { key: 'tr2.pf', title: 'Facteur de Puissance', decimals: 3, showSpark: false, kind: 'pf', icon: ICONS.pf },
 
-        { key: 'tr2.q_kvar', title: 'Réactive', unit: 'kvar', decimals: 1, showSpark: false, kind: 'q_kvar', icon: ICONS.q_kvar },
+        { key: 'tr2.q_kvar', title: 'R\u00e9active', unit: 'kvar', decimals: 1, showSpark: false, kind: 'q_kvar', icon: ICONS.q_kvar },
         { key: 'tr2.i1', title: 'I1', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
         { key: 'tr2.i2', title: 'I2', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
         { key: 'tr2.i3', title: 'I3', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr2.e_kwh', title: 'Énergie', unit: 'kWh', decimals: 0, showSpark: false, kind: 'e', icon: ICONS.e },
+        { key: 'tr2.e_kwh', title: '\u00c9nergie', unit: 'kWh', decimals: 0, showSpark: false, kind: 'e', icon: ICONS.e },
     ]);
+    initKpiCollapsibles(['tr2-kpis']);
 
-    // ====== Démarrage ======
+    // Collapsibles (KPI + cartes graphiques)
+    initCollapsibles(document);
+
+    // ====== Initialisation des charts ======
+    initializeCharts();
+
+    // ====== D\u00e9marrage ======
     attachVisibilityHandler();
 
-    // Démarre la collecte ; après le premier rendu, on applique le fallback d’icônes si besoin
+    // D\u00e9marre le polling (qui charge l'historique en premier)
+    console.log('[main] D\u00e9marrage du syst\u00e8me de supervision...');
     await startPolling();
 
-    // Laisse le temps au DOM KPI de se poser puis insère les icônes si non gérées par kpi.js
+    // Laisse le temps au DOM KPI de se poser puis ins\u00e8re les ic\u00f4nes si non g\u00e9r\u00e9es par kpi.js
     requestAnimationFrame(() => applyKpiIconsFallback(['tr1-kpis', 'tr2-kpis']));
 });

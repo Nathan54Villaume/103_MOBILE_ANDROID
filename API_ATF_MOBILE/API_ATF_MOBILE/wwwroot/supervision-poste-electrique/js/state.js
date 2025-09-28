@@ -1,6 +1,9 @@
-// État global + buffers + utils
+// \u00c9tat global + buffers + utils
+const DEFAULT_API_BASE = 'http://10.250.13.4:8088/api/energy';
+const storedApiBase = (localStorage.getItem('apiBase') || '').trim();
+
 export const state = {
-    apiBase: localStorage.getItem('apiBase') || '',
+    apiBase: storedApiBase || DEFAULT_API_BASE,
     pollMs: 1000,
     initialLoad: true,
     win: {
@@ -56,3 +59,8 @@ export function downsample(data, threshold) {
 }
 
 export const CHART_POINT_THRESHOLD = 10000;
+
+export function resetApiBaseToDefault() {
+    localStorage.removeItem('apiBase');
+    state.apiBase = DEFAULT_API_BASE;
+}

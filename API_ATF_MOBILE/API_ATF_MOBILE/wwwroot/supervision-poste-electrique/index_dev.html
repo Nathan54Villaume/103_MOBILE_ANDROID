@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Supervision — Poste Électrique</title>
+    <title>Supervision &mdash; Poste &Eacute;lectrique</title>
 
     <!-- Tailwind + Chart.js -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,15 +19,19 @@
     <link rel="stylesheet" href="./style.css" />
 
     <style>
-        /* ================= Réglages rapides (modifiable facilement) ================= */
+        /* ================= R&eacute;glages rapides (modifiable facilement) ================= */
         :root {
-            --card-bg: rgba(255,255,255,0.03);
-            --card-bd: rgba(255,255,255,0.06);
+            /* Palette indigo/violet (glassmorphism subtil) */
+            --card-bg: rgba(99,102,241,0.06);
+            --card-bd: rgba(99,102,241,0.25);
             --radius: 1rem;
             --pad: 0.75rem;
             --title-size: 1.125rem; /* ~text-lg */
             --kpi-min-h: 150px;
         }
+
+        /* S'assurer que la page occupe toute la hauteur pour le fond */
+        html, body { min-height: 100%; }
 
         .card {
             background: var(--card-bg);
@@ -37,6 +41,8 @@
             height: 100%;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 10px 25px rgba(99,102,241,0.10), inset 0 1px 0 rgba(255,255,255,0.04);
+            backdrop-filter: saturate(120%) blur(2px);
         }
 
         .card-head {
@@ -60,8 +66,8 @@
         }
 
         .sel {
-            background: rgba(255,255,255,.06);
-            border: 1px solid rgba(255,255,255,.12);
+            background: rgba(99,102,241,.08);
+            border: 1px solid rgba(99,102,241,.35);
             border-radius: .6rem;
             padding: .25rem .5rem;
         }
@@ -70,7 +76,7 @@
             width: 10px;
             height: 10px;
             border-radius: 9999px;
-            background: #ef4444;
+            background: #22c55e; /* vert par d&eacute;faut */
             display: inline-block;
             vertical-align: middle;
         }
@@ -92,6 +98,7 @@
             width: 18px;
             height: 18px;
             display: inline-block;
+            color: #a5b4fc; /* indigo-300 */
         }
 
             .icon.stroke {
@@ -122,18 +129,18 @@
             margin-top: 0.75rem;
         }
 
-            .grid-stack .grid-stack-item-content {
+        .grid-stack .grid-stack-item-content {
                 background: transparent;
             }
-        /* Poignée de drag (discrète) sur l'entête des cards principales */
+        /* Poign&eacute;e de drag (discr&egrave;te) sur l'ent&ecirc;te des cards principales */
         .gs-handle {
             cursor: move;
             opacity: .7;
             user-select: none;
         }
-        /* Handles de resize (désactivé par défaut) */
+        /* Handles de resize (d&eacute;sactiv&eacute; par d&eacute;faut) */
         .grid-stack .gs-resize-handle {
-            background: #37415133;
+            background: #6366f133;
         }
 
         /* Barre de groupe (TR1 / TR2) cliquable pour ouvrir/fermer (capsule) */
@@ -144,9 +151,53 @@
             gap: .75rem;
             padding: .6rem .85rem;
             border-radius: var(--radius);
-            border: 1px solid var(--card-bd);
-            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(99,102,241,0.35);
+            background: rgba(99,102,241,0.10);
             cursor: pointer;
+        }
+
+        /* Fond global en d&eacute;grad&eacute; indigo-violet (fixe et non r&eacute;p&eacute;t&eacute;) */
+        body.theme-indigo {
+            background-color: #0b1020;
+            position: relative;
+        }
+        body.theme-indigo::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+              radial-gradient(2000px 1000px at 20% -20%, rgba(99,102,241,0.15), transparent 70%),
+              radial-gradient(1800px 1000px at 80% 20%, rgba(168,85,247,0.12), transparent 65%),
+              radial-gradient(1500px 800px at 50% 50%, rgba(99,102,241,0.08), transparent 60%),
+              linear-gradient(180deg, #0b1020 0%, #0b1020 30%, #0a0f1d 100%);
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment: fixed;
+        }
+
+        /* Boutons harmonis&eacute;s (Param&egrave;tres, Enregistrer, Fermer) */
+        #btn-settings,
+        #save-settings {
+            background: rgba(99,102,241,0.18) !important;
+            border: 1px solid rgba(99,102,241,0.40) !important;
+            box-shadow: 0 6px 16px rgba(99,102,241,0.25);
+        }
+        #btn-settings:hover,
+        #save-settings:hover {
+            background: rgba(99,102,241,0.28) !important;
+            border-color: rgba(99,102,241,0.55) !important;
+            box-shadow: 0 8px 20px rgba(99,102,241,0.35);
+        }
+        /* Bouton "Fermer" (ghost) dans la modale */
+        dialog#settings form button:not(#save-settings) {
+            background: rgba(99,102,241,0.08) !important;
+            border: 1px solid rgba(99,102,241,0.30) !important;
+        }
+        dialog#settings form button:not(#save-settings):hover {
+            background: rgba(99,102,241,0.16) !important;
+            border-color: rgba(99,102,241,0.45) !important;
         }
 
             .group-bar .label {
@@ -156,12 +207,12 @@
                 font-weight: 600;
             }
 
-        /* Pendant drag: éviter que les canvas interceptent les événements */
+        /* Pendant drag: &eacute;viter que les canvas interceptent les &eacute;v&eacute;nements */
         .dragging canvas {
             pointer-events: none !important;
         }
 
-        /* ===== Nested grid (KPI) : poignée n'importe où dans la carte KPI ===== */
+        /* ===== Nested grid (KPI) : poign&eacute;e n'importe o&ugrave; dans la carte KPI ===== */
         .kpi-draggable {
             cursor: grab;
         }
@@ -171,9 +222,9 @@
             }
     </style>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-gray-900 text-white theme-indigo">
 
-    <!-- ===== SPRITE SVG (icônes) ===== -->
+    <!-- ===== SPRITE SVG (ic&ocirc;nes) ===== -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
         <symbol id="i-cog" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3.25" class="stroke" />
@@ -216,35 +267,35 @@
     <div id="loader"></div>
 
     <div class="max-w-7xl mx-auto p-6 space-y-6">
-        <!-- ===== En-tête ===== -->
+        <!-- ===== En-t&ecirc;te ===== -->
         <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex items-center gap-2">
                 <svg class="icon stroke lg"><use href="#i-plug" /></svg>
                 <div>
-                    <h1 class="text-2xl font-bold">TRANCANNAGE — Poste Électrique n° 8</h1>
-                    <p class="text-sm text-white/60">2 Transformateurs — Supervision détaillée</p>
+                    <h1 class="text-2xl font-bold">TRANCANNAGE &mdash; Poste &Eacute;lectrique n&deg; 8</h1>
+                    <p class="text-sm text-white/60">2 Transformateurs &mdash; Supervision d&eacute;taill&eacute;e</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-4">
                 <span id="welcome-message" class="text-lg"></span>
                 <div class="flex items-center gap-2">
-                    <span id="conn-led" class="led" title="État connexion"></span>
-                    <span id="conn-text" class="text-white/70 text-sm">Déconnecté</span>
+                    <span id="conn-led" class="led" title="&Eacute;tat connexion"></span>
+                    <span id="conn-text" class="text-white/70 text-sm">D&eacute;connect&eacute;</span>
 
                     <button id="btn-settings" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-sm btn-icon">
                         <svg class="icon stroke"><use href="#i-cog" /></svg>
-                        <span>Paramètres</span>
+                        <span>Param&egrave;tres</span>
                     </button>
                 </div>
             </div>
         </header>
 
-        <!-- ===== Paramètres ===== -->
+        <!-- ===== Param&egrave;tres ===== -->
         <dialog id="settings" class="backdrop:bg-black/60 rounded-2xl w-full max-w-xl text-white">
             <form method="dialog" class="rounded-2xl bg-gray-800 border border-white/10 p-5 space-y-4">
                 <h2 class="text-xl font-semibold flex items-center gap-2">
-                    <svg class="icon stroke"><use href="#i-cog" /></svg> Paramètres
+                    <svg class="icon stroke"><use href="#i-cog" /></svg> Param&egrave;tres
                 </h2>
                 <div class="grid grid-cols-1 gap-4">
                     <label class="block">
@@ -278,14 +329,14 @@
 
         <!-- ===== Grille modulaire principale ===== -->
         <div class="grid-stack" id="layout">
-            <!-- ===== TR1 : les 4 blocs sont déplaçables (3 courbes + bloc KPI qui lui-même contient une grille imbriquée) ===== -->
+            <!-- ===== TR1 : les 4 blocs sont d&eacute;pla&ccedil;ables (3 courbes + bloc KPI qui lui-m&ecirc;me contient une grille imbriqu&eacute;e) ===== -->
             <div class="grid-stack-item" gs-id="tr1-kpis-wrap" gs-w="6" gs-h="2" gs-x="0" gs-y="0" data-group="TR1">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span> KPI — TR1 (déplaçables individuellement)</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span> KPI &mdash; TR1 (d&eacute;pla&ccedil;ables individuellement)</div>
                     </div>
                     <div class="card-body">
-                        <!-- Grille imbriquée pour KPI TR1 (chaque KPI sera transformé en item drag) -->
+                        <!-- Grille imbriqu&eacute;e pour KPI TR1 (chaque KPI sera transform&eacute; en item drag) -->
                         <div id="tr1-kpis" class="grid-stack" data-nested="true"></div>
                     </div>
                 </div>
@@ -294,7 +345,7 @@
             <div class="grid-stack-item" gs-id="tr1-p" gs-w="6" gs-h="3" gs-x="6" gs-y="0" data-group="TR1">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon fill"><use href="#i-bolt" /></svg> Puissance active — TR1</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span><svg class="icon fill"><use href="#i-bolt" /></svg> Puissance active &mdash; TR1</div>
                         <label class="text-xs text-white/70 flex items-center gap-2">
                             Base de temps
                             <select id="win-p1" class="sel">
@@ -312,7 +363,7 @@
             <div class="grid-stack-item" gs-id="tr1-u" gs-w="6" gs-h="3" gs-x="0" gs-y="2" data-group="TR1">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-wave" /></svg> Tensions de phase — TR1</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span><svg class="icon stroke"><use href="#i-wave" /></svg> Tensions de phase &mdash; TR1</div>
                         <label class="text-xs text-white/70 flex items-center gap-2">
                             Base de temps
                             <select id="win-u1" class="sel">
@@ -330,7 +381,7 @@
             <div class="grid-stack-item" gs-id="tr1-pf" gs-w="6" gs-h="3" gs-x="6" gs-y="2" data-group="TR1">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-pf" /></svg> Facteur de Puissance — TR1</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span><svg class="icon stroke"><use href="#i-pf" /></svg> Facteur de Puissance &mdash; TR1</div>
                         <label class="text-xs text-white/70 flex items-center gap-2">
                             Base de temps
                             <select id="win-pf1" class="sel">
@@ -345,11 +396,11 @@
                 </div>
             </div>
 
-            <!-- ===== TR2 : même principe ===== -->
+            <!-- ===== TR2 : m&ecirc;me principe ===== -->
             <div class="grid-stack-item" gs-id="tr2-kpis-wrap" gs-w="6" gs-h="2" gs-x="0" gs-y="5" data-group="TR2">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span> KPI — TR2 (déplaçables individuellement)</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span> KPI &mdash; TR2 (d&eacute;pla&ccedil;ables individuellement)</div>
                     </div>
                     <div class="card-body">
                         <div id="tr2-kpis" class="grid-stack" data-nested="true"></div>
@@ -360,7 +411,7 @@
             <div class="grid-stack-item" gs-id="tr2-p" gs-w="6" gs-h="3" gs-x="6" gs-y="5" data-group="TR2">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon fill"><use href="#i-bolt" /></svg> Puissance active — TR2</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span><svg class="icon fill"><use href="#i-bolt" /></svg> Puissance active &mdash; TR2</div>
                         <label class="text-xs text-white/70 flex items-center gap-2">
                             Base de temps
                             <select id="win-p2" class="sel">
@@ -378,7 +429,7 @@
             <div class="grid-stack-item" gs-id="tr2-u" gs-w="6" gs-h="3" gs-x="0" gs-y="7" data-group="TR2">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-wave" /></svg> Tensions de phase — TR2</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span><svg class="icon stroke"><use href="#i-wave" /></svg> Tensions de phase &mdash; TR2</div>
                         <label class="text-xs text-white/70 flex items-center gap-2">
                             Base de temps
                             <select id="win-u2" class="sel">
@@ -396,7 +447,7 @@
             <div class="grid-stack-item" gs-id="tr2-pf" gs-w="6" gs-h="3" gs-x="6" gs-y="7" data-group="TR2">
                 <div class="grid-stack-item-content card">
                     <div class="card-head">
-                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">↕</span><svg class="icon stroke"><use href="#i-pf" /></svg> Facteur de Puissance — TR2</div>
+                        <div class="title"><span class="gs-handle inline-flex items-center justify-center w-6 h-6 rounded bg-gray-800 text-gray-300 text-xs">&#8597;</span><svg class="icon stroke"><use href="#i-pf" /></svg> Facteur de Puissance &mdash; TR2</div>
                         <label class="text-xs text-white/70 flex items-center gap-2">
                             Base de temps
                             <select id="win-pf2" class="sel">
@@ -413,23 +464,23 @@
         </div>
 
         <footer class="pt-2 text-xs text-white/50">
-            Auteur : N.Villaume  &nbsp;•&nbsp; Dernière mise à jour : <span id="last-update">—</span>
+            Auteur : N.Villaume  &nbsp;&bull;&nbsp; Derni&egrave;re mise &agrave; jour : <span id="last-update">&mdash;</span>
         </footer>
     </div>
 
-    <!-- JS principal de tes données (inchangé) -->
+    <!-- JS principal de tes donn&eacute;es (inchang&eacute;) -->
     <script type="module" src="./js/main.js"></script>
 
     <!-- Script d'encapsulation Grid + nested grids KPI + persistance auto + capsules TR1/TR2 -->
     <script>
       (function(){
-        const STORAGE_KEY = 'layout-v2'; // nouvelle version pour éviter conflit ancien format
+        const STORAGE_KEY = 'layout-v2'; // nouvelle version pour &eacute;viter conflit ancien format
         let mainGrid;
         const nestedGrids = new Map(); // par id (#tr1-kpis, #tr2-kpis)
 
         document.addEventListener('DOMContentLoaded', () => {
           if (typeof window.GridStack !== 'function') {
-            console.error('GridStack non chargé');
+            console.error('GridStack non charg&eacute;');
             return;
           }
 
@@ -446,7 +497,7 @@
           mainGrid.on('dragstart', () => document.body.classList.add('dragging'));
           mainGrid.on('dragstop',  () => document.body.classList.remove('dragging'));
 
-          // 2) Initialiser les grilles imbriquées KPI (drag sur toute la carte KPI)
+          // 2) Initialiser les grilles imbriqu&eacute;es KPI (drag sur toute la carte KPI)
           initNested('#tr1-kpis', {columns:5});
           initNested('#tr2-kpis', {columns:5});
 
@@ -456,10 +507,10 @@
 
           // 4) Persistance auto
           mainGrid.on('change', saveLayout);
-          // écouter chaque nested grid
+          // &eacute;couter chaque nested grid
           nestedGrids.forEach(g => g.on('change', saveLayout));
 
-          // 5) Capsules (onglets) clic sur le titre pour plier/déplier
+          // 5) Capsules (onglets) clic sur le titre pour plier/d&eacute;plier
           document.querySelectorAll('[data-group-toggle]').forEach(bar => {
             bar.addEventListener('click', () => {
               const group = bar.getAttribute('data-group-toggle');
@@ -468,7 +519,7 @@
             });
           });
 
-          // 6) Restaure l'état des groupes (ouverts par défaut si pas de stockage)
+          // 6) Restaure l'&eacute;tat des groupes (ouverts par d&eacute;faut si pas de stockage)
           restoreGroups();
         });
 
@@ -477,7 +528,7 @@
           const container = document.querySelector(selector);
           if (!container) return;
 
-          // Si des KPI existent déjà (injectés par main.js), on les transforme en items grid-stack
+          // Si des KPI existent d&eacute;j&agrave; (inject&eacute;s par main.js), on les transforme en items grid-stack
           wrapChildrenAsItems(container);
 
           const grid = GridStack.init({
@@ -491,7 +542,7 @@
             draggable: { handle: null }, // handle null -> toute la carte est draggable
           }, container);
 
-          // Style poignée KPI (facultatif)
+          // Style poign&eacute;e KPI (facultatif)
           container.querySelectorAll('.card.kpi').forEach(el => el.classList.add('kpi-draggable'));
 
           // Observer les ajouts dynamiques de KPI (si main.js en ajoute ensuite)
@@ -499,7 +550,7 @@
             let changed = false;
             muts.forEach(m => {
               m.addedNodes.forEach(node => {
-                if (node.nodeType === 1) { // élément
+                if (node.nodeType === 1) { // &eacute;l&eacute;ment
                   if (!node.closest('.grid-stack-item')) changed = true;
                 }
               });
@@ -515,11 +566,11 @@
           nestedGrids.set(selector, grid);
         }
 
-        // Enveloppe chaque enfant direct en grid-stack-item si nécessaire
+        // Enveloppe chaque enfant direct en grid-stack-item si n&eacute;cessaire
         function wrapChildrenAsItems(container){
           const children = Array.from(container.children);
           children.forEach((child, idx) => {
-            if (child.classList.contains('grid-stack-item')) return; // déjà item
+            if (child.classList.contains('grid-stack-item')) return; // d&eacute;j&agrave; item
             const wrapper = document.createElement('div');
             wrapper.className = 'grid-stack-item';
             wrapper.setAttribute('gs-id', `${container.id}-kpi-${idx}`);
@@ -602,16 +653,16 @@
         }
         function restoreGroups(){
           const saved = loadLayout();
-          // par défaut : OUVERTS (si pas de stockage)
+          // par d&eacute;faut : OUVERTS (si pas de stockage)
           if (!saved || !saved.groups) { setGroupCollapsed('TR1', false); setGroupCollapsed('TR2', false); return; }
           Object.entries(saved.groups).forEach(([g,c]) => setGroupCollapsed(g, !!c));
         }
       })();
     </script>
 
-    <!-- Exemple d’utilisation côté JS pour une carte KPI :
+    <!-- Exemple d'utilisation c&ocirc;t&eacute; JS pour une carte KPI :
         const icon = '<svg class="icon stroke"><use href="#i-battery"/></svg>';
-        // insérer icon dans l’entête ou près de la valeur KPI
+        // ins&eacute;rer icon dans l'ent&ecirc;te ou pr&egrave;s de la valeur KPI
     -->
 </body>
 </html>

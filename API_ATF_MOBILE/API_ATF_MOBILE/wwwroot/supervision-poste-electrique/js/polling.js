@@ -4,22 +4,22 @@ import { fetchJSON, normalizeSnapshot, loadSeries } from './api.js';
 import { refreshCharts } from './charts.js';
 import { Kpi } from './kpi.js';
 
-// État connexion
+// \u00c9tat connexion
 export function setConn(connected, message = '') {
     const led = $('#conn-led'), txt = $('#conn-text');
     led.style.backgroundColor = connected ? '#10b981' : '#ef4444';
-    txt.textContent = connected ? 'Connecté' : (message || 'Déconnecté');
+    txt.textContent = connected ? 'Connect\u00e9' : (message || 'D\u00e9connect\u00e9');
     txt.title = connected ? '' : message;
 }
 
 export function hideLoader() {
     if (state.initialLoad) {
         state.initialLoad = false;
-        $('#loader').style.display = 'none';
+        $('#loader').classList.remove('active');
     }
 }
 
-// ===== KPIs (legacy DOM si présent – reste compatible) =====
+// ===== KPIs (legacy DOM si pr\u00e9sent \u2013 reste compatible) =====
 export function updateKPIs(patch) {
     const map = [
         ['t1_p_kw', 't1-p', 1], ['t1_q_kvar', 't1-q', 1], ['t1_pf', 't1-pf', 3],
@@ -98,15 +98,15 @@ function applySnapshotToBuffers(tr, d, tms) {
         });
 
         // KPI cards
-        Kpi.update('tr1.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t });
-        Kpi.update('tr1.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t });
+        Kpi.update('tr1.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t, unit: 'kW' });
+        Kpi.update('tr1.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t, unit: 'kvar' });
         Kpi.update('tr1.pf', { value: d.pf, avg: d.pf_avg, min: d.pf_min, ts: t });
-        Kpi.update('tr1.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t });
-        Kpi.update('tr1.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t });
-        Kpi.update('tr1.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t });
-        Kpi.update('tr1.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t });
-        Kpi.update('tr1.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t });
-        Kpi.update('tr1.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t });
+        Kpi.update('tr1.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t, unit: 'V' });
+        Kpi.update('tr1.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t, unit: 'V' });
+        Kpi.update('tr1.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t, unit: 'V' });
+        Kpi.update('tr1.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t, unit: 'A' });
+        Kpi.update('tr1.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t, unit: 'A' });
+        Kpi.update('tr1.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t, unit: 'A' });
         Kpi.update('tr1.e_kwh', { value: d.e_kwh, ts: t });
 
     } else {
@@ -134,15 +134,15 @@ function applySnapshotToBuffers(tr, d, tms) {
             t2_pf_avg: d.pf_avg, t2_pf_min: d.pf_min
         });
 
-        Kpi.update('tr2.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t });
-        Kpi.update('tr2.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t });
+        Kpi.update('tr2.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t, unit: 'kW' });
+        Kpi.update('tr2.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t, unit: 'kvar' });
         Kpi.update('tr2.pf', { value: d.pf, avg: d.pf_avg, min: d.pf_min, ts: t });
-        Kpi.update('tr2.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t });
-        Kpi.update('tr2.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t });
-        Kpi.update('tr2.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t });
-        Kpi.update('tr2.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t });
-        Kpi.update('tr2.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t });
-        Kpi.update('tr2.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t });
+        Kpi.update('tr2.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t, unit: 'V' });
+        Kpi.update('tr2.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t, unit: 'V' });
+        Kpi.update('tr2.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t, unit: 'V' });
+        Kpi.update('tr2.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t, unit: 'A' });
+        Kpi.update('tr2.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t, unit: 'A' });
+        Kpi.update('tr2.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t, unit: 'A' });
         Kpi.update('tr2.e_kwh', { value: d.e_kwh, ts: t });
     }
 }
@@ -175,7 +175,7 @@ function scheduleNextPoll() { pollTimer = setTimeout(pollOnce, state.pollMs); }
 
 // Boucle polling
 export async function pollOnce() {
-    if (!state.apiBase) { setConn(false, "API non configurée"); scheduleNextPoll(); return; }
+    if (!state.apiBase) { setConn(false, "API non configur\u00e9e"); scheduleNextPoll(); return; }
 
     try {
         const [raw1, raw2] = await Promise.all([
@@ -204,25 +204,67 @@ export async function pollOnce() {
 }
 
 export async function startPolling() {
-    if (!state.apiBase) { setConn(false, "API non configurée"); return; }
+    if (!state.apiBase) { setConn(false, "API non configur\u00e9e"); return; }
 
     recomputeAdaptivePolling();
-
-    if (state.initialLoad) { $('#loader').style.display = 'block'; }
-
     stopPolling();
 
+    // Si c'est le premier chargement, afficher le loader
+    if (state.initialLoad) { 
+        $('#loader').classList.add('active');
+        // Mettre \u00e0 jour le texte du loader
+        const loaderText = document.querySelector('#loader-text');
+        if (loaderText) {
+            loaderText.textContent = 'Chargement de l\'historique...';
+        }
+        console.log('[polling] Premier chargement, affichage du loader');
+    }
+
+    // L'historique est maintenant charg\u00e9 dans main.js avant startPolling
+    // On ne recharge que si c'est vraiment n\u00e9cessaire
     if (state.initialLoad) {
-        try { await Promise.all([loadSeries(1), loadSeries(2)]); refreshCharts(); }
-        catch (e) { console.error("Erreur chargement historique", e); setConn(false, "Erreur historique"); }
-        finally { hideLoader(); }
+        try { 
+            console.log('[polling] Chargement historique...');
+            
+            // Charger TR1
+            const loaderText = document.querySelector('#loader-text');
+            if (loaderText) {
+                loaderText.textContent = 'Chargement données TR1...';
+            }
+            await loadSeries(1);
+            
+            // Charger TR2
+            if (loaderText) {
+                loaderText.textContent = 'Chargement données TR2...';
+            }
+            await loadSeries(2);
+            
+            // Mise \u00e0 jour des graphiques
+            if (loaderText) {
+                loaderText.textContent = 'Mise \u00e0 jour des graphiques...';
+            }
+            refreshCharts();
+            
+            console.log('[polling] Historique charg\u00e9 avec succ\u00e8s');
+        }
+        catch (e) { 
+            console.error("Erreur chargement historique", e); 
+            setConn(false, "Erreur historique"); 
+        }
+        finally { 
+            hideLoader(); 
+            console.log('[polling] Loader masqu\u00e9');
+        }
     }
 
     scheduleNextPoll();
-    if (!state.initialLoad) { pollOnce(); }
+    if (!state.initialLoad) { 
+        console.log('[polling] D\u00e9marrage du polling live...');
+        pollOnce(); 
+    }
 }
 
-// Visibilité onglet
+// Visibilit\u00e9 onglet
 export function attachVisibilityHandler() {
     document.addEventListener('visibilitychange', async () => {
         if (document.hidden) { stopPolling(); }

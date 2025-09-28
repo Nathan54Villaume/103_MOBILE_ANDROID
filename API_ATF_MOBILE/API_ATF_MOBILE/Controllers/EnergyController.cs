@@ -17,6 +17,28 @@ namespace API_ATF_MOBILE.Controllers
                          ?? throw new InvalidOperationException("ConnectionStrings:SqlAiAtr manquante");
         }
 
+        [HttpGet("signals")]
+        public IActionResult GetSignals()
+        {
+            var signals = new List<SignalDescriptor>
+            {
+                new("P_TR1", "Puissance active — TR1", "kW"),
+                new("P_TR2", "Puissance active — TR2", "kW"),
+                new("Q_TR1", "Puissance réactive — TR1", "kvar"),
+                new("Q_TR2", "Puissance réactive — TR2", "kvar"),
+                new("U12_TR1", "U12 — TR1", "V"),
+                new("U23_TR1", "U23 — TR1", "V"),
+                new("U31_TR1", "U31 — TR1", "V"),
+                new("U12_TR2", "U12 — TR2", "V"),
+                new("U23_TR2", "U23 — TR2", "V"),
+                new("U31_TR2", "U31 — TR2", "V"),
+                new("PF_TR1", "Facteur de puissance — TR1", null),
+                new("PF_TR2", "Facteur de puissance — TR2", null)
+            };
+
+            return Ok(signals);
+        }
+
         // ===================== SNAPSHOTS (MODIFIÉ) =====================
 
         [HttpGet("tr1/snapshot")]
@@ -380,5 +402,7 @@ ORDER BY [timestamp] ASC";
             public string point_id { get; set; } = string.Empty;
             public decimal val { get; set; }
         }
+
+        private record SignalDescriptor(string Id, string Label, string? Unit);
     }
 }

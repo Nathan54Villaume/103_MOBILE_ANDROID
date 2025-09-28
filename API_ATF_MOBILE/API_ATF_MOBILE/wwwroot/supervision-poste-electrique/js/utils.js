@@ -1,14 +1,14 @@
-// Sélecteur court
+// S\u00e9lecteur court
 export const $ = s => document.querySelector(s);
 
 // Formatage FR (chiffres)
 export function fmt(n, d = 1) {
   return (n == null || isNaN(n))
-    ? '—'
+    ? '\u2014'
     : Number(n).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 
-// Clone objet en minuscules (clés)
+// Clone objet en minuscules (cl\u00e9s)
 export function lowerKeys(obj) {
   const m = {};
   for (const k in obj) m[k.toLowerCase()] = obj[k];
