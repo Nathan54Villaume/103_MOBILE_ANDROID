@@ -250,7 +250,7 @@ const DEMO_SIGNALS = {
     { id: 'u31_v', label: 'U31', unit: 'V', default: true },
   ],
   'tr1-pf': [
-    { id: 'pf', label: 'Facteur de puissance', unit: '' },
+    { id: 'pf', label: 'Facteur de puissance', unit: '', default: true },
     { id: 'q_kvar', label: 'Puissance réactive', unit: 'kvar' },
   ],
   'tr2-power': [
@@ -264,7 +264,7 @@ const DEMO_SIGNALS = {
     { id: 'u31_v', label: 'U31', unit: 'V', default: true },
   ],
   'tr2-pf': [
-    { id: 'pf', label: 'Facteur de puissance', unit: '' },
+    { id: 'pf', label: 'Facteur de puissance', unit: '', default: true },
     { id: 'q_kvar', label: 'Puissance réactive', unit: 'kvar' },
   ],
 };
@@ -288,7 +288,7 @@ export async function fetchSignals(chartKey, { force = false } = {}) {
       const list = DEMO_SIGNALS[chartKey] || DEMO_SIGNALS['tr1-power'];
       return list.map(item => ({ ...item }));
     }
-    // TODO(api): ajuster l'endpoint de decouverte de signaux si different
+    // Utilisation de l'endpoint /signals de l'EnergyController
     const baseUrl = state.apiBase || API_BASE_URL;
     const url = new URL(`${baseUrl}/signals`);
     if (chartKey) url.searchParams.set('chart', chartKey);

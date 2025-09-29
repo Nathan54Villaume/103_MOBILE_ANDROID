@@ -86,12 +86,21 @@ async function loadSignals(listEl, errorEl, retryBtn, chartKey, initialSelection
 }
 
 function openMenu(detail) {
+  console.log('[contextmenu] openMenu called with detail:', detail);
   closeMenu();
   const tpl = document.getElementById('contextmenu-template');
-  if (!tpl) return;
+  console.log('[contextmenu] Template found:', !!tpl);
+  if (!tpl) {
+    console.error('[contextmenu] Template not found!');
+    return;
+  }
   const fragment = tpl.content.cloneNode(true);
   menuElement = fragment.querySelector('.contextmenu-panel');
-  if (!menuElement) return;
+  console.log('[contextmenu] Menu element created:', !!menuElement);
+  if (!menuElement) {
+    console.error('[contextmenu] Menu panel not found in template!');
+    return;
+  }
   activeChartKey = detail.chartKey;
   focusRestore = detail.canvas;
 
@@ -131,8 +140,14 @@ function openMenu(detail) {
 }
 
 document.addEventListener('chart:contextmenu', (evt) => {
+  console.log('[contextmenu] Received chart:contextmenu event:', evt);
   const detail = evt.detail || {};
-  if (!detail.chartKey) return;
+  console.log('[contextmenu] Event detail:', detail);
+  if (!detail.chartKey) {
+    console.log('[contextmenu] No chartKey in event detail, aborting');
+    return;
+  }
+  console.log('[contextmenu] Opening menu for chart:', detail.chartKey);
   openMenu(detail);
 });
 

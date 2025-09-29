@@ -3,18 +3,55 @@ import { state, bufs, filt, downsample, CHART_POINT_THRESHOLD, cutoffTs } from '
 import { getJson, setJson } from './storage.js';
 
 const { Chart } = window;
-const zoomPlugin = window['chartjs-plugin-zoom'] || window.ChartZoom || window.ChartZoomPlugin;
-if (Chart && zoomPlugin) {
-  try { 
-    Chart.register(zoomPlugin); 
-    console.log('[charts] zoom plugin registered successfully');
-    console.log('[charts] zoom plugin version:', zoomPlugin.version || 'unknown');
-  } catch (err) { 
-    console.warn('[charts] zoom plugin registration failed', err); 
+
+// Plugin zoom - essayer différentes méthodes de récupération
+let zoomPlugin = null;
+
+// Fonction pour essayer d'enregistrer le plugin zoom
+function initZoomPlugin() {
+  try {
+    // Essayer différentes façons de récupérer le plugin
+    zoomPlugin = window['chartjs-plugin-zoom'] || 
+                 window.ChartZoom || 
+                 window.ChartZoomPlugin ||
+                 window.chartjsPluginZoom;
+                 
+    console.log('[charts] Found zoom plugin:', !!zoomPlugin);
+    console.log('[charts] Available window objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
+    
+    if (!zoomPlugin && window.Chart && window.Chart.registry && window.Chart.registry.plugins) {
+      // Chercher dans les plugins déjà enregistrés
+      const registeredPlugins = window.Chart.registry.plugins.items;
+      zoomPlugin = registeredPlugins.zoom || registeredPlugins['chartjs-plugin-zoom'];
+      console.log('[charts] Found in registry:', !!zoomPlugin);
+    }
+    
+    if (Chart && zoomPlugin) {
+      Chart.register(zoomPlugin);
+      console.log('[charts] zoom plugin registered successfully');
+      console.log('[charts] zoom plugin version:', zoomPlugin.version || 'unknown');
+    } else {
+      console.warn('[charts] zoom plugin not found');
+      // Essayer de l'enregistrer quand même s'il existe dans window
+      const fallbackPlugin = window['chartjs-plugin-zoom'];
+      if (fallbackPlugin) {
+        Chart.register(fallbackPlugin);
+        zoomPlugin = fallbackPlugin;
+        console.log('[charts] Fallback plugin registered');
+      }
+    }
+  } catch (err) {
+    console.warn('[charts] zoom plugin registration failed', err);
+    zoomPlugin = null;
   }
-} else {
-  console.warn('[charts] zoom plugin not found');
-  console.log('[charts] Available window objects:', Object.keys(window).filter(k => k.includes('zoom') || k.includes('Zoom')));
+}
+
+// Essayer d'initialiser immédiatement
+initZoomPlugin();
+
+// Si pas trouvé, essayer après le chargement du DOM
+if (!zoomPlugin) {
+  document.addEventListener('DOMContentLoaded', initZoomPlugin);
 }
 
 const SIGNAL_KEY_PREFIX = 'chart:signals:';
@@ -74,285 +111,57 @@ function markChartAsZoomed(chart) {
   console.log('[markChartAsZoomed] Chart marked as zoomed with limits:', { xmin: state.xmin, xmax: state.xmax });
 }
 
-// Cache des signaux disponibles
-let signalsCache = null;
-let signalsCacheTime = 0;
-const SIGNALS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Ancien système de menu contextuel supprimé - on utilise le nouveau système dans contextmenu.js
 
-async function getAvailableSignals() {
-  const now = Date.now();
-  if (signalsCache && (now - signalsCacheTime) < SIGNALS_CACHE_TTL) {
-    return signalsCache;
-  }
-  
-  try {
-    const response = await fetch('/api/energy/signals');
-    if (!response.ok) throw new Error('Failed to fetch signals');
-    signalsCache = await response.json();
-    signalsCacheTime = now;
-    return signalsCache;
-  } catch (error) {
-    console.error('Error fetching signals:', error);
-    return [];
-  }
-}
+// Ancien système supprimé
 
-function openContextMenu(chart, x, y) {
-  const menuId = `ctx-${chart.id}`;
-  let menu = document.getElementById(menuId);
-  
-  if (!menu) {
-    menu = createContextMenu(menuId);
-    document.body.appendChild(menu);
-  }
-  
-  populateContextMenu(menu, chart);
-  positionContextMenu(menu, x, y);
-  showContextMenu(menu);
-  trapFocus(menu);
-}
+// Ancien système supprimé
 
-function createContextMenu(menuId) {
-  const menu = document.createElement('div');
-  menu.id = menuId;
-  menu.className = 'ctx-menu hidden';
-  menu.innerHTML = `
-    <div class="ctx-head">
-      <span>Signaux disponibles</span>
-      <button class="ctx-close" aria-label="Fermer">×</button>
-    </div>
-    <div class="ctx-body" role="menu" aria-label="Signaux">
-      <div class="ctx-loading">Chargement...</div>
-    </div>
-    <div class="ctx-foot">
-      <button class="ctx-apply">Appliquer</button>
-      <button class="ctx-cancel">Annuler</button>
-    </div>
-  `;
-  return menu;
-}
-
-async function populateContextMenu(menu, chart) {
-  const body = menu.querySelector('.ctx-body');
-  body.innerHTML = '<div class="ctx-loading">Chargement...</div>';
-  
-  try {
-    const signals = await getAvailableSignals();
-    if (signals.length === 0) {
-      body.innerHTML = '<div class="ctx-error">Aucun signal disponible</div>';
-      return;
-    }
-    
-    const currentSelection = selectionStates.get(chart.id) || new Set();
-    
-    body.innerHTML = signals.map(signal => `
-      <label class="ctx-signal">
-        <input type="checkbox" value="${signal.id}" ${currentSelection.has(signal.id) ? 'checked' : ''}>
-        <span>${signal.name || signal.id}</span>
-      </label>
-    `).join('');
-    
-    // Ajouter les gestionnaires d'événements
-    setupContextMenuHandlers(menu, chart);
-    
-  } catch (error) {
-    body.innerHTML = `
-      <div class="ctx-error">
-        Impossible de charger les signaux
-        <button class="ctx-retry">Réessayer</button>
-      </div>
-    `;
-    menu.querySelector('.ctx-retry').onclick = () => populateContextMenu(menu, chart);
-  }
-}
-
-function setupContextMenuHandlers(menu, chart) {
-  const closeBtn = menu.querySelector('.ctx-close');
-  const applyBtn = menu.querySelector('.ctx-apply');
-  const cancelBtn = menu.querySelector('.ctx-cancel');
-  
-  const closeMenu = () => {
-    hideContextMenu(menu);
-    restoreFocus();
-  };
-  
-  closeBtn.onclick = closeMenu;
-  cancelBtn.onclick = closeMenu;
-  
-  applyBtn.onclick = () => {
-    const selected = Array.from(menu.querySelectorAll('input:checked')).map(cb => cb.value);
-    applySignalSelection(chart, selected);
-    closeMenu();
-  };
-  
-  // Fermeture par clic extérieur
-  const outsideClick = (e) => {
-    if (!menu.contains(e.target)) {
-      closeMenu();
-      document.removeEventListener('click', outsideClick);
-    }
-  };
-  
-  // Fermeture par Escape
-  const escapeKey = (e) => {
-    if (e.key === 'Escape') {
-      closeMenu();
-      document.removeEventListener('keydown', escapeKey);
-    }
-  };
-  
-  setTimeout(() => {
-    document.addEventListener('click', outsideClick);
-    document.addEventListener('keydown', escapeKey);
-  }, 100);
-}
-
-function applySignalSelection(chart, selectedIds) {
-  // Sauvegarder la sélection
-  selectionStates.set(chart.id, new Set(selectedIds));
-  
-  // Mettre à jour les datasets sans recréer le chart
-  const currentDatasets = chart.data.datasets;
-  const newDatasets = [];
-  
-  // Garder les datasets existants qui sont encore sélectionnés
-  currentDatasets.forEach(dataset => {
-    if (selectedIds.includes(dataset.id)) {
-      newDatasets.push(dataset);
-    }
-  });
-  
-  // Ajouter les nouveaux datasets
-  selectedIds.forEach(signalId => {
-    if (!currentDatasets.find(ds => ds.id === signalId)) {
-      const newDataset = buildDataset(chart.def, signalId, chart.settings);
-      if (newDataset) {
-        newDatasets.push(newDataset);
-      }
-    }
-  });
-  
-  // Mettre à jour les données
-  chart.data.datasets = newDatasets;
-  
-  // Sauvegarder l'état avant update
-  saveChartState(chart);
-  
-  // Mettre à jour le chart
-  chart.update('none');
-  
-  // Restaurer l'état après update
-  restoreChartState(chart);
-}
-
-function positionContextMenu(menu, x, y) {
-  const rect = menu.getBoundingClientRect();
-  const viewport = {
-    width: window.innerWidth,
-    height: window.innerHeight
-  };
-  
-  let left = x;
-  let top = y;
-  
-  // Ajuster si déborde à droite
-  if (left + rect.width > viewport.width) {
-    left = viewport.width - rect.width - 10;
-  }
-  
-  // Ajuster si déborde en bas
-  if (top + rect.height > viewport.height) {
-    top = viewport.height - rect.height - 10;
-  }
-  
-  menu.style.left = `${Math.max(10, left)}px`;
-  menu.style.top = `${Math.max(10, top)}px`;
-}
-
-function showContextMenu(menu) {
-  menu.classList.remove('hidden');
-  menu.style.zIndex = '1000';
-}
-
-function hideContextMenu(menu) {
-  menu.classList.add('hidden');
-}
-
-function trapFocus(menu) {
-  const focusable = menu.querySelectorAll('button, input[type="checkbox"]');
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  
-  if (first) first.focus();
-  
-  menu.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-  });
-}
-
-function restoreFocus() {
-  // Restaurer le focus sur le canvas
-  const activeChart = document.querySelector('.chart-wrapper canvas:focus');
-  if (activeChart) {
-    activeChart.focus();
-  }
-}
+// Ancien système de menu contextuel supprimé - on utilise le nouveau système dans contextmenu.js
 
 const BUFFER_MAP = {
   tr1: {
-    p_kw: 'p1',
-    q_kvar: 'q1',
-    pf: 'pf1',
-    u12_v: 'u1_12',
-    u23_v: 'u1_23',
-    u31_v: 'u1_31',
-    i1_a: 'i1_1',
-    i2_a: 'i1_2',
-    i3_a: 'i1_3',
-    e_kwh: 'e1'
+    'p_kw': 'p1',
+    'q_kvar': 'q1',
+    'pf': 'pf1',
+    'u12_v': 'u1_12',
+    'u23_v': 'u1_23',
+    'u31_v': 'u1_31',
+    'i1_a': 'i1_1',
+    'i2_a': 'i1_2',
+    'i3_a': 'i1_3',
+    'e_kwh': 'e1'
   },
   tr2: {
-    p_kw: 'p2',
-    q_kvar: 'q2',
-    pf: 'pf2',
-    u12_v: 'u2_12',
-    u23_v: 'u2_23',
-    u31_v: 'u2_31',
-    i1_a: 'i2_1',
-    i2_a: 'i2_2',
-    i3_a: 'i2_3',
-    e_kwh: 'e2'
+    'p_kw': 'p2',
+    'q_kvar': 'q2',
+    'pf': 'pf2',
+    'u12_v': 'u2_12',
+    'u23_v': 'u2_23',
+    'u31_v': 'u2_31',
+    'i1_a': 'i2_1',
+    'i2_a': 'i2_2',
+    'i3_a': 'i2_3',
+    'e_kwh': 'e2'
   }
 };
 
 const COLOR_PALETTE = {
   tr1: {
-    p_kw: '#6366f1',
-    q_kvar: '#f97316',
-    pf: '#22c55e',
-    u12_v: '#0ea5e9',
-    u23_v: '#a855f7',
-    u31_v: '#facc15'
+    'p_kw': '#6366f1',
+    'q_kvar': '#f97316',
+    'pf': '#22c55e',
+    'u12_v': '#0ea5e9',
+    'u23_v': '#a855f7',
+    'u31_v': '#facc15'
   },
   tr2: {
-    p_kw: '#f43f5e',
-    q_kvar: '#f59e0b',
-    pf: '#14b8a6',
-    u12_v: '#8b5cf6',
-    u23_v: '#38bdf8',
-    u31_v: '#fb7185'
+    'p_kw': '#f43f5e',
+    'q_kvar': '#f59e0b',
+    'pf': '#14b8a6',
+    'u12_v': '#8b5cf6',
+    'u23_v': '#38bdf8',
+    'u31_v': '#fb7185'
   }
 };
 
@@ -381,9 +190,9 @@ const CHART_DEFS = [
       y1: { label: 'cos φ', position: 'right', min: 0.6, max: 1.05 }
     },
     signals: {
-      p_kw: { label: 'Puissance active', unit: 'kW', axis: 'y', default: true },
-      q_kvar: { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true },
-      pf: { label: 'Facteur de puissance', unit: '', axis: 'y1', optional: true }
+      'p_kw': { label: 'Puissance active', unit: 'kW', axis: 'y', default: true },
+      'q_kvar': { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true },
+      'pf': { label: 'Facteur de puissance', unit: '', axis: 'y1', optional: true }
     }
   },
   {
@@ -394,9 +203,9 @@ const CHART_DEFS = [
     primaryUnit: 'V',
     axes: { y: { label: 'V' } },
     signals: {
-      u12_v: { label: 'U12', unit: 'V', axis: 'y', default: true },
-      u23_v: { label: 'U23', unit: 'V', axis: 'y', default: true },
-      u31_v: { label: 'U31', unit: 'V', axis: 'y', default: true }
+      'u12_v': { label: 'U12', unit: 'V', axis: 'y', default: true },
+      'u23_v': { label: 'U23', unit: 'V', axis: 'y', default: true },
+      'u31_v': { label: 'U31', unit: 'V', axis: 'y', default: true }
     }
   },
   {
@@ -407,8 +216,8 @@ const CHART_DEFS = [
     primaryUnit: '',
     axes: { y: { label: 'cos φ', min: 0.6, max: 1.05 } },
     signals: {
-      pf: { label: 'Facteur de puissance', unit: '', axis: 'y', default: true },
-      q_kvar: { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true }
+      'pf': { label: 'Facteur de puissance', unit: '', axis: 'y', default: true },
+      'q_kvar': { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true }
     }
   },
   {
@@ -422,9 +231,9 @@ const CHART_DEFS = [
       y1: { label: 'cos φ', position: 'right', min: 0.6, max: 1.05 }
     },
     signals: {
-      p_kw: { label: 'Puissance active', unit: 'kW', axis: 'y', default: true },
-      q_kvar: { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true },
-      pf: { label: 'Facteur de puissance', unit: '', axis: 'y1', optional: true }
+      'p_kw': { label: 'Puissance active', unit: 'kW', axis: 'y', default: true },
+      'q_kvar': { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true },
+      'pf': { label: 'Facteur de puissance', unit: '', axis: 'y1', optional: true }
     }
   },
   {
@@ -435,9 +244,9 @@ const CHART_DEFS = [
     primaryUnit: 'V',
     axes: { y: { label: 'V' } },
     signals: {
-      u12_v: { label: 'U12', unit: 'V', axis: 'y', default: true },
-      u23_v: { label: 'U23', unit: 'V', axis: 'y', default: true },
-      u31_v: { label: 'U31', unit: 'V', axis: 'y', default: true }
+      'u12_v': { label: 'U12', unit: 'V', axis: 'y', default: true },
+      'u23_v': { label: 'U23', unit: 'V', axis: 'y', default: true },
+      'u31_v': { label: 'U31', unit: 'V', axis: 'y', default: true }
     }
   },
   {
@@ -448,8 +257,8 @@ const CHART_DEFS = [
     primaryUnit: '',
     axes: { y: { label: 'cos φ', min: 0.6, max: 1.05 } },
     signals: {
-      pf: { label: 'Facteur de puissance', unit: '', axis: 'y', default: true },
-      q_kvar: { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true }
+      'pf': { label: 'Facteur de puissance', unit: '', axis: 'y', default: true },
+      'q_kvar': { label: 'Puissance réactive', unit: 'kvar', axis: 'y', optional: true }
     }
   }
 ];
@@ -652,23 +461,43 @@ function chartOptions(def, settings) {
         }
       },
       zoom: zoomPlugin ? {
-        // === PAN À LA SOURIS, SANS TOUCHE MODIF ===
         pan: {
           enabled: true,
           mode: 'x',
-          modifierKey: null,   // Aucune touche requise
-          threshold: 0,        // démarrage immédiat
-          // Empêche de sortir du domaine des données
-          limits: { x: { min: 'original', max: 'original' } }
+          modifierKey: null,
+          threshold: 0,
+          onPanStart(context) {
+            console.log('[zoom] Pan started');
+            if (context && context.chart && context.chart.canvas) {
+              context.chart.canvas.style.cursor = 'grabbing';
+              markChartAsZoomed(context.chart);
+            }
+          },
+          onPanComplete(context) {
+            console.log('[zoom] Pan completed');
+            if (context && context.chart && context.chart.canvas) {
+              context.chart.canvas.style.cursor = 'grab';
+              markChartAsZoomed(context.chart);
+            }
+          }
         },
-        // === ZOOM (roue + pinch + drag si souhaité) ===
         zoom: {
           wheel: { enabled: true, speed: 0.1 },
           pinch: { enabled: true },
-          drag: { enabled: false }, // mets true si tu veux le rectangle de zoom
+          drag: { enabled: false },
           mode: 'x',
-          // 1) Interdit de dé-zoomer au-delà de la plage d'origine
-          limits: { x: { min: 'original', max: 'original', minRange: 1000 } } // minRange: fenêtre min (1s ici)
+          onZoomStart(context) {
+            console.log('[zoom] Zoom started');
+            if (context && context.chart) {
+              markChartAsZoomed(context.chart);
+            }
+          },
+          onZoomComplete(context) {
+            console.log('[zoom] Zoom completed');
+            if (context && context.chart && context.chart.canvas) {
+              context.chart.canvas.style.cursor = 'grab';
+            }
+          }
         }
       } : undefined
     },
@@ -766,66 +595,12 @@ function registerChart(def) {
     .map(id => buildDataset(def, id, settings))
     .filter(Boolean);
   const options = chartOptions(def, settings);
+  console.log('[charts] Creating chart with zoom config:', !!options.plugins?.zoom);
   const chart = new Chart(ctx, { type: 'line', data: { datasets }, options });
+  console.log('[charts] Chart created with ID:', chart.id);
 
   // Sauvegarder l'état initial
   saveChartState(chart);
-  
-  // Gestion du curseur grab/grabbing et des états de pan
-  let isPanning = false;
-  
-  // Configuration du plugin zoom après création du chart
-  if (zoomPlugin && chart.options.plugins.zoom) {
-    console.log('[charts] Configuring zoom plugin for chart:', chart.id);
-    console.log('[charts] Zoom plugin config:', chart.options.plugins.zoom);
-    
-    // Callbacks pour la gestion du curseur
-    chart.options.plugins.zoom.onPanStart = () => { 
-      console.log('[zoom] Pan started');
-      isPanning = true; 
-      canvas.style.cursor = 'grabbing'; 
-      markChartAsZoomed(chart);
-    };
-    
-    chart.options.plugins.zoom.onPanComplete = () => { 
-      console.log('[zoom] Pan completed');
-      isPanning = false; 
-      canvas.style.cursor = 'grab'; 
-    };
-    
-    chart.options.plugins.zoom.onZoomStart = () => {
-      console.log('[zoom] Zoom started');
-      markChartAsZoomed(chart);
-    };
-    
-    chart.options.plugins.zoom.onZoomComplete = () => {
-      console.log('[zoom] Zoom completed');
-    };
-    
-    console.log('[charts] Zoom plugin callbacks configured');
-  } else {
-    console.warn('[charts] Zoom plugin not available for chart:', chart.id);
-  }
-  
-  // Curseur par défaut survol chart
-  canvas.addEventListener('mouseenter', () => { 
-    if (!isPanning) canvas.style.cursor = 'grab'; 
-  });
-  
-  canvas.addEventListener('mouseleave', () => { 
-    canvas.style.cursor = 'default'; 
-  });
-  
-  // Détection des interactions pour marquer comme zoomé
-  canvas.addEventListener('wheel', () => {
-    markChartAsZoomed(chart);
-  });
-  
-  // Menu contextuel pour la sélection de signaux
-  canvas.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    openContextMenu(chart, e.clientX, e.clientY);
-  });
 
   const entry = {
     def,
@@ -840,21 +615,69 @@ function registerChart(def) {
   renderToggles(entry);
   updateStats(entry);
 
-  canvas.addEventListener('contextmenu', (evt) => {
-    evt.preventDefault();
-    document.dispatchEvent(new CustomEvent('chart:contextmenu', {
+  canvas.addEventListener('mouseenter', () => {
+    canvas.style.cursor = 'grab';
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    canvas.style.cursor = 'default';
+  });
+
+  canvas.addEventListener('wheel', () => {
+    markChartAsZoomed(chart);
+  });
+
+  // Ajouter des événements de debug pour voir si les listeners sont attachés
+  console.log('[charts] Attaching events to canvas:', def.canvasId);
+  
+  canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[charts] Context menu triggered for chart:', def.key);
+    console.log('[charts] Mouse position:', { x: e.clientX, y: e.clientY });
+    const chartEntry = registry.get(def.key);
+    console.log('[charts] Chart entry found:', !!chartEntry);
+    console.log('[charts] Available signals:', chartEntry ? chartEntry.state.signals : 'no entry');
+    
+    const event = new CustomEvent('chart:contextmenu', {
       detail: {
         chartKey: def.key,
         canvas,
-        clientX: evt.clientX,
-        clientY: evt.clientY,
-        signals: entry.state.signals
+        clientX: e.clientX,
+        clientY: e.clientY,
+        signals: chartEntry ? chartEntry.state.signals : []
       }
-    }));
+    });
+    
+    console.log('[charts] Dispatching context menu event:', event.detail);
+    document.dispatchEvent(event);
   });
+  
+  // Test pour voir si les événements de souris sont captés
+  canvas.addEventListener('mousedown', (e) => {
+    console.log('[charts] Mouse down on canvas:', def.canvasId, 'button:', e.button);
+  });
+  
+  canvas.addEventListener('mousemove', (e) => {
+    if (e.buttons > 0) {
+      console.log('[charts] Mouse drag detected on canvas:', def.canvasId);
+    }
+  });
+
 }
 
 export function initializeCharts() {
+  // Debug du plugin zoom
+  console.log('[charts] Available zoom plugin:', !!zoomPlugin);
+  console.log('[charts] Chart.js registered plugins:', Object.keys(Chart.registry.plugins.items || {}));
+  console.log('[charts] Window zoom objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
+  console.log('[charts] Chart.js version:', Chart.version);
+  
+  // Vérifier si le plugin zoom est disponible dans Chart.js
+  if (Chart.registry && Chart.registry.plugins) {
+    console.log('[charts] Registered plugin IDs:', Object.keys(Chart.registry.plugins.items));
+  }
+  
   CHART_DEFS.forEach(def => registerChart(def));
 }
 

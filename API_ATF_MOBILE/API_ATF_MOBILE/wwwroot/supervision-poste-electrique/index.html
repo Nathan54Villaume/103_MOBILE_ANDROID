@@ -19,6 +19,12 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <script>
+    // Debug immédiat après le chargement
+    console.log('Chart.js loaded:', !!window.Chart);
+    console.log('Zoom plugin loaded:', !!window['chartjs-plugin-zoom']);
+    console.log('Available window objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
+  </script>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
