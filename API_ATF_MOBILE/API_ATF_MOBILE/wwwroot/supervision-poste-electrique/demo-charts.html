@@ -71,6 +71,29 @@
       display: flex;
       gap: 0.5rem;
     }
+    .timerange-select {
+      background: rgba(30, 41, 59, 0.8);
+      color: #e2e8f0;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 6px;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .timerange-select:hover {
+      border-color: rgba(99, 102, 241, 0.6);
+      background: rgba(30, 41, 59, 0.9);
+    }
+    .timerange-select:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    .timerange-select option {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
     .btn {
       padding: 0.5rem 1rem;
       border-radius: 0.5rem;
@@ -192,9 +215,9 @@
 
 <body class="min-h-screen">
   <!-- Bannière de démo -->
-  <div class="demo-banner">
-    🎯 DEMO - Étape 4 : Menu Contextuel - Clic droit sur courbe pour sélectionner les signaux 🎯
-  </div>
+        <div class="demo-banner">
+          🎯 DEMO - Persistence localStorage - Les zooms + signaux sont sauvegardés ! 🎯
+        </div>
 
   <main class="container mx-auto px-4 py-8 space-y-8">
     <header class="text-center mb-12">
@@ -221,6 +244,12 @@
           Transformateur 1 - Puissance Active
         </div>
         <div class="chart-controls">
+          <select class="timerange-select" onchange="changeTimeRange('tr1-power', this.value)" title="Base de temps">
+            <option value="15">15 min</option>
+            <option value="60" selected>1 heure</option>
+            <option value="240">4 heures</option>
+            <option value="1440">24 heures</option>
+          </select>
           <button type="button" class="btn btn-secondary" onclick="resetChart('tr1-power')">
             <svg class="icon" fill="none" stroke="currentColor">
               <use href="#i-refresh"></use>
@@ -250,6 +279,12 @@
           Transformateur 2 - Puissance Active
         </div>
         <div class="chart-controls">
+          <select class="timerange-select" onchange="changeTimeRange('tr2-power', this.value)" title="Base de temps">
+            <option value="15">15 min</option>
+            <option value="60" selected>1 heure</option>
+            <option value="240">4 heures</option>
+            <option value="1440">24 heures</option>
+          </select>
           <button type="button" class="btn btn-secondary" onclick="resetChart('tr2-power')">
             <svg class="icon" fill="none" stroke="currentColor">
               <use href="#i-refresh"></use>
@@ -270,12 +305,25 @@
     </section>
   </main>
 
-  <!-- Bouton Paramètres flottant -->
-  <button type="button" class="floating-btn" onclick="openSettings()" title="Ouvrir les paramètres">
-    <svg class="icon" style="width: 1.5rem; height: 1.5rem;">
-      <use href="#i-settings"></use>
-    </svg>
-  </button>
+  <!-- Boutons flottants -->
+  <div class="floating-buttons fixed bottom-6 right-6 flex flex-col gap-3">
+    <!-- Bouton Debug localStorage -->
+    <button 
+      class="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition-colors duration-200" 
+      title="Vider localStorage (Debug)"
+      onclick="clearLocalStorage()">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+      </svg>
+    </button>
+    
+    <!-- Bouton Paramètres -->
+    <button type="button" class="floating-btn" onclick="openSettings()" title="Ouvrir les paramètres">
+      <svg class="icon" style="width: 1.5rem; height: 1.5rem;">
+        <use href="#i-settings"></use>
+      </svg>
+    </button>
+  </div>
 
   <!-- Informations en bas de page -->
   <div class="footer-info">
@@ -552,6 +600,154 @@
       }
     }
 
+    // === PERSISTENCE SERVICE ===
+    class PersistenceService {
+      constructor() {
+        this.storageKey = 'supervision-charts-state';
+        this.defaultState = {
+          charts: {},
+          lastUpdated: null
+        };
+      }
+
+      /**
+       * Sauvegarde l'état d'une courbe
+       */
+      saveChartState(chartId, state) {
+        try {
+          const fullState = this.loadState();
+          
+          if (!fullState.charts[chartId]) {
+            fullState.charts[chartId] = {};
+          }
+          
+          // Merger avec l'état existant
+          fullState.charts[chartId] = {
+            ...fullState.charts[chartId],
+            ...state
+          };
+          
+          fullState.lastUpdated = Date.now();
+          
+          localStorage.setItem(this.storageKey, JSON.stringify(fullState));
+          console.log(`[Persistence] État sauvé pour ${chartId}:`, state);
+          
+        } catch (error) {
+          console.error('[Persistence] Erreur sauvegarde:', error);
+        }
+      }
+
+      /**
+       * Charge l'état d'une courbe
+       */
+      loadChartState(chartId) {
+        try {
+          const fullState = this.loadState();
+          const chartState = fullState.charts[chartId] || {};
+          
+          console.log(`[Persistence] État chargé pour ${chartId}:`, chartState);
+          return chartState;
+          
+        } catch (error) {
+          console.error('[Persistence] Erreur chargement:', error);
+          return {};
+        }
+      }
+
+      /**
+       * Sauvegarde le zoom d'une courbe
+       */
+      saveZoom(chartId, zoomState) {
+        this.saveChartState(chartId, { zoom: zoomState });
+      }
+
+      /**
+       * Sauvegarde les signaux sélectionnés d'une courbe
+       */
+      saveSignals(chartId, signalIds) {
+        this.saveChartState(chartId, { 
+          signals: signalIds,
+          signalsUpdated: Date.now()
+        });
+      }
+
+      /**
+       * Sauvegarde l'état replié/étendu d'une carte
+       */
+      saveCardState(chartId, collapsed) {
+        this.saveChartState(chartId, { collapsed });
+      }
+
+      /**
+       * Charge l'état complet depuis localStorage
+       */
+      loadState() {
+        try {
+          const stored = localStorage.getItem(this.storageKey);
+          if (!stored) return { ...this.defaultState };
+          
+          const parsed = JSON.parse(stored);
+          return {
+            ...this.defaultState,
+            ...parsed
+          };
+          
+        } catch (error) {
+          console.error('[Persistence] Erreur parsing localStorage:', error);
+          return { ...this.defaultState };
+        }
+      }
+
+      /**
+       * Efface l'état d'une courbe
+       */
+      clearChartState(chartId) {
+        try {
+          const fullState = this.loadState();
+          delete fullState.charts[chartId];
+          fullState.lastUpdated = Date.now();
+          
+          localStorage.setItem(this.storageKey, JSON.stringify(fullState));
+          console.log(`[Persistence] État effacé pour ${chartId}`);
+          
+        } catch (error) {
+          console.error('[Persistence] Erreur suppression:', error);
+        }
+      }
+
+      /**
+       * Efface tout le localStorage
+       */
+      clearAllState() {
+        try {
+          localStorage.removeItem(this.storageKey);
+          console.log('[Persistence] Tout le localStorage effacé');
+        } catch (error) {
+          console.error('[Persistence] Erreur effacement complet:', error);
+        }
+      }
+
+      /**
+       * Retourne des statistiques sur le localStorage
+       */
+      getStats() {
+        try {
+          const state = this.loadState();
+          const chartCount = Object.keys(state.charts).length;
+          const storageSize = new Blob([JSON.stringify(state)]).size;
+          
+          return {
+            chartCount,
+            storageSize,
+            lastUpdated: state.lastUpdated,
+            charts: Object.keys(state.charts)
+          };
+        } catch (error) {
+          return { error: error.message };
+        }
+      }
+    }
+
     // === SIGNAL SERVICE ===
     class SignalService {
       constructor(baseUrl = '') {
@@ -752,10 +948,31 @@
 
       async loadAvailableSignals() {
         try {
+          console.log('[ContextMenu] Chargement des signaux disponibles...');
           this.availableSignals = await this.signalService.getAvailableSignals();
+          console.log('[ContextMenu] Signaux chargés:', this.availableSignals);
+          
+          if (!this.availableSignals || this.availableSignals.length === 0) {
+            console.warn('[ContextMenu] Aucun signal disponible, utilisation de signaux par défaut');
+            // Signaux par défaut pour la démo
+            this.availableSignals = [
+              { id: 'tr1-power', label: 'TR1 Puissance Active', unit: 'kW', group: 'Transformateur 1' },
+              { id: 'tr1-reactive', label: 'TR1 Puissance Réactive', unit: 'kVar', group: 'Transformateur 1' },
+              { id: 'tr2-power', label: 'TR2 Puissance Active', unit: 'kW', group: 'Transformateur 2' },
+              { id: 'tr2-reactive', label: 'TR2 Puissance Réactive', unit: 'kVar', group: 'Transformateur 2' }
+            ];
+          }
+          
         } catch (error) {
           console.error('[ContextMenu] Erreur chargement signaux:', error);
-          this.availableSignals = [];
+          // Fallback avec signaux par défaut
+          this.availableSignals = [
+            { id: 'tr1-power', label: 'TR1 Puissance Active', unit: 'kW', group: 'Transformateur 1' },
+            { id: 'tr1-reactive', label: 'TR1 Puissance Réactive', unit: 'kVar', group: 'Transformateur 1' },
+            { id: 'tr2-power', label: 'TR2 Puissance Active', unit: 'kW', group: 'Transformateur 2' },
+            { id: 'tr2-reactive', label: 'TR2 Puissance Réactive', unit: 'kVar', group: 'Transformateur 2' }
+          ];
+          console.log('[ContextMenu] Utilisation signaux par défaut:', this.availableSignals);
         }
       }
 
@@ -770,6 +987,9 @@
         
         this.currentChart = chartInstance;
         this.onSelectionChange = onSelectionChange;
+        
+        // Stocker l'état initial pour détecter les changements
+        this.initialSignals = [...currentSignals];
         
         // Overlay modal simple (sans flou)
         this.overlay = document.createElement('div');
@@ -862,6 +1082,8 @@
             this.currentMenu.parentNode.removeChild(this.currentMenu);
           }
           this.currentMenu = null;
+          this.validateBtn = null;
+          this.initialSignals = null;
           this.isOpen = false;
         }, 200);
         
@@ -911,12 +1133,12 @@
         header.innerHTML = '⚡ Signaux';
         menu.appendChild(header);
         
-        // Container principal compact
+        // Container principal avec hauteur ajustée
         const mainContainer = document.createElement('div');
         mainContainer.style.cssText = `
           display: flex;
           flex-direction: column;
-          max-height: 320px;
+          height: 280px;
         `;
         
         // Zone de scroll compacte
@@ -969,12 +1191,16 @@
           flex-shrink: 0;
         `;
         
-        // Boutons compacts
-        const selectAllBtn = this.createCompactButton('✓ Tout', () => this.selectAllSignals(true), '#10b981');
-        const deselectAllBtn = this.createCompactButton('✗ Vider', () => this.selectAllSignals(false), '#ef4444');
+        // Boutons d'action
+        const validateBtn = this.createCompactButton('✓ Valider', () => this.validateSelection(), '#10b981');
+        const cancelBtn = this.createCompactButton('✗ Fermer', () => this.hide(), '#6b7280');
         
-        footer.appendChild(selectAllBtn);
-        footer.appendChild(deselectAllBtn);
+        // Stocker la référence pour pouvoir l'actualiser
+        this.validateBtn = validateBtn;
+        this.updateValidateButton();
+        
+        footer.appendChild(validateBtn);
+        footer.appendChild(cancelBtn);
         menu.appendChild(footer);
         
         return menu;
@@ -1201,6 +1427,21 @@
         return btn;
       }
 
+      validateSelection() {
+        // Récupérer les signaux actuellement sélectionnés dans le menu
+        const selectedSignals = Array.from(
+          this.currentMenu.querySelectorAll('.context-menu__item[aria-checked="true"]')
+        ).map(item => item.dataset.signalId);
+        
+        // Notifier le changement
+        if (this.onSelectionChange) {
+          this.onSelectionChange(selectedSignals);
+        }
+        
+        // Fermer le menu
+        this.hide();
+      }
+
       // Méthode de compatibilité pour grouper les signaux (même si on ne les utilise plus visuellement)
       groupSignals(signals) {
         // On retourne juste un groupe unique pour simplifier
@@ -1230,45 +1471,6 @@
         menu.style.opacity = '1';
       }
 
-      selectAllSignals(selected) {
-        if (!this.currentMenu) return;
-        
-        const items = this.currentMenu.querySelectorAll('.context-menu__item[data-signal-id]');
-        const selectedSignals = [];
-        
-        items.forEach(item => {
-          const signalId = item.dataset.signalId;
-          
-          // Mettre à jour l'état
-          item.setAttribute('aria-checked', selected);
-          
-          // Mettre à jour le switch
-          const switchContainer = item.children[1];
-          const switchKnob = switchContainer.children[0];
-          
-          switchContainer.style.background = selected ? '#3b82f6' : '#4b5563';
-          switchKnob.style.left = selected ? '14px' : '2px';
-          
-          // Mettre à jour le style de l'item
-          item.style.background = selected ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
-          
-          // Mettre à jour le texte
-          const content = item.children[2];
-          const label = content.children[0];
-          
-          label.style.fontWeight = selected ? '500' : '400';
-          label.style.color = selected ? '#f1f5f9' : '#d1d5db';
-          
-          if (selected) {
-            selectedSignals.push(signalId);
-          }
-        });
-        
-        // Notifier le changement
-        if (this.onSelectionChange) {
-          this.onSelectionChange(selected ? selectedSignals : []);
-        }
-      }
 
       handleSignalToggle(signalId) {
         const item = this.currentMenu?.querySelector(`[data-signal-id="${signalId}"]`);
@@ -1307,15 +1509,43 @@
           }
         }
         
-        // Récupérer tous les signaux sélectionnés
-        const selectedSignals = Array.from(
+        // Les changements sont maintenant appliqués seulement avec "Valider"
+        // Mettre à jour le bouton Valider si des changements sont détectés
+        this.updateValidateButton();
+      }
+
+      updateValidateButton() {
+        if (!this.validateBtn || !this.currentMenu) return;
+        
+        // Comparer l'état actuel du menu avec l'état initial
+        const currentMenuSignals = Array.from(
           this.currentMenu.querySelectorAll('.context-menu__item[aria-checked="true"]')
         ).map(item => item.dataset.signalId);
         
-        // Notifier le changement
-        if (this.onSelectionChange) {
-          this.onSelectionChange(selectedSignals);
+        // L'état initial est stocké lors de l'ouverture du menu
+        const hasChanges = this.hasSelectionChanged(currentMenuSignals);
+        
+        if (hasChanges) {
+          this.validateBtn.style.background = '#059669'; // Vert plus foncé
+          this.validateBtn.style.boxShadow = '0 0 8px rgba(5, 150, 105, 0.3)';
+          this.validateBtn.innerHTML = '✓ Valider*';
+        } else {
+          this.validateBtn.style.background = '#10b981'; // Vert normal
+          this.validateBtn.style.boxShadow = 'none';
+          this.validateBtn.innerHTML = '✓ Valider';
         }
+      }
+      
+      hasSelectionChanged(currentSignals) {
+        if (!this.initialSignals) return false;
+        
+        // Comparer les deux arrays
+        if (currentSignals.length !== this.initialSignals.length) return true;
+        
+        const sortedCurrent = [...currentSignals].sort();
+        const sortedInitial = [...this.initialSignals].sort();
+        
+        return !sortedCurrent.every((signal, index) => signal === sortedInitial[index]);
       }
 
       handleDocumentClick(event) {
@@ -1707,6 +1937,25 @@
           throw new Error(`Canvas #${canvasId} introuvable`);
         }
         
+        // ID unique pour cette courbe (basé sur l'ID du canvas)
+        this.chartId = canvasId;
+        
+        // Services
+        this.signalService = new SignalService();
+        this.persistenceService = new PersistenceService();
+        
+        // Initialiser le ContextMenu après avoir vérifié que SignalService fonctionne
+        try {
+          this.contextMenu = new ContextMenu(this.signalService);
+          // IMPORTANT: Initialiser le ContextMenu pour charger les signaux disponibles
+          this.contextMenu.init();
+          console.log('[ChartHost] ContextMenu initialisé pour', this.chartId);
+          
+        } catch (error) {
+          console.error('[ChartHost] Erreur initialisation ContextMenu:', error);
+          this.contextMenu = null;
+        }
+        
         // Options par défaut (thème sombre, décimation, formats)
         this.defaultOptions = {
           responsive: true,
@@ -1826,15 +2075,29 @@
           }
         });
         
-        // Initialiser le service de signaux et le menu contextuel
-        this.signalService = new SignalService();
-        this.contextMenu = new ContextMenu(this.signalService);
+        // Les services sont déjà initialisés dans le constructeur
         
         // Binder la méthode
         this.handleContextMenu = this.handleContextMenu.bind(this);
         
         // Event listener pour clic droit
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
+        console.log('[ChartHost] Menu contextuel configuré pour', this.chartId);
+        
+        // Charger l'état sauvegardé (AVANT setup des événements)
+        try {
+          this.loadSavedState();
+          console.log('[ChartHost] État sauvegardé chargé pour', this.chartId);
+        } catch (error) {
+          console.error('[ChartHost] Erreur chargement état sauvé:', error);
+        }
+        
+        // Événements pour la persistence du zoom (APRÈS création du chart)
+        try {
+          this.setupPersistenceEvents();
+        } catch (error) {
+          console.error('[ChartHost] Erreur setup événements persistence:', error);
+        }
       }
       
       setData(datasets) {
@@ -1847,6 +2110,23 @@
         this.chart.data.datasets = [...datasets];
         this.calculateBounds();
         this.chart.update('none');
+        
+        // Mettre à jour le titre de la courbe
+        this.updateChartTitle();
+        
+        // Sauvegarder les signaux sélectionnés
+        const signalIds = datasets
+          .map(dataset => dataset.signalId)
+          .filter(id => id); // Filtrer les undefined/null
+          
+        if (signalIds.length > 0) {
+          this.persistenceService.saveSignals(this.chartId, signalIds);
+        }
+        
+        // Appliquer le zoom en attente (si on vient de charger depuis localStorage)
+        setTimeout(() => {
+          this.applyPendingZoom();
+        }, 100); // Délai pour laisser Chart.js finir le rendu
       }
       
       calculateBounds() {
@@ -1897,9 +2177,12 @@
           this.chart.options.scales.x.max = this.originalBounds.x.max;
           this.chart.options.scales.y.min = this.originalBounds.y.min;
           this.chart.options.scales.y.max = this.originalBounds.y.max;
-          
+
           this.chart.update('none');
         }
+        
+        // Effacer le zoom sauvegardé
+        this.persistenceService.saveZoom(this.chartId, null);
       }
       
       getView() {
@@ -1933,12 +2216,228 @@
       }
       
       /**
+       * Configure les événements de persistence 
+       */
+      setupPersistenceEvents() {
+        if (!this.chart) {
+          console.warn('[ChartHost] setupPersistenceEvents: chart pas encore créé');
+          return;
+        }
+        
+        console.log('[ChartHost] setupPersistenceEvents: Configuration des événements');
+        
+        // MÉTHODE SIMPLE: Sauvegarder sur les événements de la souris/touch
+        // Plutôt que d'interférer avec Chart.js
+        if (this.canvas) {
+          // Sauvegarder le zoom après mouseup (fin de pan)
+          this.canvas.addEventListener('mouseup', () => {
+            setTimeout(() => this.saveCurrentZoom(), 150);
+          });
+          
+          // Sauvegarder le zoom après wheel (fin de zoom)
+          this.canvas.addEventListener('wheel', () => {
+            setTimeout(() => this.saveCurrentZoom(), 150);
+          });
+          
+          // Sauvegarder après touchend (fin de pinch-to-zoom)
+          this.canvas.addEventListener('touchend', () => {
+            setTimeout(() => this.saveCurrentZoom(), 150);
+          });
+        }
+      }
+      
+      /**
+       * Sauvegarde le zoom actuel
+       */
+      saveCurrentZoom() {
+        const view = this.getView();
+        if (view && view.x && view.y) {
+          this.persistenceService.saveZoom(this.chartId, view);
+        }
+      }
+      
+      /**
+       * Charge l'état sauvegardé (zoom + signaux)
+       */
+      loadSavedState() {
+        const savedState = this.persistenceService.loadChartState(this.chartId);
+        
+        // Le zoom sera restauré après le chargement des données
+        if (savedState.zoom) {
+          console.log(`[ChartHost] Zoom sauvé trouvé pour ${this.chartId}:`, savedState.zoom);
+          this.pendingZoom = savedState.zoom;
+        }
+        
+        // Charger les signaux sauvegardés (APRÈS l'init complète)
+        if (savedState.signals && Array.isArray(savedState.signals)) {
+          console.log(`[ChartHost] Signaux sauvés trouvés pour ${this.chartId}:`, savedState.signals);
+          // Différer le chargement pour ne pas bloquer l'initialisation
+          setTimeout(() => {
+            this.loadSignalData(savedState.signals);
+          }, 100);
+        }
+      }
+      
+      /**
+       * Applique le zoom en attente (après chargement des données)
+       */
+      applyPendingZoom() {
+        if (this.pendingZoom && this.chart) {
+          try {
+            this.setView(this.pendingZoom);
+            console.log(`[ChartHost] Zoom restauré pour ${this.chartId}`);
+            this.pendingZoom = null;
+          } catch (error) {
+            console.warn(`[ChartHost] Erreur restauration zoom:`, error);
+          }
+        }
+      }
+      
+      /**
+       * Charge les données des signaux spécifiés
+       */
+      async loadSignalData(signalIds) {
+        if (!Array.isArray(signalIds) || signalIds.length === 0) {
+          this.setData([]);
+          return;
+        }
+        
+        try {
+          // Vérifier que le service est disponible
+          if (!this.signalService || typeof this.signalService.getSeriesData !== 'function') {
+            console.warn('[ChartHost] SignalService non disponible, utilisation fallback');
+            this.loadFallbackData(signalIds);
+            return;
+          }
+          
+          // Récupérer les données depuis l'API
+          const series = await this.signalService.getSeriesData(signalIds);
+          
+          if (series && Array.isArray(series)) {
+            this.setData(series);
+          } else {
+            console.warn(`[ChartHost] Données invalides reçues pour ${signalIds}`);
+            this.loadFallbackData(signalIds);
+          }
+          
+        } catch (error) {
+          console.error(`[ChartHost] Erreur chargement données:`, error);
+          
+          // Fallback avec données de test si disponibles
+          this.loadFallbackData(signalIds);
+        }
+      }
+      
+      /**
+       * Fallback avec données de test
+       */
+      loadFallbackData(signalIds) {
+        console.log(`[ChartHost] Fallback données test pour:`, signalIds);
+        
+        // Vérifier que TestDataGenerator est disponible
+        if (!window.TestDataGenerator) {
+          console.error(`[ChartHost] TestDataGenerator non disponible !`);
+          return;
+        }
+        
+        console.log(`[ChartHost] TestDataGenerator trouvé, génération de ${signalIds.length} signaux`);
+        const testData = [];
+        
+        signalIds.forEach((signalId, index) => {
+            console.log(`[ChartHost] Génération données pour signalId: ${signalId}`);
+            let dataset;
+            
+            switch (signalId) {
+              case 'tr1-power':
+                dataset = TestDataGenerator.generateSineWave('TR1 Puissance Active', '#6366f1', 120, 80, 420);
+                dataset.signalId = 'tr1-power';
+                testData.push(dataset);
+                console.log(`[ChartHost] Dataset TR1 Power ajouté`);
+                break;
+              case 'tr1-reactive':
+                dataset = TestDataGenerator.generateSineWave('TR1 Puissance Réactive', '#f97316', 120, 30, 120);
+                dataset.unit = 'kVar';
+                dataset.signalId = 'tr1-reactive';
+                testData.push(dataset);
+                console.log(`[ChartHost] Dataset TR1 Reactive ajouté`);
+                break;
+              case 'tr2-power':
+                dataset = TestDataGenerator.generateSineWave('TR2 Puissance Active', '#f43f5e', 120, 75, 470);
+                dataset.signalId = 'tr2-power';
+                testData.push(dataset);
+                console.log(`[ChartHost] Dataset TR2 Power ajouté`);
+                break;
+              case 'tr2-reactive':
+                dataset = TestDataGenerator.generateSineWave('TR2 Puissance Réactive', '#f59e0b', 120, 35, 110);
+                dataset.unit = 'kVar';
+                dataset.signalId = 'tr2-reactive';
+                testData.push(dataset);
+                console.log(`[ChartHost] Dataset TR2 Reactive ajouté`);
+                break;
+              default:
+                console.warn(`[ChartHost] Signal ID inconnu: ${signalId}`);
+            }
+          });
+          
+          console.log(`[ChartHost] Données générées (${testData.length} datasets):`, testData.map(d => d.label));
+          
+          if (testData.length > 0) {
+            console.log(`[ChartHost] Appel de setData() avec ${testData.length} datasets`);
+            this.setData(testData);
+            
+            // Recalculer les bounds pour inclure tous les nouveaux signaux
+            this.calculateBounds();
+            
+            // Mettre à jour les scales
+            if (this.chart.options.scales.x) {
+              this.chart.options.scales.x.min = this.originalBounds.x.min;
+              this.chart.options.scales.x.max = this.originalBounds.x.max;
+            }
+            if (this.chart.options.scales.y) {
+              this.chart.options.scales.y.min = this.originalBounds.y.min;
+              this.chart.options.scales.y.max = this.originalBounds.y.max;
+            }
+            
+            // Forcer la mise à jour avec les nouvelles bounds
+            this.chart.update('active');
+            
+            console.log(`[ChartHost] setData() terminé avec remise à l'échelle`);
+          } else {
+            console.warn(`[ChartHost] Aucune donnée générée pour:`, signalIds);
+          }
+        }
+      
+      /**
        * Gère le clic droit sur le canvas
        */
       handleContextMenu(event) {
-        if (!this.contextMenu) return;
+        console.log('[ChartHost] handleContextMenu appelé pour', this.chartId, event);
+        console.log('[ChartHost] Etat actuel - contextMenu:', this.contextMenu);
+        console.log('[ChartHost] Etat actuel - signalService:', this.signalService);
         
-        const currentSignalIds = this.datasets.map(dataset => dataset.signalId || dataset.label).filter(Boolean);
+        if (!this.contextMenu) {
+          console.error('[ChartHost] contextMenu non initialisé !');
+          console.error('[ChartHost] Tentative de re-création du ContextMenu...');
+          
+          // Tentative de re-création si possible
+          try {
+            this.contextMenu = new ContextMenu(this.signalService);
+            this.contextMenu.init(); // Charger les signaux disponibles
+            console.log('[ChartHost] ContextMenu re-créé avec succès');
+          } catch (error) {
+            console.error('[ChartHost] Erreur re-création ContextMenu:', error);
+            return;
+          }
+        }
+        
+        // Extraire les IDs des signaux actuellement affichés sur cette courbe
+        const currentSignalIds = this.datasets.map(dataset => {
+          // Essayer d'abord signalId, puis mapper depuis le label
+          return dataset.signalId || this.mapLabelToSignalId(dataset.label);
+        }).filter(Boolean);
+        
+        console.log(`[ChartHost] Menu contextuel pour ${this.canvasId} avec signaux:`, currentSignalIds);
+        
         this.contextMenu.show(
           event, 
           this.chart, 
@@ -1948,44 +2447,52 @@
       }
       
       /**
+       * Mappe un label de dataset vers son ID de signal correspondant
+       */
+      mapLabelToSignalId(label) {
+        const labelToIdMap = {
+          'Puissance TR1': 'tr1-power',
+          'Puissance Réactive TR1': 'tr1-reactive', 
+          'TR1 Puissance Active': 'tr1-power',
+          'TR1 Puissance Réactive': 'tr1-reactive',
+          'Puissance TR2': 'tr2-power',
+          'Puissance Réactive TR2': 'tr2-reactive',
+          'TR2 Puissance Active': 'tr2-power', 
+          'TR2 Puissance Réactive': 'tr2-reactive'
+        };
+        
+        return labelToIdMap[label] || label.toLowerCase().replace(/\s+/g, '-');
+      }
+      
+      /**
        * Gère le changement de sélection des signaux
        */
       async onSignalSelectionChange(selectedSignalIds) {
-        if (!this.signalService || selectedSignalIds.length === 0) {
+        console.log(`[ChartHost] Changement signaux pour ${this.chartId}:`, selectedSignalIds);
+        
+        if (!selectedSignalIds || selectedSignalIds.length === 0) {
           // Vider le graphique si aucun signal sélectionné
           this.setData([]);
           return;
         }
         
+        // Sauvegarder le zoom actuel
+        const currentView = this.getView();
+        
         try {
-          // Calculer la plage de temps (dernières 24h par défaut)
-          const to = new Date();
-          const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-          
-          // Récupérer les données
-          const seriesData = await this.signalService.getSeriesData(selectedSignalIds, from, to);
-          
-          // Ajouter les IDs aux datasets pour le suivi
-          const datasetsWithIds = seriesData.datasets.map((dataset, index) => ({
-            ...dataset,
-            signalId: selectedSignalIds[index] || dataset.label
-          }));
-          
-          // Mettre à jour les données (sans perdre le zoom)
-          const currentView = this.getView();
-          this.setData(datasetsWithIds);
+          // Utiliser loadSignalData qui gère déjà les fallbacks
+          await this.loadSignalData(selectedSignalIds);
           
           // Restaurer le zoom si il y en avait un
-          if (currentView && (currentView.x.min !== currentView.x.max || currentView.y.min !== currentView.y.max)) {
+          if (currentView && (currentView.x.min !== undefined || currentView.y.min !== undefined)) {
             setTimeout(() => {
               this.setView(currentView);
-            }, 50);
+              console.log(`[ChartHost] Zoom restauré après changement signaux`);
+            }, 100);
           }
           
-          this.currentSignals = selectedSignalIds;
-          
         } catch (error) {
-          console.error('[ChartHost] Erreur chargement signaux:', error);
+          console.error(`[ChartHost] Erreur chargement signaux sélectionnés:`, error);
         }
       }
       
@@ -1994,6 +2501,83 @@
        */
       getCurrentSignals() {
         return [...this.currentSignals];
+      }
+      
+      /**
+       * Met à jour le titre de la courbe basé sur les signaux affichés
+       */
+      updateChartTitle() {
+        // Trouver l'élément titre de la carte
+        const canvas = this.canvas;
+        const card = canvas.closest('.card');
+        if (!card) return;
+        
+        const titleElement = card.querySelector('.chart-title');
+        if (!titleElement) return;
+        
+        if (!this.datasets || this.datasets.length === 0) {
+          // Aucun signal - afficher un titre par défaut
+          const iconSvg = titleElement.querySelector('svg');
+          titleElement.innerHTML = '';
+          if (iconSvg) {
+            titleElement.appendChild(iconSvg);
+          }
+          titleElement.appendChild(document.createTextNode('Aucun signal sélectionné'));
+          titleElement.style.opacity = '0.6';
+          return;
+        }
+        
+        // Restaurer l'opacité normale
+        titleElement.style.opacity = '1';
+        
+        // Générer le titre basé sur les signaux
+        let title = '';
+        const signalLabels = this.datasets.map(d => d.label);
+        
+        if (signalLabels.length === 1) {
+          title = `⚡ ${signalLabels[0]}`;
+        } else if (signalLabels.length <= 3) {
+          title = `⚡ ${signalLabels.join(' + ')}`;
+        } else {
+          // Grouper par type de signal si possible
+          const groups = this.groupSignalsByType(signalLabels);
+          if (groups.length === 1) {
+            title = `⚡ ${groups[0]} (${signalLabels.length})`;
+          } else {
+            title = `⚡ ${signalLabels.length} signaux`;
+          }
+        }
+        
+        // Mettre à jour le titre en préservant l'icône
+        const iconSvg = titleElement.querySelector('svg');
+        titleElement.innerHTML = '';
+        if (iconSvg) {
+          titleElement.appendChild(iconSvg);
+        }
+        titleElement.appendChild(document.createTextNode(title.replace('⚡ ', '')));
+      }
+      
+      /**
+       * Groupe les signaux par type pour un affichage plus intelligent
+       */
+      groupSignalsByType(labels) {
+        const groups = new Set();
+        
+        labels.forEach(label => {
+          if (label.includes('Puissance')) {
+            groups.add('Puissance');
+          } else if (label.includes('Tension')) {
+            groups.add('Tension');
+          } else if (label.includes('Courant')) {
+            groups.add('Courant');
+          } else if (label.includes('Ligne')) {
+            groups.add('Lignes');
+          } else {
+            groups.add('Signaux');
+          }
+        });
+        
+        return Array.from(groups);
       }
       
       destroy() {
@@ -2077,16 +2661,17 @@
     
     // === GÉNÉRATEUR DE DONNÉES TEST ===
     const TestDataGenerator = {
-      generateSineWave(label, color, points = 100, amplitude = 100, offset = 0) {
+      generateSineWave(label, color, points = 100, amplitude = 100, offset = 0, frequency = 0.1, minutes = 60) {
         const data = [];
         const now = Date.now();
-        const timeSpan = 3600000; // 1 heure
+        const timeSpan = minutes * 60 * 1000; // Fenêtre temporelle en ms
         
         for (let i = 0; i < points; i++) {
           const x = now - timeSpan + (i * timeSpan / points);
-          const y = offset + amplitude * Math.sin((i / points) * 4 * Math.PI) + (Math.random() - 0.5) * 10;
+          const normalizedTime = (i / points) * frequency * 10;
+          const y = offset + amplitude * Math.sin(normalizedTime) + (Math.random() - 0.5) * (amplitude * 0.1);
           
-          data.push({ x: x, y: Number(y.toFixed(2)) });
+          data.push({ x: x, y: Number(Math.max(0, y).toFixed(2)) });
         }
         
         return {
@@ -2094,24 +2679,38 @@
           data: data,
           borderColor: color,
           backgroundColor: 'transparent',
-          unit: 'kW'
+          unit: 'kW',
+          signalId: label.toLowerCase().replace(/\s+/g, '-')
         };
       },
       
       generateTR1Data() {
-        return [
-          this.generateSineWave('Puissance TR1', '#6366f1', 120, 80, 420),
-          this.generateSineWave('Puissance Réactive TR1', '#f97316', 120, 30, 120)
-        ];
+        const data1 = this.generateSineWave('TR1 Puissance Active', '#6366f1', 120, 80, 420);
+        const data2 = this.generateSineWave('TR1 Puissance Réactive', '#f97316', 120, 30, 120);
+        
+        // S'assurer que les signalId correspondent aux IDs dans SignalService
+        data1.signalId = 'tr1-power';
+        data2.signalId = 'tr1-reactive';
+        data2.unit = 'kVar';
+        
+        return [data1, data2];
       },
       
       generateTR2Data() {
-        return [
-          this.generateSineWave('Puissance TR2', '#f43f5e', 120, 75, 470),
-          this.generateSineWave('Puissance Réactive TR2', '#f59e0b', 120, 35, 110)
-        ];
+        const data1 = this.generateSineWave('TR2 Puissance Active', '#f43f5e', 120, 75, 470);
+        const data2 = this.generateSineWave('TR2 Puissance Réactive', '#f59e0b', 120, 35, 110);
+        
+        // S'assurer que les signalId correspondent aux IDs dans SignalService  
+        data1.signalId = 'tr2-power';
+        data2.signalId = 'tr2-reactive';
+        data2.unit = 'kVar';
+        
+        return [data1, data2];
       }
     };
+    
+    // Assigner TestDataGenerator à window pour qu'il soit accessible globalement
+    window.TestDataGenerator = TestDataGenerator;
 
     // === FONCTIONS GLOBALES EXPOSÉES ===
     // Fonction Reset globale
@@ -2155,6 +2754,195 @@
       } catch (error) {
         console.error(`❌ Erreur lors de l'export de ${cardId}:`, error);
         return false;
+      }
+    };
+
+    // === GESTION BASE DE TEMPS ===
+    window.changeTimeRange = function(chartId, minutes) {
+      console.log(`⏱️ Changement base de temps pour ${chartId}: ${minutes} minutes`);
+      
+      const instance = chartInstances.get(chartId);
+      if (!instance) {
+        console.warn(`❌ Carte ${chartId} non trouvée pour changement de base de temps`);
+        return;
+      }
+      
+      // Sauvegarder la sélection dans localStorage
+      try {
+        const storageKey = `timerange-${chartId}`;
+        localStorage.setItem(storageKey, minutes.toString());
+        console.log(`💾 Base de temps sauvée: ${storageKey} = ${minutes}`);
+      } catch (error) {
+        console.warn(`⚠️ Erreur sauvegarde localStorage:`, error);
+      }
+      
+      // Recharger les données avec la nouvelle base de temps
+      loadChartsWithTimeRange(chartId, parseInt(minutes));
+    };
+
+    function loadChartsWithTimeRange(chartId, minutes) {
+      console.log(`🔄 Rechargement données pour ${chartId} avec ${minutes} minutes`);
+      
+      // Générer de nouvelles données selon la base de temps
+      const datasets = generateDataForTimeRange(chartId, minutes);
+      if (datasets && datasets.length > 0) {
+        const instance = chartInstances.get(chartId);
+        if (instance && instance.host) {
+          // Mettre à jour les données
+          instance.host.setData(datasets);
+          
+          // Recalculer et mettre à jour les bounds de l'axe X
+          const chart = instance.host.chart;
+          if (chart && chart.options && chart.options.scales && chart.options.scales.x) {
+            const now = Date.now();
+            const timeSpan = minutes * 60 * 1000;
+            
+            // Forcer les nouvelles limites de l'axe X
+            chart.options.scales.x.min = now - timeSpan;
+            chart.options.scales.x.max = now;
+            
+            // Adapter l'unité de temps selon la durée
+            if (minutes <= 15) {
+              chart.options.scales.x.time.unit = 'minute';
+              chart.options.scales.x.time.stepSize = 1;
+            } else if (minutes <= 60) {
+              chart.options.scales.x.time.unit = 'minute';
+              chart.options.scales.x.time.stepSize = 5;
+            } else if (minutes <= 240) {
+              chart.options.scales.x.time.unit = 'hour';
+              chart.options.scales.x.time.stepSize = 1;
+            } else {
+              chart.options.scales.x.time.unit = 'hour';
+              chart.options.scales.x.time.stepSize = 4;
+            }
+            
+            // Reset l'état de zoom pour éviter les conflits
+            if (instance.host.resetView) {
+              // Sauvegarder les nouvelles limites avant le reset
+              const savedMin = chart.options.scales.x.min;
+              const savedMax = chart.options.scales.x.max;
+              
+              // Effectuer le reset pour nettoyer l'état
+              instance.host.resetView();
+              
+              // Rétablir les bonnes limites
+              chart.options.scales.x.min = savedMin;
+              chart.options.scales.x.max = savedMax;
+            }
+            
+            // Forcer la mise à jour du chart
+            chart.update('active');
+            
+            console.log(`✅ Axe X mis à jour: ${new Date(now - timeSpan).toLocaleTimeString()} → ${new Date(now).toLocaleTimeString()}`);
+          }
+        }
+        console.log(`✅ Données et axes mis à jour pour ${chartId} (${datasets.length} datasets)`);
+      } else {
+        console.warn(`⚠️ Aucune donnée générée pour ${chartId}`);
+      }
+    }
+
+    function generateDataForTimeRange(chartId, minutes) {
+      // Adapter le nombre de points selon la base de temps
+      let pointCount = 100;
+      let amplitude = 100;
+      let frequency = 0.1;
+      
+      switch (minutes) {
+        case 15:
+          pointCount = 60;   // 1 point par 15 secondes
+          frequency = 0.2;   // Plus de variations
+          break;
+        case 60:
+          pointCount = 120;  // 1 point par 30 secondes  
+          frequency = 0.15;  // Variations moyennes
+          break;
+        case 240:
+          pointCount = 240;  // 1 point par minute
+          frequency = 0.1;   // Moins de variations
+          break;
+        case 1440:
+          pointCount = 360;  // 1 point par 4 minutes
+          frequency = 0.05;  // Très peu de variations
+          amplitude = 120;   // Plus d'amplitude sur 24h
+          break;
+      }
+      
+      if (chartId === 'tr1-power') {
+        return [
+          TestDataGenerator.generateSineWave('TR1 Puissance Active', '#6366f1', pointCount, amplitude, 420, frequency, minutes),
+          TestDataGenerator.generateSineWave('TR1 Puissance Réactive', '#f97316', pointCount, amplitude * 0.3, 120, frequency * 0.8, minutes)
+        ];
+      } else if (chartId === 'tr2-power') {
+        return [
+          TestDataGenerator.generateSineWave('TR2 Puissance Active', '#f43f5e', pointCount, amplitude, 470, frequency, minutes),
+          TestDataGenerator.generateSineWave('TR2 Puissance Réactive', '#f59e0b', pointCount, amplitude * 0.3, 110, frequency * 0.8, minutes)
+        ];
+      }
+      
+      return [];
+    }
+
+    function loadSavedTimeRanges() {
+      const charts = ['tr1-power', 'tr2-power'];
+      
+      charts.forEach(chartId => {
+        try {
+          const storageKey = `timerange-${chartId}`;
+          const savedMinutes = localStorage.getItem(storageKey);
+          
+          if (savedMinutes) {
+            const select = document.querySelector(`select[onchange*="${chartId}"]`);
+            if (select) {
+              select.value = savedMinutes;
+              console.log(`📥 Base de temps restaurée pour ${chartId}: ${savedMinutes} min`);
+              // Appliquer les données correspondant à cette base de temps
+              loadChartsWithTimeRange(chartId, parseInt(savedMinutes));
+            }
+          }
+        } catch (error) {
+          console.warn(`⚠️ Erreur restauration localStorage pour ${chartId}:`, error);
+        }
+      });
+    }
+
+    // Fonction pour vider le localStorage (Debug)
+    window.clearLocalStorage = () => {
+      try {
+        const persistenceService = new PersistenceService();
+        const stats = persistenceService.getStats();
+        
+        if (confirm(`Vider le localStorage ?\n\n` +
+                   `Charts: ${stats.chartCount}\n` +
+                   `Taille: ${(stats.storageSize / 1024).toFixed(1)} KB\n` +
+                   `Dernière MAJ: ${stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'Jamais'}`)) {
+          
+          persistenceService.clearAllState();
+          
+          // Afficher confirmation
+          const notification = document.createElement('div');
+          notification.innerHTML = '✅ localStorage vidé !';
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 999999;
+            font-weight: 500;
+          `;
+          
+          document.body.appendChild(notification);
+          setTimeout(() => document.body.removeChild(notification), 3000);
+          
+          // Recharger la page pour voir l'effet
+          setTimeout(() => location.reload(), 1000);
+        }
+      } catch (error) {
+        console.error('Erreur vidage localStorage:', error);
+        alert('Erreur lors du vidage du localStorage');
       }
     };
 
@@ -2321,6 +3109,11 @@
         setInterval(updateTime, 1000);
 
         console.log('✅ Démo initialisée avec succès');
+        
+        // Charger les bases de temps sauvées après initialisation
+        setTimeout(() => {
+          loadSavedTimeRanges();
+        }, 500);
 
       } catch (error) {
         console.error('❌ Erreur lors de l\'initialisation:', error);
