@@ -166,6 +166,9 @@ export async function pollOnce() {
     refreshCharts();
     $('#last-update').textContent = new Date().toLocaleString('fr-FR');
     finishInitialLoad();
+    
+    // Programmer le prochain polling
+    scheduleNextPoll();
   } catch (err) {
     console.error('[polling] erreur', err);
     setConn(false, 'Erreur de communication');
@@ -175,6 +178,9 @@ export async function pollOnce() {
       lastErrorToastTs = now;
     }
     finishInitialLoad();
+    
+    // Programmer le prochain polling même en cas d'erreur
+    scheduleNextPoll();
   }
 }
 

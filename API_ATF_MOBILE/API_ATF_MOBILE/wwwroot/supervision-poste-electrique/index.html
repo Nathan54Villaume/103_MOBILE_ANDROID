@@ -4,7 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Supervision - Poste Electrique</title>
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M13 2L4 13.5h6L9 22l9-11.5h-6L13 2z'/%3E%3C/svg%3E">
+  <!-- Tailwind CSS local -->
+  <script>
+    tailwind = {
+      config: {
+        content: ['./*.html', './js/*.js'],
+        theme: { extend: {} },
+        plugins: []
+      }
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
@@ -103,19 +113,9 @@
           <svg class="icon stroke" aria-hidden="true"><use href="#i-calendar" /></svg>
           <div class="text-sm" id="top-clock">-</div>
         </div>
-        <button id="btn-settings" type="button" class="btn btn-primary flex items-center gap-2">
-          <svg class="icon stroke" aria-hidden="true"><use href="#i-cog" /></svg>
-          <span>Paramètres</span>
-        </button>
       </div>
     </header>
 
-    <section class="card info-bar" aria-live="polite">
-      <div class="flex flex-wrap items-center gap-4">
-        <span class="flex items-center gap-2 text-sm text-slate-300"><svg class="icon stroke" aria-hidden="true"><use href="#i-info" /></svg>Dernière mise à jour : <time id="last-update" datetime="">-</time></span>
-        <span id="mode-indicator" class="badge badge-soft">Mode production</span>
-      </div>
-    </section>
 
     <section class="deck" data-collapsible-id="transformer-1" data-collapsible-type="section">
       <div class="deck-head" data-collapsible-trigger>
@@ -327,38 +327,20 @@
       </div>
     </section>
 
-    <section id="daily-view" class="card daily-view">
-      <header class="daily-head">
-        <div class="flex items-center gap-2">
-          <svg class="icon stroke" aria-hidden="true"><use href="#i-calendar" /></svg>
-          <h2 class="text-lg font-semibold">Vue journalière</h2>
-        </div>
-        <div class="daily-controls" role="group" aria-label="Navigation journalière">
-          <button type="button" id="daily-prev" class="btn btn-soft" aria-label="Jour précédent"><svg class="icon stroke" aria-hidden="true"><use href="#i-arrow-left" /></svg></button>
-          <input type="date" id="daily-date" class="daily-date" aria-label="Sélection de la date" />
-          <button type="button" id="daily-next" class="btn btn-soft" aria-label="Jour suivant"><svg class="icon stroke" aria-hidden="true"><use href="#i-arrow-right" /></svg></button>
-        </div>
-      </header>
-      <div class="daily-body">
-        <article class="daily-metric" data-metric="kwh">
-          <h3 class="metric-label">Énergie</h3>
-          <div class="metric-value"><span id="daily-kwh">-</span><small>kWh</small></div>
-        </article>
-        <article class="daily-metric" data-metric="kw-max">
-          <h3 class="metric-label">Puissance max</h3>
-          <div class="metric-value"><span id="daily-kw-max">-</span><small>kW</small></div>
-        </article>
-        <article class="daily-metric" data-metric="pf-min">
-          <h3 class="metric-label">cos φ min</h3>
-          <div class="metric-value"><span id="daily-pf-min">-</span></div>
-        </article>
-      </div>
-    </section>
 
-    <footer class="page-footer text-xs text-slate-500">
-      <p>Interface de supervision &mdash; aucune erreur console toleree.</p>
+    <footer class="w-full border-t border-white/10 text-sm text-gray-300 px-4 py-2 flex items-center justify-between sticky bottom-0 backdrop-blur bg-black/30">
+      <span class="flex items-center gap-2">
+        <svg class="icon stroke" aria-hidden="true"><use href="#i-info" /></svg>
+        Dernière mise à jour : <time id="last-update" datetime="">-</time>
+      </span>
+      <span>N.Villaume</span>
     </footer>
   </main>
+
+  <!-- Bouton Paramètres flottant -->
+  <button id="btn-settings" type="button" class="fixed bottom-4 right-4 z-50 rounded-full shadow-lg p-3 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors" aria-label="Ouvrir les paramètres">
+    <svg class="icon stroke w-6 h-6" aria-hidden="true"><use href="#i-cog" /></svg>
+  </button>
 
   <dialog id="settings-dialog" class="app-dialog">
     <form method="dialog" class="dialog-content">

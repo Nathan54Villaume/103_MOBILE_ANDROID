@@ -1,5 +1,5 @@
 ﻿import { fmt, frTooltip, frTick, displayFormats, timeUnitFor, debounce } from './utils.js';
-import { state, bufs, filt, downsample, CHART_POINT_THRESHOLD } from './state.js';
+import { state, bufs, filt, downsample, CHART_POINT_THRESHOLD, cutoffTs } from './state.js';
 import { getJson, setJson } from './storage.js';
 
 const { Chart } = window;
@@ -291,14 +291,16 @@ function chartOptions(def, settings) {
       legend: { display: settings.showLegend, labels: { color: '#e2e8f0' } },
       tooltip: { callbacks: { title: items => items.map(frTooltip) } },
       zoom: zoomPlugin ? {
-        pan: { enabled: true, mode: 'x' },
+        pan: { 
+          enabled: true, 
+          mode: 'x',
+          modifierKey: null  // Pan horizontal sans touche Ctrl requise
+        },
         zoom: {
-          wheel: { enabled: true },
-          pinch: { enabled: true },
-          mode({ chart, event }) {
-            const point = getPointer(chart, event);
-            return determineZoomAxis(chart, point);
-          }
+          wheel: { enabled: false },  // Désactiver le zoom par molette
+          pinch: { enabled: false },  // Désactiver le zoom par pincement
+          drag: { enabled: false },   // Désactiver le zoom par drag
+          mode: 'x'
         }
       } : undefined
     },
@@ -439,8 +441,20 @@ export function refreshCharts() {
   registry.forEach((entry) => {
     if (inactiveCharts.has(entry.def.canvasId)) return;
     const minutes = state.win[entry.def.windowKey] ?? 15;
+    
+    // Mettre à jour l'unité de temps
     entry.chart.options.scales.x.time.unit = timeUnitFor(minutes);
+    
+    // Recalculer les limites temporelles de l'axe X pour que le changement de base de temps soit effectif
+    const now = Date.now();
+    const cutoff = cutoffTs(minutes);
+    entry.chart.options.scales.x.min = cutoff;
+    entry.chart.options.scales.x.max = now;
+    
+    // Mettre à jour les données
     entry.chart.data.datasets = datasetList(entry);
+    
+    // Mettre à jour les échelles Y
     const yScale = entry.chart.options.scales.y;
     if (yScale) {
       yScale.type = entry.state.settings.scaleMode === 'log' ? 'logarithmic' : 'linear';
@@ -450,11 +464,15 @@ export function refreshCharts() {
     if (entry.chart.options.scales.y1) {
       entry.chart.options.scales.y1.display = entry.state.signals.some(id => (entry.def.signals[id]?.axis || 'y') === 'y1');
     }
+    
+    // Mettre à jour les options d'affichage
     entry.chart.options.plugins.legend.display = entry.state.settings.showLegend;
     entry.chart.options.scales.x.grid.color = entry.state.settings.showGrid ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.06)';
     if (entry.chart.options.scales.y.grid) {
       entry.chart.options.scales.y.grid.color = entry.state.settings.showGrid ? 'rgba(148,163,184,0.18)' : 'rgba(148,163,184,0.05)';
     }
+    
+    // Mettre à jour le graphique
     entry.chart.update('none');
     updateStats(entry);
   });

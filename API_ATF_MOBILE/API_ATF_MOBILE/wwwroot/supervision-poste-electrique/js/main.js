@@ -2,7 +2,7 @@
 import { $, fmt } from './utils.js';
 import { state, setWindow, setApiBase } from './state.js';
 import { startPolling, attachVisibilityHandler, recomputeAdaptivePolling } from './polling.js';
-import { loadSeries, fetchDailySummary } from './api.js';
+import { loadSeries } from './api.js';
 import { refreshCharts, initializeCharts, setChartActive, resetChartView, listCharts } from './charts.js';
 import { Kpi, initKpiCollapsibles } from './kpi.js';
 import { initCollapsibles } from './ui-collapsibles.js';
@@ -58,15 +58,7 @@ function syncWelcome() {
 }
 
 function syncModeIndicator() {
-  const indicator = $('#mode-indicator');
-  if (!indicator) return;
-  if (state.modeDev) {
-    indicator.textContent = state.demoEnabled ? 'Mode développement (mock)' : 'Mode développement';
-    indicator.classList.add('badge-dev-soft');
-  } else {
-    indicator.textContent = 'Mode production';
-    indicator.classList.remove('badge-dev-soft');
-  }
+  // Fonction supprimée - plus de barre d'information supérieure
 }
 
 function initClock() {
@@ -116,76 +108,45 @@ function initWindows() {
   sync('win-pf2', state.win.pf2);
 }
 
-function decorateKpiCards(rootIds = ['tr1-kpis', 'tr2-kpis']) {
-  rootIds.forEach(id => {
-    const root = document.getElementById(id);
-    if (!root) return;
-    root.querySelectorAll('.kpi').forEach(card => {
-      if (card.querySelector('svg')) return;
-      const kind = card.dataset.kind;
-      const title = card.querySelector('.kpi-title');
-      if (!title || !kind || !ICONS[kind]) return;
-      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      icon.setAttribute('class', 'icon stroke');
-      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-      use.setAttributeNS(null, 'href', ICONS[kind]);
-      icon.appendChild(use);
-      title.prepend(icon);
-    });
-  });
-}
+// Créer et initialiser les KPI pour les transformateurs
+// Cette fonction remplace l'ancienne decorateKpiCards() qui ne créait pas les KPI
+function initKPIs() {
+  // Définitions des KPI pour TR1
+  const tr1KpiDefs = [
+    { key: 'tr1.p_kw', title: 'Puissance active', unit: 'kW', kind: 'p_kw', decimals: 1 },
+    { key: 'tr1.q_kvar', title: 'Puissance réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
+    { key: 'tr1.pf', title: 'Facteur de puissance', unit: '', kind: 'pf', decimals: 3 },
+    { key: 'tr1.u1', title: 'Tension U12', unit: 'V', kind: 'u', decimals: 1 },
+    { key: 'tr1.u2', title: 'Tension U23', unit: 'V', kind: 'u', decimals: 1 },
+    { key: 'tr1.u3', title: 'Tension U31', unit: 'V', kind: 'u', decimals: 1 },
+    { key: 'tr1.i1', title: 'Courant I1', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr1.i2', title: 'Courant I2', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr1.i3', title: 'Courant I3', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr1.e_kwh', title: 'Énergie', unit: 'kWh', kind: 'e', decimals: 1 }
+  ];
 
-function updateDailyMetrics(data) {
-  const energy = $('#daily-kwh');
-  const power = $('#daily-kw-max');
-  const pf = $('#daily-pf-min');
-  if (energy) energy.textContent = data?.kwh != null ? fmt(data.kwh, 1) : '\u2014';
-  if (power) power.textContent = data?.kwMax != null ? fmt(data.kwMax, 1) : '\u2014';
-  if (pf) pf.textContent = data?.pfMin != null ? fmt(data.pfMin, 3) : '\u2014';
-}
+  // Définitions des KPI pour TR2
+  const tr2KpiDefs = [
+    { key: 'tr2.p_kw', title: 'Puissance active', unit: 'kW', kind: 'p_kw', decimals: 1 },
+    { key: 'tr2.q_kvar', title: 'Puissance réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
+    { key: 'tr2.pf', title: 'Facteur de puissance', unit: '', kind: 'pf', decimals: 3 },
+    { key: 'tr2.u1', title: 'Tension U12', unit: 'V', kind: 'u', decimals: 1 },
+    { key: 'tr2.u2', title: 'Tension U23', unit: 'V', kind: 'u', decimals: 1 },
+    { key: 'tr2.u3', title: 'Tension U31', unit: 'V', kind: 'u', decimals: 1 },
+    { key: 'tr2.i1', title: 'Courant I1', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr2.i2', title: 'Courant I2', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr2.i3', title: 'Courant I3', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr2.e_kwh', title: 'Énergie', unit: 'kWh', kind: 'e', decimals: 1 }
+  ];
 
-async function loadDailySummary(date) {
+  // Créer les KPI
   try {
-    const summary = await fetchDailySummary(date);
-    updateDailyMetrics(summary);
+    Kpi.create('tr1-kpis', tr1KpiDefs);
+    Kpi.create('tr2-kpis', tr2KpiDefs);
+    console.log('✅ KPI créés avec succès');
   } catch (err) {
-    console.error('[main] daily summary failed', err);
-    showToast("Impossible de charger la vue journalière", { variant: 'error' });
+    console.error('❌ Erreur lors de la création des KPI:', err);
   }
-}
-
-function initDailyView() {
-  const input = $('#daily-date');
-  const prev = $('#daily-prev');
-  const next = $('#daily-next');
-  if (!input) return;
-
-  const setDate = (date) => {
-    const iso = date.toISOString().slice(0, 10);
-    input.value = iso;
-    loadDailySummary(iso);
-  };
-
-  input.addEventListener('change', () => {
-    const value = input.value;
-    if (value) loadDailySummary(value);
-  });
-
-  prev?.addEventListener('click', () => {
-    if (!input.value) return;
-    const date = new Date(input.value);
-    date.setDate(date.getDate() - 1);
-    setDate(date);
-  });
-
-  next?.addEventListener('click', () => {
-    if (!input.value) return;
-    const date = new Date(input.value);
-    date.setDate(date.getDate() + 1);
-    setDate(date);
-  });
-
-  setDate(new Date());
 }
 
 function initModeBanner() {
@@ -246,19 +207,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('🌐 API configurée:', state.apiBase);
 
   syncWelcome();
-  syncModeIndicator();
   initModeBanner();
   initClock();
   initSettingsDialog();
   initContextMenus();
   initChartSettings();
   initCollapsibles(document);
+  initKPIs(); // Créer les KPI
   initKpiCollapsibles(['tr1-kpis', 'tr2-kpis']);
   initToolbars();
-  initDailyView();
   initWindows();
   syncSelectorsFromState();
-  decorateKpiCards();
   watchSettingsChanges();
 
   initializeCharts();

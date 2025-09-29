@@ -28,74 +28,91 @@ function resolveValue(input, fallback) {
 function renderForm(def, state) {
   if (!body) return;
   body.innerHTML = `
-    <section class="settings-group">
-      <h3 class="settings-title">Courbe</h3>
-      <div class="settings-grid">
-        <label class="settings-field">
-          <span>Epaisseur</span>
-          <input type="range" min="1" max="6" step="1" name="lineWidth" value="${state.settings.lineWidth}">
+    <div class="space-y-6">
+      <section class="space-y-3">
+        <h3 class="text-sm font-medium text-gray-700">Courbe</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-600">Épaisseur</span>
+            <input type="range" min="1" max="6" step="1" name="lineWidth" value="${state.settings.lineWidth}" class="w-full">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-600">Interpolation</span>
+            <select name="mode" class="bg-white text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              <option value="line" ${state.settings.stepped ? '' : 'selected'}>Linéaire</option>
+              <option value="stepped" ${state.settings.stepped ? 'selected' : ''}>Escaliers</option>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-600">Lissage</span>
+            <input type="range" min="0" max="0.6" step="0.05" name="tension" value="${state.settings.tension}" class="w-full">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-600">Moyenne mobile</span>
+            <select name="movingAvg" class="bg-white text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              <option value="0" ${state.settings.movingAvg === 0 ? 'selected' : ''}>Aucun</option>
+              <option value="3" ${state.settings.movingAvg === 3 ? 'selected' : ''}>3 points</option>
+              <option value="5" ${state.settings.movingAvg === 5 ? 'selected' : ''}>5 points</option>
+              <option value="9" ${state.settings.movingAvg === 9 ? 'selected' : ''}>9 points</option>
+            </select>
+          </label>
+        </div>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" name="showPoints" ${state.settings.showPoints ? 'checked' : ''} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700">Afficher les points</span>
         </label>
-        <label class="settings-field">
-          <span>Interpolation</span>
-          <select name="mode">
-            <option value="line">Lineaire</option>
-            <option value="stepped">Escaliers</option>
-          </select>
+      </section>
+
+      <section class="space-y-3">
+        <h3 class="text-sm font-medium text-gray-700">Axes</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <fieldset class="space-y-2">
+            <legend class="text-xs text-gray-600">Échelle Y</legend>
+            <div class="space-y-1">
+              <label class="flex items-center gap-2">
+                <input type="radio" name="scaleMode" value="linear" ${state.settings.scaleMode !== 'log' ? 'checked' : ''} class="text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm text-gray-700">Linéaire</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="scaleMode" value="log" ${state.settings.scaleMode === 'log' ? 'checked' : ''} class="text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm text-gray-700">Logarithmique</span>
+              </label>
+            </div>
+          </fieldset>
+          <div class="space-y-2">
+            <label class="flex flex-col gap-1">
+              <span class="text-xs text-gray-600">Min Y</span>
+              <input type="number" name="yMin" step="0.1" placeholder="auto" value="${state.settings.yMin || ''}" class="bg-white text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-xs text-gray-600">Max Y</span>
+              <input type="number" name="yMax" step="0.1" placeholder="auto" value="${state.settings.yMax || ''}" class="bg-white text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </label>
+          </div>
+        </div>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" name="showGrid" ${state.settings.showGrid ? 'checked' : ''} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700">Afficher la grille</span>
         </label>
-        <label class="settings-field">
-          <span>Lissage</span>
-          <input type="range" min="0" max="0.6" step="0.05" name="tension" value="${state.settings.tension}">
+      </section>
+
+      <section class="space-y-3">
+        <h3 class="text-sm font-medium text-gray-700">Affichage</h3>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" name="showLegend" ${state.settings.showLegend ? 'checked' : ''} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700">Afficher la légende</span>
         </label>
-        <label class="settings-field checkbox">
-          <input type="checkbox" name="showPoints"> Afficher les points
-        </label>
-        <label class="settings-field">
-          <span>Moyenne mobile</span>
-          <select name="movingAvg">
-            <option value="0">Aucun</option>
-            <option value="3">3 points</option>
-            <option value="5">5 points</option>
-            <option value="9">9 points</option>
-          </select>
-        </label>
-      </div>
-    </section>
-    <section class="settings-group">
-      <h3 class="settings-title">Axes</h3>
-      <div class="settings-grid">
-        <fieldset class="settings-field fieldset">
-          <legend>Echelle Y</legend>
-          <label><input type="radio" name="scaleMode" value="linear"> Lineaire</label>
-          <label><input type="radio" name="scaleMode" value="log"> Logarithmique</label>
-        </fieldset>
-        <label class="settings-field checkbox">
-          <input type="checkbox" name="showGrid"> Afficher la grille
-        </label>
-        <label class="settings-field">
-          <span>Min Y</span>
-          <input type="number" name="yMin" step="0.1" placeholder="auto">
-        </label>
-        <label class="settings-field">
-          <span>Max Y</span>
-          <input type="number" name="yMax" step="0.1" placeholder="auto">
-        </label>
-      </div>
-    </section>
-    <section class="settings-group">
-      <h3 class="settings-title">Affichage</h3>
-      <div class="settings-grid">
-        <label class="settings-field checkbox">
-          <input type="checkbox" name="showLegend"> Afficher la legende
-        </label>
-      </div>
-    </section>
-    <section class="settings-group">
-      <h3 class="settings-title">Export</h3>
-      <div class="settings-actions">
-        <button type="button" class="btn btn-soft" id="${exportPngId}">Exporter PNG</button>
-        <button type="button" class="btn btn-soft" id="${exportCsvId}">Exporter CSV</button>
-      </div>
-    </section>
+      </section>
+
+      <section class="space-y-3">
+        <h3 class="text-sm font-medium text-gray-700">Export</h3>
+        <div class="flex gap-2">
+          <button type="button" class="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 focus:ring-2 focus:ring-indigo-500" id="${exportPngId}">Exporter PNG</button>
+          <button type="button" class="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 focus:ring-2 focus:ring-indigo-500" id="${exportCsvId}">Exporter CSV</button>
+          <button type="button" class="px-3 py-2 bg-orange-100 text-orange-700 rounded text-sm hover:bg-orange-200 focus:ring-2 focus:ring-orange-500" id="chart-reset-view">Reset</button>
+        </div>
+      </section>
+    </div>
   `;
 }
 
@@ -203,14 +220,62 @@ function openSettings(chartKey) {
   currentChartKey = chartKey;
   ensureDialog();
   renderForm(def, state);
-  fillValues(state);
+  
+  // Ajouter les gestionnaires d'événements
   const pngBtn = body.querySelector(`#${exportPngId}`);
   const csvBtn = body.querySelector(`#${exportCsvId}`);
+  const resetBtn = body.querySelector('#chart-reset-view');
+  
   pngBtn?.addEventListener('click', () => exportChart(chartKey, 'png'));
   csvBtn?.addEventListener('click', () => exportChart(chartKey, 'csv'));
+  resetBtn?.addEventListener('click', () => {
+    resetChartView(chartKey);
+    closeDialog();
+  });
+  
   if (titleEl) titleEl.textContent = `Réglages - ${def.key}`;
   if (subEl) subEl.textContent = def.canvasId;
+  
+  // Gérer la fermeture avec Escape
+  const handleKeydown = (evt) => {
+    if (evt.key === 'Escape') {
+      evt.preventDefault();
+      closeDialog();
+    }
+  };
+  
+  // Gérer la fermeture avec clic sur overlay
+  const handleBackdropClick = (evt) => {
+    if (evt.target === dialog) {
+      closeDialog();
+    }
+  };
+  
+  document.addEventListener('keydown', handleKeydown);
+  dialog.addEventListener('click', handleBackdropClick);
+  
+  // Stocker les gestionnaires pour les supprimer plus tard
+  dialog._keydownHandler = handleKeydown;
+  dialog._backdropHandler = handleBackdropClick;
+  
   dialog.showModal();
+}
+
+function closeDialog() {
+  if (!dialog) return;
+  
+  // Supprimer les gestionnaires d'événements
+  if (dialog._keydownHandler) {
+    document.removeEventListener('keydown', dialog._keydownHandler);
+    delete dialog._keydownHandler;
+  }
+  if (dialog._backdropHandler) {
+    dialog.removeEventListener('click', dialog._backdropHandler);
+    delete dialog._backdropHandler;
+  }
+  
+  dialog.close();
+  currentChartKey = null;
 }
 
 if (form) {
@@ -218,7 +283,7 @@ if (form) {
     evt.preventDefault();
     if (!currentChartKey) return;
     updateChartSettings(currentChartKey, gatherSettings());
-    dialog.close();
+    closeDialog();
   });
 }
 
@@ -242,7 +307,7 @@ if (applyAllBtn) {
 if (dialog) {
   dialog.addEventListener('cancel', (evt) => {
     evt.preventDefault();
-    dialog.close();
+    closeDialog();
   });
   dialog.addEventListener('close', () => { currentChartKey = null; });
 }
