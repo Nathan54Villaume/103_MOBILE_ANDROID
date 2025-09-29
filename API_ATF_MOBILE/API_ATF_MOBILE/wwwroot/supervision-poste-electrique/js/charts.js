@@ -5,7 +5,14 @@ import { getJson, setJson } from './storage.js';
 const { Chart } = window;
 const zoomPlugin = window['chartjs-plugin-zoom'] || window.ChartZoom || window.ChartZoomPlugin;
 if (Chart && zoomPlugin) {
-  try { Chart.register(zoomPlugin); } catch (err) { console.warn('[charts] zoom plugin registration failed', err); }
+  try { 
+    Chart.register(zoomPlugin); 
+    console.log('[charts] zoom plugin registered successfully');
+  } catch (err) { 
+    console.warn('[charts] zoom plugin registration failed', err); 
+  }
+} else {
+  console.warn('[charts] zoom plugin not found');
 }
 
 const SIGNAL_KEY_PREFIX = 'chart:signals:';
@@ -256,14 +263,21 @@ function chartOptions(def, settings) {
     x: {
       type: 'time',
       time: { tooltipFormat: 'HH:mm', displayFormats },
-      ticks: { color: '#cbd5f5', callback: value => frTick(value) },
-      grid: { color: settings.showGrid ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.06)' }
+      ticks: { color: '#e2e8f0', font: { size: 12 }, callback: value => frTick(value) },
+      grid: { color: settings.showGrid ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.08)' },
+      border: { color: 'rgba(148,163,184,0.2)' }
     },
     y: {
       position: 'left',
-      title: { display: !!def.axes.y?.label, text: def.axes.y?.label || '' },
-      ticks: { color: '#cbd5f5' },
-      grid: { color: settings.showGrid ? 'rgba(148,163,184,0.18)' : 'rgba(148,163,184,0.05)' },
+      title: { 
+        display: !!def.axes.y?.label, 
+        text: def.axes.y?.label || '',
+        color: '#e2e8f0',
+        font: { size: 13, weight: '500' }
+      },
+      ticks: { color: '#e2e8f0', font: { size: 11 } },
+      grid: { color: settings.showGrid ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.08)' },
+      border: { color: 'rgba(148,163,184,0.2)' },
       type: settings.scaleMode === 'log' ? 'logarithmic' : 'linear',
       min: settings.yMin ?? def.axes.y?.min ?? undefined,
       max: settings.yMax ?? def.axes.y?.max ?? undefined
@@ -273,9 +287,15 @@ function chartOptions(def, settings) {
   if (def.axes.y1) {
     scales.y1 = {
       position: def.axes.y1.position || 'right',
-      title: { display: !!def.axes.y1.label, text: def.axes.y1.label || '' },
-      ticks: { color: '#cbd5f5' },
+      title: { 
+        display: !!def.axes.y1.label, 
+        text: def.axes.y1.label || '',
+        color: '#e2e8f0',
+        font: { size: 13, weight: '500' }
+      },
+      ticks: { color: '#e2e8f0', font: { size: 11 } },
       grid: { drawOnChartArea: false },
+      border: { color: 'rgba(148,163,184,0.2)' },
       min: def.axes.y1.min ?? undefined,
       max: def.axes.y1.max ?? undefined
     };
@@ -287,6 +307,10 @@ function chartOptions(def, settings) {
     animation: false,
     parsing: false,
     hover: { mode: 'index', intersect: false },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
     plugins: {
       legend: { display: settings.showLegend, labels: { color: '#e2e8f0' } },
       tooltip: { callbacks: { title: items => items.map(frTooltip) } },
@@ -294,13 +318,20 @@ function chartOptions(def, settings) {
         pan: { 
           enabled: true, 
           mode: 'x',
-          modifierKey: null  // Pan horizontal sans touche Ctrl requise
+          threshold: 10,
+          onPan: function({chart}) {
+            chart.update('none');
+          }
         },
         zoom: {
-          wheel: { enabled: false },  // Désactiver le zoom par molette
-          pinch: { enabled: false },  // Désactiver le zoom par pincement
-          drag: { enabled: false },   // Désactiver le zoom par drag
-          mode: 'x'
+          wheel: { 
+            enabled: true,
+            speed: 0.1
+          },
+          mode: 'x',
+          onZoom: function({chart}) {
+            chart.update('none');
+          }
         }
       } : undefined
     },
@@ -399,6 +430,52 @@ function registerChart(def) {
     .filter(Boolean);
   const options = chartOptions(def, settings);
   const chart = new Chart(ctx, { type: 'line', data: { datasets }, options });
+
+  // Debug: vérifier que le pan fonctionne
+  if (zoomPlugin) {
+    console.log('[charts] Chart created with zoom plugin, pan should be enabled');
+  }
+
+  // Ajouter des événements de pan personnalisés si le plugin ne fonctionne pas
+  let isPanning = false;
+  let lastX = 0;
+  
+  canvas.addEventListener('mousedown', (e) => {
+    if (e.button === 0) { // Clic gauche
+      isPanning = true;
+      lastX = e.clientX;
+      canvas.style.cursor = 'grabbing';
+    }
+  });
+  
+  canvas.addEventListener('mousemove', (e) => {
+    if (isPanning) {
+      const deltaX = e.clientX - lastX;
+      if (Math.abs(deltaX) > 5) { // Seuil pour éviter les micro-mouvements
+        const scales = chart.options.scales;
+        if (scales.x && scales.x.min !== undefined && scales.x.max !== undefined) {
+          const range = scales.x.max - scales.x.min;
+          const deltaTime = (deltaX / canvas.offsetWidth) * range;
+          scales.x.min -= deltaTime;
+          scales.x.max -= deltaTime;
+          chart.update('none');
+        }
+        lastX = e.clientX;
+      }
+    }
+  });
+  
+  canvas.addEventListener('mouseup', () => {
+    isPanning = false;
+    canvas.style.cursor = 'grab';
+  });
+  
+  canvas.addEventListener('mouseleave', () => {
+    isPanning = false;
+    canvas.style.cursor = 'grab';
+  });
+  
+  canvas.style.cursor = 'grab';
 
   const entry = {
     def,

@@ -115,7 +115,11 @@ body {
 .chart-wrapper {
   position: relative;
   width: 100%;
-  height: 320px;
+  height: 380px;
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin: 0.5rem 0;
 }
 
 .chart-accessories,
@@ -167,19 +171,78 @@ canvas {
   fill: currentColor;
 }
 
+/* Animations et transitions globales */
 .kpi {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 150px;
-  padding: 0.75rem;
+  min-height: 160px;
+  padding: 1.25rem;
+  gap: 0.75rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 0.875rem;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.kpi:hover {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.kpi .kpi-value {
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.kpi:hover .kpi-value {
+  transform: scale(1.05);
+}
+
+/* Animation d'apparition */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation de mise à jour des valeurs */
+.kpi .kpi-value-number {
+  transition: all 0.3s ease;
+}
+
+.kpi .kpi-value-number.updating {
+  animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 .kpi .kpi-title {
   font-size: 0.9rem;
   font-weight: 500;
-  color: rgba(226, 232, 240, 0.8);
+  color: rgba(226, 232, 240, 0.9);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -194,20 +257,22 @@ canvas {
   display: flex;
   align-items: baseline;
   gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .kpi .kpi-unit {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .kpi .kpi-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
   width: 100%;
   align-items: center;
 }
@@ -580,5 +645,146 @@ canvas {
 .toast[data-variant="info"] {
   background: rgba(59, 130, 246, 0.22);
   border-color: rgba(96, 165, 250, 0.4);
+}
+
+/* Responsive KPI adjustments */
+@media (max-width: 640px) {
+  .kpi {
+    min-height: 140px;
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .kpi .kpi-value {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .kpi .kpi-unit {
+    font-size: 1.75rem;
+  }
+  
+  .kpi .kpi-stats-values {
+    font-size: 0.8rem;
+    gap: 1.5rem;
+  }
+  
+  .kpi .kpi-stats-labels {
+    font-size: 0.7rem;
+    gap: 1.5rem;
+  }
+}
+
+/* Animations pour les boutons et interactions */
+.btn, .chart-btn, button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:hover, .chart-btn:hover, button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active, .chart-btn:active, button:active {
+  transform: translateY(0);
+  transition: all 0.1s ease;
+}
+
+/* Animation pour le bouton flottant */
+#btn-settings {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#btn-settings:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+}
+
+#btn-settings:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* Animation pour les cartes */
+.card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Améliorations du header */
+.page-header {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.page-header h1 {
+  background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.conn-indicator {
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.conn-indicator:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.led-off {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.led-on {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+/* Améliorations du footer */
+footer {
+  background: rgba(15, 23, 42, 0.8);
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+footer:hover {
+  background: rgba(15, 23, 42, 0.9);
+  border-top-color: rgba(148, 163, 184, 0.3);
+}
+
+footer time {
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+footer .author {
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.3s ease;
+}
+
+footer .author:hover {
+  color: #e2e8f0;
 }
 
