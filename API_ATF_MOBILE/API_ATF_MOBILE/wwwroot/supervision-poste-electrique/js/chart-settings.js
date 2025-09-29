@@ -1,4 +1,5 @@
 ﻿import { updateChartSettings, resetChartSettings, listCharts, getChartState, getChartDefinition, getCanvas, resetChartView } from './charts.js';
+import { getChart } from '../charts/index.js';
 
 let currentChartKey = null;
 const dialog = document.getElementById('chart-settings-dialog');
@@ -214,9 +215,22 @@ function exportChart(chartKey, format) {
 
 function openSettings(chartKey) {
   if (!dialog || !body) return;
+  
+  // Essayer d'abord le nouveau système
+  const newChart = getChart(chartKey);
+  if (newChart) {
+    console.log(`[chart-settings] Ouverture des settings pour NOUVEAU chart: ${chartKey}`);
+    openNewSystemSettings(chartKey, newChart);
+    return;
+  }
+  
+  // Fallback vers l'ancien système
   const def = getChartDefinition(chartKey);
   const state = getChartState(chartKey);
-  if (!def || !state) return;
+  if (!def || !state) {
+    console.warn(`[chart-settings] Aucun chart trouvé pour la clé: ${chartKey}`);
+    return;
+  }
   currentChartKey = chartKey;
   ensureDialog();
   renderForm(def, state);
@@ -332,11 +346,100 @@ document.addEventListener('chart:export', (evt) => {
   openSettings(chartKey);
 });
 
-document.addEventListener('chart:reset-view', (evt) => {
+document.addEventListener('chart:reset-view', async (evt) => {
   const { chartKey } = evt.detail || {};
   if (!chartKey) return;
+  
+  // Tenter d'abord le nouveau système
+  try {
+    const { resetChart } = await import('../charts/index.js');
+    const success = resetChart(chartKey);
+    if (success) {
+      console.log(`[chart-settings] Chart ${chartKey} reset via NEW system`);
+      return;
+    }
+  } catch (error) {
+    console.warn('[chart-settings] New system reset failed:', error);
+  }
+  
+  // Fallback vers l'ancien système
   resetChartView(chartKey);
+  console.log(`[chart-settings] Chart ${chartKey} reset via OLD system`);
 });
+
+// === NOUVEAU SYSTÈME DE SETTINGS ===
+function openNewSystemSettings(chartKey, chartInstance) {
+  currentChartKey = chartKey;
+  ensureDialog();
+  
+  // Titre et sous-titre
+  if (titleEl) titleEl.textContent = `Réglages - ${chartKey}`;
+  if (subEl) subEl.textContent = `Nouveau système de charts`;
+  
+  // Créer le contenu des settings pour le nouveau système
+  body.innerHTML = `
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Base de temps</label>
+          <select id="new-chart-timerange" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white">
+            <option value="15">15 minutes</option>
+            <option value="60">1 heure</option>
+            <option value="240">4 heures</option>
+            <option value="1440">24 heures</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Actions</label>
+          <div class="flex gap-2">
+            <button type="button" id="new-chart-reset" class="btn btn-soft">Reset Vue</button>
+            <button type="button" id="new-chart-export" class="btn btn-soft">Export PNG</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-600 pt-4">
+        <p class="text-sm text-gray-400 mb-2">Signaux disponibles :</p>
+        <div id="new-chart-signals" class="space-y-2">
+          <!-- Les signaux seront ajoutés dynamiquement -->
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Configurer la base de temps actuelle
+  const timerangeSelect = body.querySelector('#new-chart-timerange');
+  if (timerangeSelect && chartInstance.host) {
+    timerangeSelect.value = String(chartInstance.host.getTimeRange());
+    timerangeSelect.addEventListener('change', () => {
+      const minutes = parseInt(timerangeSelect.value, 10);
+      chartInstance.host.setTimeRange(minutes);
+    });
+  }
+  
+  // Bouton reset
+  const resetBtn = body.querySelector('#new-chart-reset');
+  resetBtn?.addEventListener('click', () => {
+    if (chartInstance.host) {
+      chartInstance.host.resetView();
+      console.log(`[chart-settings] Chart ${chartKey} reset via nouveau système`);
+    }
+  });
+  
+  // Bouton export
+  const exportBtn = body.querySelector('#new-chart-export');
+  exportBtn?.addEventListener('click', () => {
+    if (chartInstance.host && chartInstance.host.chart) {
+      const link = document.createElement('a');
+      link.download = `${chartKey}-${new Date().toISOString().slice(0, 19)}.png`;
+      link.href = chartInstance.host.chart.toBase64Image();
+      link.click();
+      console.log(`[chart-settings] Chart ${chartKey} exported`);
+    }
+  });
+  
+  dialog.showModal();
+}
 
 export function initChartSettings() {
   ensureDialog();

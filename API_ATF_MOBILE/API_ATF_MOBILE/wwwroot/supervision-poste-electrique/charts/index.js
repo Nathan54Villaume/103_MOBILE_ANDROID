@@ -5,6 +5,7 @@
  */
 
 import { ChartHost } from './core/ChartHost.js';
+import { registerChartHost } from './bridge/TimeRangeBridge.js';
 
 // Registre global des instances de courbes
 const chartInstances = new Map();
@@ -26,6 +27,9 @@ export function initChart(cardId, canvasId, config = {}) {
     // Créer l'instance ChartHost
     const chartHost = new ChartHost(canvasId, config.options);
     
+    // Enregistrer dans le pont pour la gestion des bases de temps
+    registerChartHost(cardId, chartHost);
+    
     // Stocker dans le registre
     chartInstances.set(cardId, {
       host: chartHost,
@@ -34,7 +38,7 @@ export function initChart(cardId, canvasId, config = {}) {
       canvasId: canvasId
     });
     
-    console.log(`[Charts] Carte ${cardId} initialisée`);
+    console.log(`[Charts] Carte ${cardId} initialisée et enregistrée dans le pont`);
     return chartInstances.get(cardId);
     
   } catch (error) {

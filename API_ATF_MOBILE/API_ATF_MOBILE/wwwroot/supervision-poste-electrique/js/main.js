@@ -3,7 +3,11 @@ import { $, fmt } from './utils.js';
 import { state, setWindow, setApiBase } from './state.js';
 import { startPolling, attachVisibilityHandler, recomputeAdaptivePolling } from './polling.js';
 import { loadSeries } from './api.js';
-import { refreshCharts, initializeCharts, setChartActive, resetChartView, listCharts } from './charts.js';
+// NOUVEAU SYSTÈME DE CHARTS
+import { initChart, updateChart, resetChart, getChart } from '../charts/index.js';
+// Ancien système conservé pour compatibilité temporaire
+import { refreshCharts, setChartActive, resetChartView, listCharts } from './charts.js';
+import { bufs } from './state.js';
 import { Kpi, initKpiCollapsibles } from './kpi.js';
 import { initCollapsibles } from './ui-collapsibles.js';
 import { initSettingsDialog } from './settings.js';
@@ -27,7 +31,10 @@ function handleCollapsibleChange(event) {
 
   if (type === 'chart') {
     setChartActive(id, expanded !== false);
-    if (expanded && !init) refreshCharts();
+    if (expanded && !init) {
+      // refreshCharts(); // Ancien système
+      refreshNewChartSystem(); // NOUVEAU système
+    }
     return;
   }
 
@@ -37,7 +44,10 @@ function handleCollapsibleChange(event) {
       if (!canvas || !canvas.id) return;
       setChartActive(canvas.id, expanded !== false);
     });
-    if (expanded && !init) refreshCharts();
+    if (expanded && !init) {
+      // refreshCharts(); // Ancien système
+      refreshNewChartSystem(); // NOUVEAU système
+    }
   }
 }
 
@@ -83,9 +93,18 @@ function initWindows() {
   document.querySelectorAll('.sel').forEach(select => {
     select.addEventListener('change', async () => {
       const key = select.id.split('-')[1];
-      setWindow(key, Number(select.value));
+      const minutes = Number(select.value);
+      
+      // Ancien système (à conserver pour la compatibilité)
+      setWindow(key, minutes);
       const trId = key.includes('1') ? 1 : 2;
+      
       try {
+        // Nouveau système - gestion des bases de temps via ChartHost
+        const { handleTimeRangeChange } = await import('../charts/bridge/TimeRangeBridge.js');
+        handleTimeRangeChange(select.id, minutes);
+        
+        // Ancien système de chargement de données
         await loadSeries(trId);
         refreshCharts();
       } catch (err) {
@@ -156,14 +175,7 @@ function initModeBanner() {
 }
 
 function initToolbars() {
-  document.querySelectorAll('.chart-btn[data-action="export"]').forEach(btn => {
-    btn.addEventListener('click', (evt) => {
-      evt.preventDefault();
-      const chartKey = btn.closest('[data-chart]')?.dataset.chart;
-      if (!chartKey) return;
-      document.dispatchEvent(new CustomEvent('chart:export', { detail: { chartKey } }));
-    });
-  });
+  // Boutons export supprimés - maintenant dans les paramètres
 
   document.querySelectorAll('.chart-btn[data-action="settings"]').forEach(btn => {
     btn.addEventListener('click', (evt) => {
@@ -220,13 +232,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncSelectorsFromState();
   watchSettingsChanges();
 
-  initializeCharts();
-  refreshCharts();
+  // Initialisation du NOUVEAU système de charts
+  console.log('🚀 [main] Initializing NEW chart system...');
+  initializeNewChartSystem();
+  
+  // Conserve l'ancien système pour backup temporaire
+  console.log('🔄 [main] Initializing backup chart system...');
+  // initializeCharts(); // Temporairement désactivé
+  // refreshCharts();    // Temporairement désactivé
+  
+  // Restaurer les bases de temps depuis localStorage après initialisation
+  setTimeout(async () => {
+    try {
+      const { restoreAllTimeRanges } = await import('../charts/bridge/TimeRangeBridge.js');
+      restoreAllTimeRanges();
+    } catch (err) {
+      console.warn('[main] Failed to restore time ranges:', err);
+    }
+  }, 1000);
 
   try {
     await loadSeries(1);
     await loadSeries(2);
-    refreshCharts();
+    // refreshCharts(); // Ancien système désactivé
+    refreshNewChartSystem(); // NOUVEAU système
   } catch (err) {
     console.error('[main] initial load failed', err);
   }
@@ -238,6 +267,96 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // expose for other modules if needed
+// === NOUVEAU SYSTÈME DE CHARTS ===
+function initializeNewChartSystem() {
+  const chartDefinitions = [
+    { cardId: 'tr1-power', canvasId: 'chartP1', config: { type: 'power', tr: 1 } },
+    { cardId: 'tr1-tension', canvasId: 'chartU1', config: { type: 'voltage', tr: 1 } },
+    { cardId: 'tr1-pf', canvasId: 'chartPF1', config: { type: 'power-factor', tr: 1 } },
+    { cardId: 'tr2-power', canvasId: 'chartP2', config: { type: 'power', tr: 2 } },
+    { cardId: 'tr2-tension', canvasId: 'chartU2', config: { type: 'voltage', tr: 2 } },
+    { cardId: 'tr2-pf', canvasId: 'chartPF2', config: { type: 'power-factor', tr: 2 } }
+  ];
+  
+  chartDefinitions.forEach(({ cardId, canvasId, config }) => {
+    try {
+      console.log(`[main] Initializing new chart system: ${cardId} -> ${canvasId}`);
+      const chartInstance = initChart(cardId, canvasId, config);
+      if (chartInstance) {
+        console.log(`✅ [main] Chart ${cardId} initialized successfully`);
+      } else {
+        console.warn(`⚠️ [main] Chart ${cardId} initialization failed`);
+      }
+    } catch (error) {
+      console.error(`❌ [main] Error initializing chart ${cardId}:`, error);
+    }
+  });
+}
+
+// Fonction pour alimenter les nouveaux charts avec les données existantes
+function refreshNewChartSystem() {
+  console.log('🔄 [main] Refreshing new chart system with data...');
+  
+  const chartDataMap = {
+    'tr1-power': { bufferKeys: ['p1', 'q1'], labels: ['Puissance active', 'Puissance réactive'], colors: ['#3b82f6', '#f59e0b'] },
+    'tr1-tension': { bufferKeys: ['u1_12', 'u1_23', 'u1_31'], labels: ['U12', 'U23', 'U31'], colors: ['#ef4444', '#10b981', '#8b5cf6'] },
+    'tr1-pf': { bufferKeys: ['pf1'], labels: ['Facteur de puissance'], colors: ['#06b6d4'] },
+    'tr2-power': { bufferKeys: ['p2', 'q2'], labels: ['Puissance active', 'Puissance réactive'], colors: ['#3b82f6', '#f59e0b'] },
+    'tr2-tension': { bufferKeys: ['u2_12', 'u2_23', 'u2_31'], labels: ['U12', 'U23', 'U31'], colors: ['#ef4444', '#10b981', '#8b5cf6'] },
+    'tr2-pf': { bufferKeys: ['pf2'], labels: ['Facteur de puissance'], colors: ['#06b6d4'] }
+  };
+  
+  Object.entries(chartDataMap).forEach(([cardId, { bufferKeys, labels, colors }]) => {
+    try {
+      const chartInstance = getChart(cardId);
+      if (!chartInstance) {
+        console.warn(`[main] Chart ${cardId} not found for data refresh`);
+        return;
+      }
+      
+      const datasets = [];
+      bufferKeys.forEach((bufferKey, index) => {
+        const buffer = bufs[bufferKey];
+        if (!buffer || !buffer.length) {
+          console.log(`[main] No data in buffer ${bufferKey}`);
+          return;
+        }
+        
+        const data = buffer.map(item => ({
+          x: item.x,  // Format correct selon appendUnique()
+          y: item.y   // Format correct selon appendUnique()
+        }));
+        
+        datasets.push({
+          label: labels[index] || bufferKey,
+          data: data,
+          borderColor: colors[index] || '#3b82f6',
+          backgroundColor: colors[index] + '20' || '#3b82f620',
+          fill: false,
+          tension: 0.1,
+          pointRadius: 0,           // Pas de points visibles
+          pointHoverRadius: 0,      // Pas de points au survol non plus
+          pointBorderWidth: 0,      // Pas de bordure de points
+          pointBackgroundColor: 'transparent'  // Points transparents
+        });
+        
+        console.log(`[main] Dataset ${bufferKey} created with ${data.length} points`);
+      });
+      
+      if (datasets.length > 0) {
+        updateChart(cardId, datasets);
+        console.log(`✅ [main] Chart ${cardId} updated with ${datasets.length} dataset(s)`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ [main] Error refreshing chart ${cardId}:`, error);
+    }
+  });
+}
+
+// Export pour utilisation dans polling.js
+export { refreshNewChartSystem };
+
 export function listRegisteredCharts() {
   return listCharts();
 }

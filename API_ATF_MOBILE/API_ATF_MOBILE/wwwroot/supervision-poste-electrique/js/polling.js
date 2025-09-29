@@ -2,6 +2,7 @@
 import { state, bufs, prune } from './state.js';
 import { fetchJSON, normalizeSnapshot, loadSeries } from './api.js';
 import { refreshCharts, debouncedRefreshCharts } from './charts.js';
+import { refreshNewChartSystem } from './main.js';
 import { Kpi } from './kpi.js';
 import { showLoader as uiShowLoader, hideLoader as uiHideLoader, showToast } from './ui.js';
 
@@ -217,7 +218,8 @@ export async function pollOnce() {
     prune();
     
     console.log('[polling] Refreshing charts...');
-    debouncedRefreshCharts();
+    // debouncedRefreshCharts(); // Ancien système
+    refreshNewChartSystem(); // NOUVEAU système
     
     $('#last-update').textContent = new Date().toLocaleString('fr-FR');
     finishInitialLoad();
@@ -261,7 +263,8 @@ export async function startPolling() {
       if (loaderText) loaderText.textContent = 'Chargement données TR2...';
       await loadSeries(2);
       if (loaderText) loaderText.textContent = 'Mise à jour des graphiques...';
-      refreshCharts();
+      // refreshCharts(); // Ancien système
+      refreshNewChartSystem(); // NOUVEAU système
     } catch (err) {
       console.error('[polling] historique echoue', err);
       setConn(false, 'Erreur historique');

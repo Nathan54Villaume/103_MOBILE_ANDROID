@@ -25,6 +25,13 @@ export class ChartHost {
       throw new Error(`Canvas #${canvasId} introuvable`);
     }
     
+    // État interne pour la gestion des bases de temps
+    this.currentTimeRange = 60; // 1 heure par défaut
+    this.persistenceKey = `chart-${canvasId}`;
+    
+    // Restaurer la base de temps depuis localStorage
+    this.loadTimeRange();
+    
     // Options par défaut (thème sombre, décimation, formats)
     this.defaultOptions = {
       responsive: true,
@@ -181,10 +188,14 @@ export class ChartHost {
     // Calculer les bornes globales
     this.calculateBounds();
     
-    // Mettre à jour le graphique
-    this.chart.update('none');
+    // Mettre à jour les limites des axes selon les données et la base de temps
+    this.updateTimeAxis(this.currentTimeRange);
+    this.updateYAxis();
     
-    console.log(`[ChartHost] Données mises à jour: ${datasets.length} dataset(s)`);
+    // Mettre à jour le graphique avec animation
+    this.chart.update('active');
+    
+    console.log(`[ChartHost] Données mises à jour: ${datasets.length} dataset(s), total points: ${datasets.reduce((sum, ds) => sum + (ds.data?.length || 0), 0)}`);
   }
   
   /**
@@ -407,6 +418,106 @@ export class ChartHost {
    */
   getCurrentSignals() {
     return [...this.currentSignals];
+  }
+  
+  /**
+   * Change la base de temps et recharge les données
+   * @param {number} minutes - Nouvelle base de temps en minutes (15, 60, 240, 1440)
+   */
+  setTimeRange(minutes) {
+    const validRanges = [15, 60, 240, 1440];
+    if (!validRanges.includes(minutes)) {
+      console.warn(`[ChartHost] Base de temps invalide: ${minutes}. Utilisation de 60.`);
+      minutes = 60;
+    }
+    
+    this.currentTimeRange = minutes;
+    
+    // Sauvegarder dans localStorage
+    try {
+      localStorage.setItem(`${this.persistenceKey}-timerange`, String(minutes));
+    } catch (error) {
+      console.warn('[ChartHost] Erreur sauvegarde localStorage:', error);
+    }
+    
+    // Adapter l'affichage de l'axe X selon la base de temps
+    this.updateTimeAxis(minutes);
+    
+    console.log(`[ChartHost] Base de temps changée: ${minutes} minutes`);
+  }
+  
+  /**
+   * Met à jour l'affichage de l'axe X selon la base de temps
+   * @param {number} minutes - Base de temps en minutes
+   */
+  updateTimeAxis(minutes) {
+    if (!this.chart || !this.chart.options.scales.x) return;
+    
+    const now = Date.now();
+    const timeSpan = minutes * 60 * 1000;
+    
+    // Mettre à jour les limites
+    this.chart.options.scales.x.min = now - timeSpan;
+    this.chart.options.scales.x.max = now;
+    
+    // Adapter l'unité de temps selon la durée
+    if (minutes <= 15) {
+      this.chart.options.scales.x.time.unit = 'minute';
+      this.chart.options.scales.x.time.stepSize = 1;
+    } else if (minutes <= 60) {
+      this.chart.options.scales.x.time.unit = 'minute';
+      this.chart.options.scales.x.time.stepSize = 5;
+    } else if (minutes <= 240) {
+      this.chart.options.scales.x.time.unit = 'hour';
+      this.chart.options.scales.x.time.stepSize = 1;
+    } else {
+      this.chart.options.scales.x.time.unit = 'hour';
+      this.chart.options.scales.x.time.stepSize = 4;
+    }
+    
+    // Forcer la mise à jour
+    this.chart.update('active');
+    
+    console.log(`[ChartHost] Axe X mis à jour: ${new Date(now - timeSpan).toLocaleTimeString()} → ${new Date(now).toLocaleTimeString()}`);
+  }
+  
+  /**
+   * Récupère la base de temps actuelle
+   * @returns {number} Base de temps en minutes
+   */
+  getTimeRange() {
+    return this.currentTimeRange;
+  }
+  
+  /**
+   * Restaure la base de temps depuis localStorage
+   */
+  loadTimeRange() {
+    try {
+      const saved = localStorage.getItem(`${this.persistenceKey}-timerange`);
+      if (saved) {
+        const minutes = parseInt(saved, 10);
+        if ([15, 60, 240, 1440].includes(minutes)) {
+          this.currentTimeRange = minutes;
+          console.log(`[ChartHost] Base de temps restaurée: ${minutes} min`);
+        }
+      }
+    } catch (error) {
+      console.warn('[ChartHost] Erreur chargement localStorage:', error);
+    }
+  }
+
+  /**
+   * Met à jour l'axe Y selon les bornes calculées des données
+   */
+  updateYAxis() {
+    if (!this.chart || !this.chart.options.scales.y || !this.originalBounds) return;
+    
+    // Appliquer les bornes Y calculées
+    this.chart.options.scales.y.min = this.originalBounds.y.min;
+    this.chart.options.scales.y.max = this.originalBounds.y.max;
+    
+    console.log(`[ChartHost] Axe Y mis à jour: ${this.originalBounds.y.min.toFixed(2)} → ${this.originalBounds.y.max.toFixed(2)}`);
   }
   
   /**
