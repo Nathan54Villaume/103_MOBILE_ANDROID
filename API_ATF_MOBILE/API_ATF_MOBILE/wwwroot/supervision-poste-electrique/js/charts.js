@@ -8,11 +8,13 @@ if (Chart && zoomPlugin) {
   try { 
     Chart.register(zoomPlugin); 
     console.log('[charts] zoom plugin registered successfully');
+    console.log('[charts] zoom plugin version:', zoomPlugin.version || 'unknown');
   } catch (err) { 
     console.warn('[charts] zoom plugin registration failed', err); 
   }
 } else {
   console.warn('[charts] zoom plugin not found');
+  console.log('[charts] Available window objects:', Object.keys(window).filter(k => k.includes('zoom') || k.includes('Zoom')));
 }
 
 const SIGNAL_KEY_PREFIX = 'chart:signals:';
@@ -20,6 +22,293 @@ const SETTINGS_KEY_PREFIX = 'chart:settings:';
 
 const inactiveCharts = new Set();
 const registry = new Map();
+const chartStates = new Map(); // État de zoom/pan par chart
+const selectionStates = new Map(); // Sélection de signaux par chart
+
+// Fonctions de gestion d'état des charts
+function saveChartState(chart) {
+  const scales = chart.scales;
+  const currentState = chartStates.get(chart.id) || {};
+  
+  // Détecter si l'utilisateur a vraiment changé le zoom/pan
+  const hasUserChangedZoom = currentState.userZoomed && 
+    (currentState.xmin !== scales.x?.min || currentState.xmax !== scales.x?.max);
+  
+  chartStates.set(chart.id, {
+    xmin: scales.x?.min,
+    xmax: scales.x?.max,
+    ymin: scales.y?.min,
+    ymax: scales.y?.max,
+    userZoomed: hasUserChangedZoom || currentState.userZoomed || false
+  });
+  
+  console.log('[saveChartState] Saved state for chart', chart.id, ':', {
+    xmin: scales.x?.min,
+    xmax: scales.x?.max,
+    userZoomed: hasUserChangedZoom || currentState.userZoomed || false
+  });
+}
+
+function restoreChartState(chart) {
+  const state = chartStates.get(chart.id);
+  if (state && state.userZoomed) {
+    const scales = chart.options.scales;
+    if (scales.x) {
+      scales.x.min = state.xmin;
+      scales.x.max = state.xmax;
+    }
+    if (scales.y) {
+      scales.y.min = state.ymin;
+      scales.y.max = state.ymax;
+    }
+  }
+}
+
+function markChartAsZoomed(chart) {
+  const state = chartStates.get(chart.id) || {};
+  state.userZoomed = true;
+  // Sauvegarder les limites actuelles
+  state.xmin = chart.options.scales.x.min;
+  state.xmax = chart.options.scales.x.max;
+  chartStates.set(chart.id, state);
+  console.log('[markChartAsZoomed] Chart marked as zoomed with limits:', { xmin: state.xmin, xmax: state.xmax });
+}
+
+// Cache des signaux disponibles
+let signalsCache = null;
+let signalsCacheTime = 0;
+const SIGNALS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getAvailableSignals() {
+  const now = Date.now();
+  if (signalsCache && (now - signalsCacheTime) < SIGNALS_CACHE_TTL) {
+    return signalsCache;
+  }
+  
+  try {
+    const response = await fetch('/api/energy/signals');
+    if (!response.ok) throw new Error('Failed to fetch signals');
+    signalsCache = await response.json();
+    signalsCacheTime = now;
+    return signalsCache;
+  } catch (error) {
+    console.error('Error fetching signals:', error);
+    return [];
+  }
+}
+
+function openContextMenu(chart, x, y) {
+  const menuId = `ctx-${chart.id}`;
+  let menu = document.getElementById(menuId);
+  
+  if (!menu) {
+    menu = createContextMenu(menuId);
+    document.body.appendChild(menu);
+  }
+  
+  populateContextMenu(menu, chart);
+  positionContextMenu(menu, x, y);
+  showContextMenu(menu);
+  trapFocus(menu);
+}
+
+function createContextMenu(menuId) {
+  const menu = document.createElement('div');
+  menu.id = menuId;
+  menu.className = 'ctx-menu hidden';
+  menu.innerHTML = `
+    <div class="ctx-head">
+      <span>Signaux disponibles</span>
+      <button class="ctx-close" aria-label="Fermer">×</button>
+    </div>
+    <div class="ctx-body" role="menu" aria-label="Signaux">
+      <div class="ctx-loading">Chargement...</div>
+    </div>
+    <div class="ctx-foot">
+      <button class="ctx-apply">Appliquer</button>
+      <button class="ctx-cancel">Annuler</button>
+    </div>
+  `;
+  return menu;
+}
+
+async function populateContextMenu(menu, chart) {
+  const body = menu.querySelector('.ctx-body');
+  body.innerHTML = '<div class="ctx-loading">Chargement...</div>';
+  
+  try {
+    const signals = await getAvailableSignals();
+    if (signals.length === 0) {
+      body.innerHTML = '<div class="ctx-error">Aucun signal disponible</div>';
+      return;
+    }
+    
+    const currentSelection = selectionStates.get(chart.id) || new Set();
+    
+    body.innerHTML = signals.map(signal => `
+      <label class="ctx-signal">
+        <input type="checkbox" value="${signal.id}" ${currentSelection.has(signal.id) ? 'checked' : ''}>
+        <span>${signal.name || signal.id}</span>
+      </label>
+    `).join('');
+    
+    // Ajouter les gestionnaires d'événements
+    setupContextMenuHandlers(menu, chart);
+    
+  } catch (error) {
+    body.innerHTML = `
+      <div class="ctx-error">
+        Impossible de charger les signaux
+        <button class="ctx-retry">Réessayer</button>
+      </div>
+    `;
+    menu.querySelector('.ctx-retry').onclick = () => populateContextMenu(menu, chart);
+  }
+}
+
+function setupContextMenuHandlers(menu, chart) {
+  const closeBtn = menu.querySelector('.ctx-close');
+  const applyBtn = menu.querySelector('.ctx-apply');
+  const cancelBtn = menu.querySelector('.ctx-cancel');
+  
+  const closeMenu = () => {
+    hideContextMenu(menu);
+    restoreFocus();
+  };
+  
+  closeBtn.onclick = closeMenu;
+  cancelBtn.onclick = closeMenu;
+  
+  applyBtn.onclick = () => {
+    const selected = Array.from(menu.querySelectorAll('input:checked')).map(cb => cb.value);
+    applySignalSelection(chart, selected);
+    closeMenu();
+  };
+  
+  // Fermeture par clic extérieur
+  const outsideClick = (e) => {
+    if (!menu.contains(e.target)) {
+      closeMenu();
+      document.removeEventListener('click', outsideClick);
+    }
+  };
+  
+  // Fermeture par Escape
+  const escapeKey = (e) => {
+    if (e.key === 'Escape') {
+      closeMenu();
+      document.removeEventListener('keydown', escapeKey);
+    }
+  };
+  
+  setTimeout(() => {
+    document.addEventListener('click', outsideClick);
+    document.addEventListener('keydown', escapeKey);
+  }, 100);
+}
+
+function applySignalSelection(chart, selectedIds) {
+  // Sauvegarder la sélection
+  selectionStates.set(chart.id, new Set(selectedIds));
+  
+  // Mettre à jour les datasets sans recréer le chart
+  const currentDatasets = chart.data.datasets;
+  const newDatasets = [];
+  
+  // Garder les datasets existants qui sont encore sélectionnés
+  currentDatasets.forEach(dataset => {
+    if (selectedIds.includes(dataset.id)) {
+      newDatasets.push(dataset);
+    }
+  });
+  
+  // Ajouter les nouveaux datasets
+  selectedIds.forEach(signalId => {
+    if (!currentDatasets.find(ds => ds.id === signalId)) {
+      const newDataset = buildDataset(chart.def, signalId, chart.settings);
+      if (newDataset) {
+        newDatasets.push(newDataset);
+      }
+    }
+  });
+  
+  // Mettre à jour les données
+  chart.data.datasets = newDatasets;
+  
+  // Sauvegarder l'état avant update
+  saveChartState(chart);
+  
+  // Mettre à jour le chart
+  chart.update('none');
+  
+  // Restaurer l'état après update
+  restoreChartState(chart);
+}
+
+function positionContextMenu(menu, x, y) {
+  const rect = menu.getBoundingClientRect();
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  };
+  
+  let left = x;
+  let top = y;
+  
+  // Ajuster si déborde à droite
+  if (left + rect.width > viewport.width) {
+    left = viewport.width - rect.width - 10;
+  }
+  
+  // Ajuster si déborde en bas
+  if (top + rect.height > viewport.height) {
+    top = viewport.height - rect.height - 10;
+  }
+  
+  menu.style.left = `${Math.max(10, left)}px`;
+  menu.style.top = `${Math.max(10, top)}px`;
+}
+
+function showContextMenu(menu) {
+  menu.classList.remove('hidden');
+  menu.style.zIndex = '1000';
+}
+
+function hideContextMenu(menu) {
+  menu.classList.add('hidden');
+}
+
+function trapFocus(menu) {
+  const focusable = menu.querySelectorAll('button, input[type="checkbox"]');
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  
+  if (first) first.focus();
+  
+  menu.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  });
+}
+
+function restoreFocus() {
+  // Restaurer le focus sur le canvas
+  const activeChart = document.querySelector('.chart-wrapper canvas:focus');
+  if (activeChart) {
+    activeChart.focus();
+  }
+}
 
 const BUFFER_MAP = {
   tr1: {
@@ -204,8 +493,18 @@ function sanitizeSignals(def, signals) {
 }
 
 function bufferFor(def, signalId) {
+  console.log('[bufferFor] Getting buffer for signal:', signalId, 'in transformer:', def.tr);
+  
   const map = BUFFER_MAP[`tr${def.tr}`];
-  return map ? bufs[map[signalId]] || [] : [];
+  console.log('[bufferFor] Buffer map for tr' + def.tr + ':', map);
+  
+  const bufferKey = map ? map[signalId] : null;
+  console.log('[bufferFor] Buffer key for signal', signalId + ':', bufferKey);
+  
+  const buffer = map ? bufs[bufferKey] || [] : [];
+  console.log('[bufferFor] Buffer size:', buffer?.length || 0);
+  
+  return buffer;
 }
 
 function movingAverage(data, windowSize) {
@@ -227,10 +526,21 @@ function movingAverage(data, windowSize) {
 }
 
 function filteredData(def, signalId) {
+  console.log('[filteredData] Getting data for signal:', signalId, 'in chart:', def.canvasId);
+  
   const source = bufferFor(def, signalId);
+  console.log('[filteredData] Source buffer size:', source?.length || 0);
+  
   const minutes = state.win[def.windowKey] ?? 15;
+  console.log('[filteredData] Time window (minutes):', minutes);
+  
   const filtered = filt(source, minutes);
-  return downsample(filtered, CHART_POINT_THRESHOLD);
+  console.log('[filteredData] Filtered data points:', filtered?.length || 0);
+  
+  const downsampled = downsample(filtered, CHART_POINT_THRESHOLD);
+  console.log('[filteredData] Downsampled data points:', downsampled?.length || 0);
+  
+  return downsampled;
 }
 
 function applyMovingAverage(data, settings) {
@@ -238,10 +548,20 @@ function applyMovingAverage(data, settings) {
 }
 
 function buildDataset(def, signalId, settings) {
+  console.log('[buildDataset] Building dataset for signal:', signalId, 'in chart:', def.canvasId);
+  
   const info = def.signals[signalId];
-  if (!info) return null;
+  if (!info) {
+    console.log('[buildDataset] No signal info found for:', signalId);
+    return null;
+  }
+  
+  console.log('[buildDataset] Signal info:', info);
+  
   const series = applyMovingAverage(filteredData(def, signalId), settings);
-  return {
+  console.log('[buildDataset] Series data points:', series?.length || 0);
+  
+  const dataset = {
     label: info.label,
     borderColor: COLOR_PALETTE[`tr${def.tr}`]?.[signalId] || '#60a5fa',
     backgroundColor: 'transparent',
@@ -256,6 +576,15 @@ function buildDataset(def, signalId, settings) {
     yAxisID: info.axis || 'y',
     unit: info.unit || def.primaryUnit || ''
   };
+  
+  console.log('[buildDataset] Final dataset:', {
+    label: dataset.label,
+    dataPoints: dataset.data?.length || 0,
+    yAxisID: dataset.yAxisID,
+    color: dataset.borderColor
+  });
+  
+  return dataset;
 }
 
 function chartOptions(def, settings) {
@@ -308,30 +637,38 @@ function chartOptions(def, settings) {
     parsing: false,
     hover: { mode: 'index', intersect: false },
     interaction: {
-      intersect: false,
-      mode: 'index'
+      mode: 'nearest',
+      intersect: false
     },
     plugins: {
       legend: { display: settings.showLegend, labels: { color: '#e2e8f0' } },
-      tooltip: { callbacks: { title: items => items.map(frTooltip) } },
+      tooltip: { 
+        callbacks: { 
+          title: items => items.map(frTooltip),
+          label: function(ctx) {
+            const t = new Date(ctx.parsed.x).toLocaleTimeString('fr-FR', { hour12: false });
+            return `${t} → ${ctx.parsed.y}`;
+          }
+        }
+      },
       zoom: zoomPlugin ? {
-        pan: { 
-          enabled: true, 
+        // === PAN À LA SOURIS, SANS TOUCHE MODIF ===
+        pan: {
+          enabled: true,
           mode: 'x',
-          threshold: 10,
-          onPan: function({chart}) {
-            chart.update('none');
-          }
+          modifierKey: null,   // Aucune touche requise
+          threshold: 0,        // démarrage immédiat
+          // Empêche de sortir du domaine des données
+          limits: { x: { min: 'original', max: 'original' } }
         },
+        // === ZOOM (roue + pinch + drag si souhaité) ===
         zoom: {
-          wheel: { 
-            enabled: true,
-            speed: 0.1
-          },
+          wheel: { enabled: true, speed: 0.1 },
+          pinch: { enabled: true },
+          drag: { enabled: false }, // mets true si tu veux le rectangle de zoom
           mode: 'x',
-          onZoom: function({chart}) {
-            chart.update('none');
-          }
+          // 1) Interdit de dé-zoomer au-delà de la plage d'origine
+          limits: { x: { min: 'original', max: 'original', minRange: 1000 } } // minRange: fenêtre min (1s ici)
         }
       } : undefined
     },
@@ -431,51 +768,64 @@ function registerChart(def) {
   const options = chartOptions(def, settings);
   const chart = new Chart(ctx, { type: 'line', data: { datasets }, options });
 
-  // Debug: vérifier que le pan fonctionne
-  if (zoomPlugin) {
-    console.log('[charts] Chart created with zoom plugin, pan should be enabled');
-  }
-
-  // Ajouter des événements de pan personnalisés si le plugin ne fonctionne pas
+  // Sauvegarder l'état initial
+  saveChartState(chart);
+  
+  // Gestion du curseur grab/grabbing et des états de pan
   let isPanning = false;
-  let lastX = 0;
   
-  canvas.addEventListener('mousedown', (e) => {
-    if (e.button === 0) { // Clic gauche
-      isPanning = true;
-      lastX = e.clientX;
-      canvas.style.cursor = 'grabbing';
-    }
+  // Configuration du plugin zoom après création du chart
+  if (zoomPlugin && chart.options.plugins.zoom) {
+    console.log('[charts] Configuring zoom plugin for chart:', chart.id);
+    console.log('[charts] Zoom plugin config:', chart.options.plugins.zoom);
+    
+    // Callbacks pour la gestion du curseur
+    chart.options.plugins.zoom.onPanStart = () => { 
+      console.log('[zoom] Pan started');
+      isPanning = true; 
+      canvas.style.cursor = 'grabbing'; 
+      markChartAsZoomed(chart);
+    };
+    
+    chart.options.plugins.zoom.onPanComplete = () => { 
+      console.log('[zoom] Pan completed');
+      isPanning = false; 
+      canvas.style.cursor = 'grab'; 
+    };
+    
+    chart.options.plugins.zoom.onZoomStart = () => {
+      console.log('[zoom] Zoom started');
+      markChartAsZoomed(chart);
+    };
+    
+    chart.options.plugins.zoom.onZoomComplete = () => {
+      console.log('[zoom] Zoom completed');
+    };
+    
+    console.log('[charts] Zoom plugin callbacks configured');
+  } else {
+    console.warn('[charts] Zoom plugin not available for chart:', chart.id);
+  }
+  
+  // Curseur par défaut survol chart
+  canvas.addEventListener('mouseenter', () => { 
+    if (!isPanning) canvas.style.cursor = 'grab'; 
   });
   
-  canvas.addEventListener('mousemove', (e) => {
-    if (isPanning) {
-      const deltaX = e.clientX - lastX;
-      if (Math.abs(deltaX) > 5) { // Seuil pour éviter les micro-mouvements
-        const scales = chart.options.scales;
-        if (scales.x && scales.x.min !== undefined && scales.x.max !== undefined) {
-          const range = scales.x.max - scales.x.min;
-          const deltaTime = (deltaX / canvas.offsetWidth) * range;
-          scales.x.min -= deltaTime;
-          scales.x.max -= deltaTime;
-          chart.update('none');
-        }
-        lastX = e.clientX;
-      }
-    }
+  canvas.addEventListener('mouseleave', () => { 
+    canvas.style.cursor = 'default'; 
   });
   
-  canvas.addEventListener('mouseup', () => {
-    isPanning = false;
-    canvas.style.cursor = 'grab';
+  // Détection des interactions pour marquer comme zoomé
+  canvas.addEventListener('wheel', () => {
+    markChartAsZoomed(chart);
   });
   
-  canvas.addEventListener('mouseleave', () => {
-    isPanning = false;
-    canvas.style.cursor = 'grab';
+  // Menu contextuel pour la sélection de signaux
+  canvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    openContextMenu(chart, e.clientX, e.clientY);
   });
-  
-  canvas.style.cursor = 'grab';
 
   const entry = {
     def,
@@ -509,27 +859,82 @@ export function initializeCharts() {
 }
 
 function datasetList(entry) {
-  return entry.state.signals
-    .map(signalId => buildDataset(entry.def, signalId, entry.state.settings))
+  console.log('[datasetList] Building datasets for chart:', entry.def.canvasId);
+  console.log('[datasetList] Signals:', entry.state.signals);
+  
+  const datasets = entry.state.signals
+    .map(signalId => {
+      console.log('[datasetList] Building dataset for signal:', signalId);
+      const dataset = buildDataset(entry.def, signalId, entry.state.settings);
+      console.log('[datasetList] Dataset result:', dataset ? {
+        label: dataset.label,
+        dataPoints: dataset.data?.length || 0,
+        id: dataset.id
+      } : 'null');
+      return dataset;
+    })
     .filter(Boolean);
+    
+  console.log('[datasetList] Final datasets count:', datasets.length);
+  return datasets;
 }
 
 export function refreshCharts() {
+  console.log('[refreshCharts] Starting refresh, registry size:', registry.size);
+  
   registry.forEach((entry) => {
-    if (inactiveCharts.has(entry.def.canvasId)) return;
+    if (inactiveCharts.has(entry.def.canvasId)) {
+      console.log('[refreshCharts] Skipping inactive chart:', entry.def.canvasId);
+      return;
+    }
+    
     const minutes = state.win[entry.def.windowKey] ?? 15;
+    console.log('[refreshCharts] Processing chart:', entry.def.canvasId, 'minutes:', minutes);
     
     // Mettre à jour l'unité de temps
-    entry.chart.options.scales.x.time.unit = timeUnitFor(minutes);
+    const timeUnit = timeUnitFor(minutes);
+    entry.chart.options.scales.x.time.unit = timeUnit;
+    console.log('[refreshCharts] Time unit set to:', timeUnit);
     
-    // Recalculer les limites temporelles de l'axe X pour que le changement de base de temps soit effectif
-    const now = Date.now();
-    const cutoff = cutoffTs(minutes);
-    entry.chart.options.scales.x.min = cutoff;
-    entry.chart.options.scales.x.max = now;
+    // Sauvegarder l'état avant update
+    saveChartState(entry.chart);
+    
+    // Recalculer les limites temporelles de l'axe X seulement si l'utilisateur n'a pas zoomé
+    const chartState = chartStates.get(entry.chart.id);
+    console.log('[refreshCharts] Chart state:', chartState);
+    
+    // Vérifier si l'utilisateur a zoomé
+    const hasUserZoomed = chartState && chartState.userZoomed;
+    
+    console.log('[refreshCharts] Zoom detection:', {
+      hasState: !!chartState,
+      userZoomed: chartState?.userZoomed,
+      hasUserZoomed,
+      currentXMin: entry.chart.options.scales.x.min,
+      currentXMax: entry.chart.options.scales.x.max
+    });
+    
+    if (!hasUserZoomed) {
+      const now = Date.now();
+      const cutoff = cutoffTs(minutes);
+      entry.chart.options.scales.x.min = cutoff;
+      entry.chart.options.scales.x.max = now;
+      console.log('[refreshCharts] X axis limits set:', { min: cutoff, max: now });
+    } else {
+      console.log('[refreshCharts] Preserving user zoom state - NOT updating X limits');
+    }
     
     // Mettre à jour les données
-    entry.chart.data.datasets = datasetList(entry);
+    const datasets = datasetList(entry);
+    console.log('[refreshCharts] Datasets count:', datasets.length);
+    datasets.forEach((dataset, i) => {
+      console.log(`[refreshCharts] Dataset ${i}:`, {
+        label: dataset.label,
+        dataPoints: dataset.data?.length || 0,
+        id: dataset.id
+      });
+    });
+    entry.chart.data.datasets = datasets;
     
     // Mettre à jour les échelles Y
     const yScale = entry.chart.options.scales.y;
@@ -537,9 +942,11 @@ export function refreshCharts() {
       yScale.type = entry.state.settings.scaleMode === 'log' ? 'logarithmic' : 'linear';
       yScale.min = entry.state.settings.yMin ?? entry.def.axes.y?.min ?? undefined;
       yScale.max = entry.state.settings.yMax ?? entry.def.axes.y?.max ?? undefined;
+      console.log('[refreshCharts] Y scale updated:', { type: yScale.type, min: yScale.min, max: yScale.max });
     }
     if (entry.chart.options.scales.y1) {
       entry.chart.options.scales.y1.display = entry.state.signals.some(id => (entry.def.signals[id]?.axis || 'y') === 'y1');
+      console.log('[refreshCharts] Y1 scale display:', entry.chart.options.scales.y1.display);
     }
     
     // Mettre à jour les options d'affichage
@@ -549,16 +956,89 @@ export function refreshCharts() {
       entry.chart.options.scales.y.grid.color = entry.state.settings.showGrid ? 'rgba(148,163,184,0.18)' : 'rgba(148,163,184,0.05)';
     }
     
+    console.log('[refreshCharts] About to update chart:', entry.def.canvasId);
+    
     // Mettre à jour le graphique
     entry.chart.update('none');
+    
+    // Restaurer l'état après update
+    restoreChartState(entry.chart);
+    
     updateStats(entry);
+    
+    console.log('[refreshCharts] Chart updated successfully:', entry.def.canvasId);
   });
+  
+  console.log('[refreshCharts] Refresh completed');
 }
 
 export function setChartActive(canvasId, active) {
   if (!canvasId) return;
   if (active) inactiveCharts.delete(canvasId);
   else inactiveCharts.add(canvasId);
+}
+
+export function resetChartView(chartId) {
+  const entry = registry.get(chartId);
+  if (!entry) return;
+  
+  const chart = entry.chart;
+  
+  console.log('[resetChartView] Resetting chart:', chartId);
+  
+  // Réinitialiser l'état de zoom
+  chartStates.set(chartId, { userZoomed: false });
+  
+  // Reset du zoom si disponible (revient aux bornes d'origine)
+  if (chart.resetZoom) {
+    chart.resetZoom();
+  }
+  
+  // Supprimer les limites min/max pour revenir aux bornes d'origine
+  if (chart.options.scales.x) {
+    delete chart.options.scales.x.min;
+    delete chart.options.scales.x.max;
+  }
+  if (chart.options.scales.y) {
+    delete chart.options.scales.y.min;
+    delete chart.options.scales.y.max;
+  }
+  
+  // Mettre à jour le chart
+  chart.update();
+  
+  console.log('[resetChartView] Chart reset completed');
+}
+
+// Gestionnaire de resize avec debounce
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    console.log('[resize] Resizing charts with debounce');
+    registry.forEach((entry) => {
+      if (inactiveCharts.has(entry.def.canvasId)) return;
+      
+      // Sauvegarder l'état avant resize
+      saveChartState(entry.chart);
+      
+      // Redimensionner le chart
+      entry.chart.resize();
+      
+      // Restaurer l'état après resize
+      restoreChartState(entry.chart);
+    });
+  }, 150);
+});
+
+// Debounce pour les updates de données
+let updateTimeout;
+export function debouncedRefreshCharts() {
+  clearTimeout(updateTimeout);
+  updateTimeout = setTimeout(() => {
+    console.log('[debouncedRefreshCharts] Refreshing charts with debounce');
+    refreshCharts();
+  }, 100);
 }
 
 export function applySignals(chartKey, signals) {
@@ -588,12 +1068,6 @@ export function resetChartSettings(chartKey) {
   refreshCharts();
 }
 
-export function resetChartView(chartKey) {
-  const entry = registry.get(chartKey);
-  if (!entry) return;
-  if (entry.chart.resetZoom) entry.chart.resetZoom();
-  refreshCharts();
-}
 
 export function listCharts() {
   return CHART_DEFS.map(def => def.key);
