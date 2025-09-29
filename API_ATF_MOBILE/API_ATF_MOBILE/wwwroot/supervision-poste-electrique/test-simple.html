@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple Menu</title>
+    <style>
+        body { background: #0f172a; color: white; font-family: system-ui; padding: 20px; }
+        .instructions { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .log { background: #111827; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>🔍 Test Diagnostic Menu Contextuel</h2>
+        <p><strong>Instructions :</strong></p>
+        <ol>
+            <li>Ouvre <code>demo-charts.html</code> dans un nouvel onglet</li>
+            <li>Ouvre la console (F12)</li>
+            <li>Fais un <strong>clic droit sur une courbe</strong></li>
+            <li>Regarde les logs dans la console ET ci-dessous</li>
+        </ol>
+        <p><strong>Recherche ces messages :</strong></p>
+        <ul>
+            <li>🖱️ [ChartHost] Clic droit détecté sur canvas</li>
+            <li>🎯 [ContextMenu] show() appelé</li>
+            <li>🎯 [ContextMenu] Menu créé</li>
+        </ul>
+    </div>
+
+    <div class="log" id="log">
+        <div style="color: #10b981;">🚀 Diagnostic en attente...</div>
+    </div>
+
+    <script>
+        const logDiv = document.getElementById('log');
+        
+        function addLog(message, color = '#e2e8f0') {
+            const div = document.createElement('div');
+            div.style.color = color;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            logDiv.appendChild(div);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        addLog('📋 Instructions pour le test:', '#fbbf24');
+        addLog('1. Ouvrir demo-charts.html', '#e2e8f0');
+        addLog('2. Clic droit sur courbe', '#e2e8f0');
+        addLog('3. Vérifier console', '#e2e8f0');
+        addLog('', '#e2e8f0');
+        addLog('🔍 Messages à chercher:', '#f59e0b');
+        addLog('- "[ChartHost] Clic droit détecté"', '#e2e8f0');
+        addLog('- "[ContextMenu] show() appelé"', '#e2e8f0');
+        addLog('- "[ContextMenu] Menu créé"', '#e2e8f0');
+        addLog('', '#e2e8f0');
+        addLog('❌ Si aucun message: problème d\'event listener', '#ef4444');
+        addLog('⚠️ Si messages partiels: problème de création menu', '#f59e0b');
+        addLog('✅ Si tous messages: problème d\'affichage/CSS', '#10b981');
+
+        // Simulation de ce qu'on devrait voir
+        setTimeout(() => {
+            addLog('', '#e2e8f0');
+            addLog('📝 EXEMPLE de logs attendus:', '#8b5cf6');
+            addLog('🖱️ [ChartHost] Clic droit détecté sur canvas chart-tr1-power', '#94a3b8');
+            addLog('🖱️ [ChartHost] ContextMenu disponible: true', '#94a3b8');
+            addLog('🖱️ [ChartHost] Datasets actuels: 1', '#94a3b8');
+            addLog('🎯 [ContextMenu] show() appelé', '#94a3b8');
+            addLog('🎯 [ContextMenu] Available signals: 15', '#94a3b8');
+            addLog('🎯 [ContextMenu] Menu créé: true', '#94a3b8');
+            addLog('🎯 [ContextMenu] Menu ouvert avec succès', '#94a3b8');
+        }, 2000);
+    </script>
+</body>
+</html>

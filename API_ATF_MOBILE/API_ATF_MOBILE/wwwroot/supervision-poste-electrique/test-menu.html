@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Menu Contextuel</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: white;
+            font-family: system-ui;
+            padding: 20px;
+        }
+        .test-area {
+            width: 400px;
+            height: 300px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Menu Contextuel</h1>
+    <p>Clic droit sur la zone ci-dessous :</p>
+    
+    <div class="test-area" id="testArea">
+        Clic droit ici !
+    </div>
+    
+    <div id="console-output" style="background: #111827; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-top: 20px; max-height: 200px; overflow-y: auto;">
+        <div style="color: #10b981;">Console de test:</div>
+    </div>
+    
+    <script>
+        // Capture console.log
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const div = document.createElement('div');
+            div.style.color = '#e2e8f0';
+            div.textContent = args.join(' ');
+            consoleOutput.appendChild(div);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            const div = document.createElement('div');
+            div.style.color = '#ef4444';
+            div.textContent = '❌ ' + args.join(' ');
+            consoleOutput.appendChild(div);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+        
+        // Test simple du menu contextuel
+        document.getElementById('testArea').addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            console.log('🖱️ Clic droit détecté à', e.clientX, e.clientY);
+            
+            // Test de création d'un menu simple
+            createTestMenu(e.clientX, e.clientY);
+        });
+        
+        function createTestMenu(x, y) {
+            // Supprimer menu existant
+            const existing = document.getElementById('test-menu');
+            if (existing) existing.remove();
+            
+            // Créer nouveau menu
+            const menu = document.createElement('div');
+            menu.id = 'test-menu';
+            menu.style.cssText = `
+                position: fixed;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(15, 23, 42, 0.95);
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(12px);
+                padding: 16px;
+                z-index: 10000;
+                min-width: 200px;
+                color: white;
+            `;
+            
+            menu.innerHTML = `
+                <div style="text-align: center; font-weight: 600; margin-bottom: 12px;">
+                    🎯 Menu Test
+                </div>
+                <div style="padding: 8px; background: rgba(99, 102, 241, 0.1); border-radius: 8px; margin-bottom: 8px;">
+                    ✅ Menu créé avec succès !
+                </div>
+                <div style="padding: 8px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; margin-bottom: 8px;">
+                    ✅ Styling appliqué !
+                </div>
+                <div style="padding: 8px; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                    ✅ Position: ${x}, ${y}
+                </div>
+                <button onclick="document.getElementById('test-menu').remove()" style="
+                    width: 100%;
+                    margin-top: 12px;
+                    background: #ef4444;
+                    color: white;
+                    border: none;
+                    padding: 8px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                ">Fermer</button>
+            `;
+            
+            document.body.appendChild(menu);
+            console.log('✅ Menu test créé et ajouté au DOM');
+            
+            // Auto-fermeture après 5s
+            setTimeout(() => {
+                if (menu.parentNode) {
+                    menu.remove();
+                    console.log('⏰ Menu fermé automatiquement');
+                }
+            }, 5000);
+        }
+        
+        // Fermeture par clic extérieur
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('test-menu');
+            if (menu && !menu.contains(e.target)) {
+                menu.remove();
+                console.log('🖱️ Menu fermé par clic extérieur');
+            }
+        });
+        
+        console.log('🚀 Test menu contextuel initialisé');
+        console.log('👉 Faites un clic droit sur la zone bleue');
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+@echo off
+echo Ouverture du test menu contextuel...
+start test-menu.html
+echo Ouverture de la demo principale...
+start demo-charts.html
+pause

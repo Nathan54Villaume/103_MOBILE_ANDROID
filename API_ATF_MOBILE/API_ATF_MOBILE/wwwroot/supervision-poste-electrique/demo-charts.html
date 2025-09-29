@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Supervision - Courbes (Demo)</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M13 2L4 13.5h6L9 22l9-11.5h-6L13 2z'/%3E%3C/svg%3E">
+  
+  <!-- Tailwind CSS - DEV only -->
+  <script>
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:') {
+      document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+    }
+  </script>
+  
+  <!-- Chart.js 4.x + adaptateur dates -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  
+  <!-- Icônes SVG -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-bolt" viewBox="0 0 24 24">
+      <polygon points="13 2 4 13.5 10 13.5 9 22 20 9 14 9 13 2" fill="currentColor" />
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M20 11a8 8 0 1 0-3 5.9L20 18" />
+      <path d="M20 14v4h-4" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M12 3v14" />
+      <path d="m7 12 5 5 5-5" />
+      <path d="M5 20h14" />
+    </symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" />
+    </symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </symbol>
+  </svg>
+  
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; }
+    .card { 
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 0.75rem;
+      backdrop-filter: blur(4px);
+    }
+    .chart-container {
+      height: 320px;
+      position: relative;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    .chart-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+    .chart-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid transparent;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #6366f1;
+      color: white;
+      border-color: #6366f1;
+    }
+    .btn-primary:hover {
+      background: #4f46e5;
+      border-color: #4f46e5;
+    }
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.1);
+      color: #e2e8f0;
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+    .btn-secondary:hover {
+      background: rgba(148, 163, 184, 0.2);
+    }
+    .icon {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    .floating-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .floating-btn:hover {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      transform: scale(1.1) rotate(90deg);
+      box-shadow: 0 15px 35px rgba(99, 102, 241, 0.6);
+    }
+    .floating-btn:active {
+      transform: scale(1.05) rotate(90deg);
+    }
+    
+    /* Context Menu Styles - Design moderne et épuré */
+    .context-menu {
+      font-family: system-ui, -apple-system, sans-serif;
+      backdrop-filter: blur(8px);
+    }
+    .context-menu--open {
+      opacity: 1 !important;
+      transform: scale(1) translateY(0) !important;
+    }
+    .context-menu--closing {
+      opacity: 0 !important;
+      transform: scale(0.95) translateY(-8px) !important;
+    }
+    
+    /* Masquer complètement la scrollbar */
+    .context-menu::-webkit-scrollbar {
+      display: none;
+    }
+    .context-menu {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+    
+    /* Indicateur de scroll subtil */
+    .context-menu-scroll-indicator {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 30px;
+      background: linear-gradient(to bottom, transparent, #6366f1, transparent);
+      border-radius: 1px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .context-menu:hover .context-menu-scroll-indicator {
+      opacity: 0.6;
+    }
+    
+    .footer-info {
+      position: fixed;
+      bottom: 1rem;
+      left: 1rem;
+      right: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    .demo-banner {
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+      color: white;
+      text-align: center;
+      padding: 0.75rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <!-- Bannière de démo -->
+  <div class="demo-banner">
+    🎯 DEMO - Étape 4 : Menu Contextuel - Clic droit sur courbe pour sélectionner les signaux 🎯
+  </div>
+
+  <main class="container mx-auto px-4 py-8 space-y-8">
+    <header class="text-center mb-12">
+      <h1 class="text-3xl font-bold mb-4">Supervision - Poste Électrique</h1>
+      <p class="text-lg text-slate-400">Système de courbes robuste et modulaire</p>
+      <div class="mt-4 p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
+        <h3 class="font-semibold text-blue-200 mb-2">🎮 Instructions de test :</h3>
+        <div class="text-sm text-blue-100 space-y-1">
+          <p><strong>Pan :</strong> Clic gauche + glisser horizontalement (sans CTRL)</p>
+          <p><strong>Zoom :</strong> Molette sur courbe = zoom X, molette sur axe Y = zoom Y</p>
+          <p><strong>Reset :</strong> Bouton "Reset" restaure la vue d'origine</p>
+          <p><strong>Tactile :</strong> Pincement pour zoom sur les deux axes</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Carte Transformateur 1 -->
+    <section class="card">
+      <div class="chart-header">
+        <div class="chart-title">
+          <svg class="icon" fill="currentColor">
+            <use href="#i-bolt"></use>
+          </svg>
+          Transformateur 1 - Puissance Active
+        </div>
+        <div class="chart-controls">
+          <button type="button" class="btn btn-secondary" onclick="resetChart('tr1-power')">
+            <svg class="icon" fill="none" stroke="currentColor">
+              <use href="#i-refresh"></use>
+            </svg>
+            Reset
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="exportChart('tr1-power')">
+            <svg class="icon" fill="none" stroke="currentColor">
+              <use href="#i-download"></use>
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="chart-tr1-power"></canvas>
+      </div>
+    </section>
+
+    <!-- Carte Transformateur 2 -->
+    <section class="card">
+      <div class="chart-header">
+        <div class="chart-title">
+          <svg class="icon" fill="currentColor">
+            <use href="#i-bolt"></use>
+          </svg>
+          Transformateur 2 - Puissance Active
+        </div>
+        <div class="chart-controls">
+          <button type="button" class="btn btn-secondary" onclick="resetChart('tr2-power')">
+            <svg class="icon" fill="none" stroke="currentColor">
+              <use href="#i-refresh"></use>
+            </svg>
+            Reset
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="exportChart('tr2-power')">
+            <svg class="icon" fill="none" stroke="currentColor">
+              <use href="#i-download"></use>
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="chart-tr2-power"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bouton Paramètres flottant -->
+  <button type="button" class="floating-btn" onclick="openSettings()" title="Ouvrir les paramètres">
+    <svg class="icon" style="width: 1.5rem; height: 1.5rem;">
+      <use href="#i-settings"></use>
+    </svg>
+  </button>
+
+  <!-- Informations en bas de page -->
+  <div class="footer-info">
+    <span>Dernière mise à jour : <span id="last-update">--:--:--</span></span>
+    <span>N.Villaume</span>
+  </div>
+
+  <!-- Script principal - Version inline pour éviter CORS -->
+  <script>
+    // === CROSSHAIR PLUGIN ===
+    const CrosshairPlugin = {
+      id: 'crosshair',
+      
+      defaults: {
+        enabled: true,
+        color: 'rgba(226, 232, 240, 0.6)',
+        width: 1,
+        style: 'solid',
+        snapToData: false
+      },
+      
+      beforeInit(chart, args, options) {
+        chart.crosshair = {
+          x: null,
+          y: null,
+          active: false,
+          options: { ...this.defaults, ...options }
+        };
+      },
+      
+      afterInit(chart) {
+        const canvas = chart.canvas;
+        if (!canvas) return;
+        
+        const updateCrosshair = (event) => {
+          const rect = canvas.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = event.clientY - rect.top;
+          
+          const chartArea = chart.chartArea;
+          const inBounds = x >= chartArea.left && 
+                          x <= chartArea.right && 
+                          y >= chartArea.top && 
+                          y <= chartArea.bottom;
+          
+          if (inBounds && chart.crosshair.options.enabled) {
+            chart.crosshair.x = x;
+            chart.crosshair.y = y;
+            chart.crosshair.active = true;
+            chart.update('none');
+          } else {
+            chart.crosshair.active = false;
+            chart.update('none');
+          }
+        };
+        
+        const hideCrosshair = () => {
+          chart.crosshair.active = false;
+          chart.update('none');
+        };
+        
+        canvas.addEventListener('mousemove', updateCrosshair);
+        canvas.addEventListener('mouseleave', hideCrosshair);
+        
+        chart.crosshair.updateCrosshair = updateCrosshair;
+        chart.crosshair.hideCrosshair = hideCrosshair;
+      },
+      
+      beforeDestroy(chart) {
+        const canvas = chart.canvas;
+        if (!canvas || !chart.crosshair) return;
+        
+        if (chart.crosshair.updateCrosshair) {
+          canvas.removeEventListener('mousemove', chart.crosshair.updateCrosshair);
+        }
+        if (chart.crosshair.hideCrosshair) {
+          canvas.removeEventListener('mouseleave', chart.crosshair.hideCrosshair);
+        }
+      },
+      
+      afterDraw(chart) {
+        if (!chart.crosshair || !chart.crosshair.active || !chart.crosshair.options.enabled) {
+          return;
+        }
+        
+        const ctx = chart.ctx;
+        const { x, options } = chart.crosshair;
+        const chartArea = chart.chartArea;
+        
+        if (x === null || !chartArea) return;
+        
+        ctx.save();
+        ctx.strokeStyle = options.color;
+        ctx.lineWidth = options.width;
+        
+        switch (options.style) {
+          case 'dashed':
+            ctx.setLineDash([5, 5]);
+            break;
+          case 'dotted':
+            ctx.setLineDash([2, 2]);
+            break;
+          default:
+            ctx.setLineDash([]);
+        }
+        
+        ctx.beginPath();
+        ctx.moveTo(x, chartArea.top);
+        ctx.lineTo(x, chartArea.bottom);
+        ctx.stroke();
+        
+        ctx.restore();
+      }
+    };
+
+    // === TOOLTIP FORMATTER ===
+    class TooltipFormatter {
+      static formatTime(timestamp) {
+        try {
+          const date = new Date(timestamp);
+          
+          if (isNaN(date.getTime())) {
+            return '--:--:--';
+          }
+          
+          const now = new Date();
+          const isToday = date.toDateString() === now.toDateString();
+          
+          if (isToday) {
+            return date.toLocaleTimeString('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit',  
+              second: '2-digit',
+              hour12: false
+            });
+          } else {
+            return date.toLocaleString('fr-FR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            });
+          }
+        } catch (error) {
+          console.warn('[TooltipFormatter] Erreur formatage time:', error);
+          return '--:--:--';
+        }
+      }
+      
+      static formatValue(value, unit = '', decimals = 2) {
+        if (value === null || value === undefined || !Number.isFinite(value)) {
+          return `N/A${unit ? ` ${unit}` : ''}`;
+        }
+        
+        let formattedValue;
+        let displayUnit = unit;
+        
+        switch (unit.toLowerCase()) {
+          case 'kw':
+          case 'kvar':
+            if (Math.abs(value) >= 1000) {
+              formattedValue = (value / 1000).toFixed(3);
+              displayUnit = unit.replace('k', 'M');
+            } else {
+              formattedValue = value.toFixed(2);
+            }
+            break;
+            
+          case 'kwh':
+            if (Math.abs(value) >= 1000) {
+              formattedValue = (value / 1000).toFixed(2);
+              displayUnit = 'MWh';
+            } else {
+              formattedValue = value.toFixed(1);
+            }
+            break;
+            
+          case 'v':
+            formattedValue = value.toFixed(1);
+            break;
+            
+          case 'a':
+            formattedValue = value.toFixed(1);
+            break;
+            
+          case '':
+          case 'pu':
+            if (value <= 1.2 && value >= 0) {
+              formattedValue = value.toFixed(3);
+              displayUnit = displayUnit || 'cos φ';
+            } else {
+              formattedValue = value.toFixed(decimals);
+            }
+            break;
+            
+          default:
+            formattedValue = value.toFixed(decimals);
+        }
+        
+        if (Math.abs(parseFloat(formattedValue)) >= 1000) {
+          formattedValue = parseFloat(formattedValue).toLocaleString('fr-FR', {
+            minimumFractionDigits: formattedValue.includes('.') ? formattedValue.split('.')[1].length : 0,
+            maximumFractionDigits: formattedValue.includes('.') ? formattedValue.split('.')[1].length : 0
+          });
+        }
+        
+        return `${formattedValue}${displayUnit ? ` ${displayUnit}` : ''}`;
+      }
+      
+      static getTooltipConfig(options = {}) {
+        return {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: 'rgba(30, 41, 59, 0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#e2e8f0',
+          borderColor: 'rgba(148,163,184,0.3)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          padding: 12,
+          displayColors: true,
+          titleFont: {
+            size: 13,
+            weight: '600'
+          },
+          bodyFont: {
+            size: 12,
+            weight: 'normal'
+          },
+          titleMarginBottom: 8,
+          bodySpacing: 6,
+          caretPadding: 6,
+          ...options,
+          callbacks: {
+            title: (tooltipItems) => {
+              if (!tooltipItems || tooltipItems.length === 0) {
+                return '';
+              }
+              
+              const firstItem = tooltipItems[0];
+              if (!firstItem || !firstItem.parsed) {
+                return '';
+              }
+              
+              return TooltipFormatter.formatTime(firstItem.parsed.x);
+            },
+            label: (context) => {
+              if (!context || !context.dataset) {
+                return '';
+              }
+              
+              const dataset = context.dataset;
+              const value = context.parsed.y;
+              const label = dataset.label || 'Signal';
+              const unit = dataset.unit || '';
+              
+              let decimals = 2;
+              if (unit.toLowerCase() === 'v' || unit.toLowerCase() === 'a') {
+                decimals = 1;
+              } else if (!unit || unit.toLowerCase().includes('pf') || unit.toLowerCase().includes('cos')) {
+                decimals = 3;
+              }
+              
+              const formattedValue = TooltipFormatter.formatValue(value, unit, decimals);
+              
+              return `${label}: ${formattedValue}`;
+            },
+            ...options.callbacks
+          }
+        };
+      }
+    }
+
+    // === SIGNAL SERVICE ===
+    class SignalService {
+      constructor(baseUrl = '') {
+        this.baseUrl = baseUrl;
+        this.signalsCache = null;
+        this.cacheTimestamp = null;
+        this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+        this.requestTimeout = 10000; // 10 secondes
+      }
+
+      async getAvailableSignals() {
+        // Vérifier le cache
+        if (this.signalsCache && this.cacheTimestamp && 
+            (Date.now() - this.cacheTimestamp) < this.cacheTimeout) {
+          return this.signalsCache;
+        }
+
+        try {
+          const signals = this.getFallbackSignals();
+          
+          // Mettre en cache
+          this.signalsCache = signals;
+          this.cacheTimestamp = Date.now();
+          
+          return signals;
+
+        } catch (error) {
+          console.error('[SignalService] Erreur récupération signaux:', error);
+          return this.getFallbackSignals();
+        }
+      }
+
+      async getSeriesData(signalIds, from, to) {
+        if (!signalIds || signalIds.length === 0) {
+          return { datasets: [] };
+        }
+
+        try {
+          return this.generateFallbackSeries(signalIds, from, to);
+        } catch (error) {
+          console.error('[SignalService] Erreur récupération séries:', error);
+          return this.generateFallbackSeries(signalIds, from, to);
+        }
+      }
+
+      getFallbackSignals() {
+        return [
+          { id: 'tr1-power', label: 'TR1 Puissance Active', unit: 'kW', group: 'Transformateurs' },
+          { id: 'tr1-reactive', label: 'TR1 Puissance Réactive', unit: 'kVar', group: 'Transformateurs' },
+          { id: 'tr1-voltage', label: 'TR1 Tension', unit: 'V', group: 'Transformateurs' },
+          { id: 'tr1-current', label: 'TR1 Courant', unit: 'A', group: 'Transformateurs' },
+          { id: 'tr2-power', label: 'TR2 Puissance Active', unit: 'kW', group: 'Transformateurs' },
+          { id: 'tr2-reactive', label: 'TR2 Puissance Réactive', unit: 'kVar', group: 'Transformateurs' },
+          { id: 'tr2-voltage', label: 'TR2 Tension', unit: 'V', group: 'Transformateurs' },
+          { id: 'tr2-current', label: 'TR2 Courant', unit: 'A', group: 'Transformateurs' },
+          { id: 'line1-power', label: 'Ligne 1 Puissance', unit: 'kW', group: 'Lignes' },
+          { id: 'line2-power', label: 'Ligne 2 Puissance', unit: 'kW', group: 'Lignes' },
+          { id: 'total-consumption', label: 'Consommation Totale', unit: 'kW', group: 'Global' },
+          { id: 'pf-average', label: 'Facteur de Puissance Moyen', unit: 'cos φ', group: 'Global' },
+          { id: 'frequency', label: 'Fréquence Réseau', unit: 'Hz', group: 'Réseau' },
+          { id: 'temperature', label: 'Température Salle', unit: '°C', group: 'Environnement' },
+          { id: 'humidity', label: 'Humidité', unit: '%', group: 'Environnement' }
+        ];
+      }
+
+      generateFallbackSeries(signalIds, from, to) {
+        const datasets = [];
+        const colors = this.getSignalColors();
+        const signals = this.getFallbackSignals();
+
+        signalIds.forEach((signalId, index) => {
+          const signal = signals.find(s => s.id === signalId);
+          if (!signal) return;
+
+          // Générer des données réalistes
+          const data = this.generateRealisticData(signalId, from, to);
+          
+          datasets.push({
+            label: signal.label,
+            unit: signal.unit,
+            data: data,
+            borderColor: colors[index % colors.length],
+            backgroundColor: colors[index % colors.length] + '20',
+            pointBackgroundColor: colors[index % colors.length],
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0.1,
+            spanGaps: true,
+            signalId: signalId
+          });
+        });
+
+        return { datasets };
+      }
+
+      generateRealisticData(signalId, from, to) {
+        const points = [];
+        const duration = to.getTime() - from.getTime();
+        const interval = Math.max(60000, duration / 100); // Au moins 1 min entre points
+        
+        let baseValue = 100;
+        let amplitude = 20;
+        
+        // Valeurs réalistes selon le type de signal
+        if (signalId.includes('power')) {
+          baseValue = Math.random() * 500 + 200;
+          amplitude = baseValue * 0.3;
+        } else if (signalId.includes('voltage')) {
+          baseValue = 230 + Math.random() * 20;
+          amplitude = 10;
+        } else if (signalId.includes('current')) {
+          baseValue = Math.random() * 50 + 10;
+          amplitude = baseValue * 0.2;
+        } else if (signalId.includes('pf')) {
+          baseValue = 0.85 + Math.random() * 0.1;
+          amplitude = 0.05;
+        } else if (signalId.includes('frequency')) {
+          baseValue = 50;
+          amplitude = 0.1;
+        } else if (signalId.includes('temperature')) {
+          baseValue = 22 + Math.random() * 8;
+          amplitude = 2;
+        } else if (signalId.includes('humidity')) {
+          baseValue = 45 + Math.random() * 20;
+          amplitude = 5;
+        }
+        
+        for (let time = from.getTime(); time <= to.getTime(); time += interval) {
+          const t = (time - from.getTime()) / duration;
+          const noise = (Math.random() - 0.5) * amplitude * 0.5;
+          const trend = Math.sin(t * Math.PI * 4) * amplitude * 0.3;
+          const value = baseValue + trend + noise;
+          
+          points.push({
+            x: new Date(time),
+            y: Math.max(0, value)
+          });
+        }
+        
+        return points;
+      }
+
+      getSignalColors() {
+        return [
+          '#ef4444', // red-500
+          '#3b82f6', // blue-500
+          '#10b981', // emerald-500
+          '#f59e0b', // amber-500
+          '#8b5cf6', // violet-500
+          '#06b6d4', // cyan-500
+          '#84cc16', // lime-500
+          '#f97316', // orange-500
+          '#ec4899', // pink-500
+          '#6366f1', // indigo-500
+          '#14b8a6', // teal-500
+          '#eab308', // yellow-500
+          '#dc2626', // red-600
+          '#2563eb', // blue-600
+          '#059669'  // emerald-600
+        ];
+      }
+    }
+
+    // === CONTEXT MENU ===
+    class ContextMenu {
+      constructor(signalService, options = {}) {
+        this.signalService = signalService;
+        this.options = {
+          className: 'context-menu',
+          maxHeight: 400,
+          animationDuration: 200,
+          ...options
+        };
+        
+        this.isOpen = false;
+        this.currentMenu = null;
+        this.currentChart = null;
+        this.onSelectionChange = null;
+        this.availableSignals = [];
+        
+        // Bindings
+        this.handleDocumentClick = this.handleDocumentClick.bind(this);
+        this.handleKeyDown = this.handleKeyDown.bind(this);
+        this.handleSignalToggle = this.handleSignalToggle.bind(this);
+        
+        this.init();
+      }
+
+      init() {
+        // Charger les signaux disponibles
+        this.loadAvailableSignals();
+        
+        // Event listeners globaux
+        document.addEventListener('click', this.handleDocumentClick);
+        document.addEventListener('keydown', this.handleKeyDown);
+      }
+
+      async loadAvailableSignals() {
+        try {
+          this.availableSignals = await this.signalService.getAvailableSignals();
+        } catch (error) {
+          console.error('[ContextMenu] Erreur chargement signaux:', error);
+          this.availableSignals = [];
+        }
+      }
+
+      show(event, chartInstance, currentSignals = [], onSelectionChange = null) {
+        event.preventDefault();
+        
+        // Fermer le menu existant
+        this.hide();
+        
+        // MODAL CAPTIF - Bloquer le scroll de la page
+        document.body.style.overflow = 'hidden';
+        
+        this.currentChart = chartInstance;
+        this.onSelectionChange = onSelectionChange;
+        
+        // Overlay modal simple (sans flou)
+        this.overlay = document.createElement('div');
+        this.overlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.4);
+          z-index: 99998;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          cursor: pointer;
+        `;
+        
+        // Fermer le menu si on clique sur l'overlay
+        this.overlay.addEventListener('click', (e) => {
+          if (e.target === this.overlay) {
+            this.hide();
+          }
+        });
+        
+        document.body.appendChild(this.overlay);
+        
+        // Animation d'entrée overlay
+        requestAnimationFrame(() => {
+          this.overlay.style.opacity = '1';
+        });
+        
+        // Créer le menu
+        this.currentMenu = this.createMenuElement(currentSignals);
+        
+        // Positionner le menu
+        this.positionMenu(this.currentMenu, event.clientX, event.clientY);
+        
+        // Ajouter le menu au DOM avec animation d'entrée
+        this.currentMenu.style.opacity = '0';
+        this.currentMenu.style.transform = 'scale(0.9) translateY(-20px)';
+        document.body.appendChild(this.currentMenu);
+        
+        // Animation d'entrée moderne
+        requestAnimationFrame(() => {
+          this.currentMenu.style.opacity = '1';
+          this.currentMenu.style.transform = 'scale(1) translateY(0)';
+        });
+        
+        this.isOpen = true;
+        
+        // Empêcher l'ouverture d'autres menus contextuels
+        this.preventOtherContextMenus = (e) => {
+          if (!this.currentMenu || !document.body.contains(this.currentMenu)) return;
+          e.preventDefault();
+          e.stopPropagation();
+        };
+        document.addEventListener('contextmenu', this.preventOtherContextMenus, true);
+        
+        // DEBUG SUPPRIMÉ - on se concentre sur le menu principal
+      }
+
+      hide() {
+        if (!this.currentMenu || !this.isOpen) return;
+        
+        // RESTAURER LE SCROLL DE LA PAGE et nettoyer les listeners
+        document.body.style.overflow = '';
+        
+        // Supprimer le bloqueur de contextmenu
+        if (this.preventOtherContextMenus) {
+          document.removeEventListener('contextmenu', this.preventOtherContextMenus, true);
+          this.preventOtherContextMenus = null;
+        }
+        
+        // Animation de fermeture overlay
+        if (this.overlay) {
+          this.overlay.style.opacity = '0';
+          setTimeout(() => {
+            if (this.overlay && this.overlay.parentNode) {
+              this.overlay.parentNode.removeChild(this.overlay);
+            }
+            this.overlay = null;
+          }, 200);
+        }
+        
+        // Animation de fermeture menu
+        this.currentMenu.style.opacity = '0';
+        this.currentMenu.style.transform = 'scale(0.95) translateY(-10px)';
+        
+        setTimeout(() => {
+          if (this.currentMenu && this.currentMenu.parentNode) {
+            this.currentMenu.parentNode.removeChild(this.currentMenu);
+          }
+          this.currentMenu = null;
+          this.isOpen = false;
+        }, 200);
+        
+      }
+
+      createMenuElement(currentSignals) {
+        const menu = document.createElement('div');
+        menu.className = this.options.className;
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', 'Sélection des signaux');
+        
+        // Style compact et moderne
+        menu.style.cssText = `
+          position: fixed;
+          z-index: 999999;
+          background: #1e293b;
+          border: 1px solid #3b82f6;
+          border-radius: 8px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          width: 260px;
+          max-height: 400px;
+          overflow: hidden;
+          opacity: 1;
+          display: block;
+          font-size: 13px;
+          color: #f1f5f9;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          transition: all 0.15s ease;
+        `;
+        
+        
+        
+        // En-tête compact
+        const header = document.createElement('div');
+        header.style.cssText = `
+          padding: 12px 16px;
+          font-weight: 600;
+          font-size: 13px;
+          color: #3b82f6;
+          background: #0f172a;
+          border-bottom: 1px solid #374151;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        `;
+        header.innerHTML = '⚡ Signaux';
+        menu.appendChild(header);
+        
+        // Container principal compact
+        const mainContainer = document.createElement('div');
+        mainContainer.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          max-height: 320px;
+        `;
+        
+        // Zone de scroll compacte
+        const scrollContainer = document.createElement('div');
+        scrollContainer.style.cssText = `
+          overflow-y: auto;
+          padding: 8px;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        `;
+        // Masquer scrollbar WebKit
+        scrollContainer.classList.add('hide-scrollbar');
+        
+        // CSS pour masquer scrollbar WebKit
+        if (!document.getElementById('hide-scrollbar-styles')) {
+          const style = document.createElement('style');
+          style.id = 'hide-scrollbar-styles';
+          style.textContent = '.hide-scrollbar::-webkit-scrollbar { width: 0px; }';
+          document.head.appendChild(style);
+        }
+        
+        // Grid ultra-compacte
+        const signalsGrid = document.createElement('div');
+        signalsGrid.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        `;
+        
+        // Créer tous les signaux avec design moderne
+        this.availableSignals.forEach((signal, index) => {
+          const item = this.createModernSignalItem(signal, currentSignals.includes(signal.id), index);
+          signalsGrid.appendChild(item);
+        });
+        
+        // Assembler la structure
+        scrollContainer.appendChild(signalsGrid);
+        mainContainer.appendChild(scrollContainer);
+        menu.appendChild(mainContainer);
+        
+        // Footer compact
+        const footer = document.createElement('div');
+        footer.style.cssText = `
+          padding: 8px;
+          background: #0f172a;
+          border-top: 1px solid #374151;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 8px;
+          flex-shrink: 0;
+        `;
+        
+        // Boutons compacts
+        const selectAllBtn = this.createCompactButton('✓ Tout', () => this.selectAllSignals(true), '#10b981');
+        const deselectAllBtn = this.createCompactButton('✗ Vider', () => this.selectAllSignals(false), '#ef4444');
+        
+        footer.appendChild(selectAllBtn);
+        footer.appendChild(deselectAllBtn);
+        menu.appendChild(footer);
+        
+        return menu;
+      }
+
+      createModernSignalItem(signal, checked, index) {
+        const item = document.createElement('div');
+        item.className = 'context-menu__item';
+        item.setAttribute('role', 'menuitemcheckbox');
+        item.setAttribute('aria-checked', checked);
+        item.setAttribute('tabindex', '0');
+        item.dataset.signalId = signal.id;
+        
+        // Couleur unique pour chaque signal
+        const colors = [
+          '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
+          '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1',
+          '#14b8a6', '#eab308', '#dc2626', '#2563eb', '#059669'
+        ];
+        const signalColor = colors[index % colors.length];
+        
+        item.style.cssText = `
+          display: flex;
+          align-items: center;
+          padding: 6px 8px;
+          margin: 0;
+          background: ${checked ? 'rgba(59, 130, 246, 0.15)' : 'transparent'};
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          user-select: none;
+          gap: 8px;
+          position: relative;
+        `;
+        
+        // Dot de couleur compact
+        const colorDot = document.createElement('div');
+        colorDot.style.cssText = `
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: ${signalColor};
+          flex-shrink: 0;
+        `;
+        
+        // Switch compact
+        const checkboxContainer = document.createElement('div');
+        checkboxContainer.style.cssText = `
+          width: 28px;
+          height: 16px;
+          background: ${checked ? '#3b82f6' : '#4b5563'};
+          border-radius: 8px;
+          position: relative;
+          transition: all 0.15s ease;
+          flex-shrink: 0;
+        `;
+        
+        const checkboxKnob = document.createElement('div');
+        checkboxKnob.style.cssText = `
+          width: 12px;
+          height: 12px;
+          background: white;
+          border-radius: 50%;
+          position: absolute;
+          top: 2px;
+          left: ${checked ? '14px' : '2px'};
+          transition: all 0.15s ease;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        `;
+        
+        checkboxContainer.appendChild(checkboxKnob);
+        
+        // Contenu compact (une seule ligne)
+        const content = document.createElement('div');
+        content.style.cssText = `
+          flex: 1;
+          overflow: hidden;
+        `;
+        
+        const label = document.createElement('div');
+        label.textContent = `${signal.label} ${signal.unit ? `(${signal.unit})` : ''}`;
+        label.style.cssText = `
+          font-size: 12px;
+          font-weight: ${checked ? '500' : '400'};
+          color: ${checked ? '#f1f5f9' : '#d1d5db'};
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          line-height: 1.3;
+        `;
+        
+        content.appendChild(label);
+        
+        // Assemblage
+        item.appendChild(colorDot);
+        item.appendChild(checkboxContainer);
+        item.appendChild(content);
+        
+        // Events
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.handleSignalToggle(signal.id);
+        });
+        
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.handleSignalToggle(signal.id);
+          }
+        });
+        
+        // Hover effects subtils
+        item.addEventListener('mouseover', () => {
+          item.style.background = checked ? 'rgba(59, 130, 246, 0.2)' : 'rgba(75, 85, 99, 0.3)';
+        });
+        
+        item.addEventListener('mouseout', () => {
+          item.style.background = checked ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+        });
+        
+        item.addEventListener('focus', () => {
+          item.style.outline = '2px solid #6366f1';
+          item.style.outlineOffset = '1px';
+        });
+        
+        item.addEventListener('blur', () => {
+          item.style.outline = 'none';
+        });
+        
+        return item;
+      }
+
+      createModernButton(text, onClick, color = '#6366f1') {
+        const btn = document.createElement('button');
+        btn.innerHTML = text;
+        btn.style.cssText = `
+          background: linear-gradient(135deg, ${color}, ${color}dd);
+          color: white;
+          border: none;
+          padding: 12px 20px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px ${color}30;
+          min-width: 120px;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        `;
+        
+        // Click handler avec effet ripple simple
+        btn.addEventListener('click', (e) => {
+          onClick();
+          
+          const ripple = document.createElement('div');
+          ripple.style.cssText = `
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: scale(0);
+            animation: ripple 0.6s ease-out;
+            pointer-events: none;
+            left: ${e.offsetX - 25}px;
+            top: ${e.offsetY - 25}px;
+            width: 50px;
+            height: 50px;
+          `;
+          
+          if (!document.getElementById('ripple-css')) {
+            const style = document.createElement('style');
+            style.id = 'ripple-css';
+            style.textContent = '@keyframes ripple { to { transform: scale(4); opacity: 0; } }';
+            document.head.appendChild(style);
+          }
+          
+          btn.appendChild(ripple);
+          setTimeout(() => ripple.remove(), 600);
+        });
+        
+        btn.addEventListener('mouseover', () => {
+          btn.style.transform = 'translateY(-2px)';
+          btn.style.boxShadow = `0 8px 20px ${color}40`;
+        });
+        
+        btn.addEventListener('mouseout', () => {
+          btn.style.transform = 'translateY(0)';
+          btn.style.boxShadow = `0 4px 12px ${color}30`;
+        });
+        
+        return btn;
+      }
+
+      createCompactButton(text, onClick, color = '#3b82f6') {
+        const btn = document.createElement('button');
+        btn.innerHTML = text;
+        btn.style.cssText = `
+          background: ${color};
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          flex: 1;
+          text-align: center;
+        `;
+        
+        btn.addEventListener('click', onClick);
+        
+        btn.addEventListener('mouseover', () => {
+          btn.style.opacity = '0.8';
+          btn.style.transform = 'scale(0.98)';
+        });
+        
+        btn.addEventListener('mouseout', () => {
+          btn.style.opacity = '1';
+          btn.style.transform = 'scale(1)';
+        });
+        
+        return btn;
+      }
+
+      // Méthode de compatibilité pour grouper les signaux (même si on ne les utilise plus visuellement)
+      groupSignals(signals) {
+        // On retourne juste un groupe unique pour simplifier
+        return { 'Tous': signals };
+      }
+
+
+      positionMenu(menu, x, y) {
+        // Mesurer le menu
+        menu.style.left = '-9999px';
+        menu.style.top = '-9999px';
+        menu.style.opacity = '0';
+        document.body.appendChild(menu);
+        
+        const rect = menu.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        document.body.removeChild(menu);
+        
+        // Calculer position optimale
+        let finalX = Math.max(50, Math.min(x, viewportWidth - 400));
+        let finalY = Math.max(50, Math.min(y, viewportHeight - 500));
+        
+        menu.style.left = `${finalX}px`;
+        menu.style.top = `${finalY}px`;
+        menu.style.opacity = '1';
+      }
+
+      selectAllSignals(selected) {
+        if (!this.currentMenu) return;
+        
+        const items = this.currentMenu.querySelectorAll('.context-menu__item[data-signal-id]');
+        const selectedSignals = [];
+        
+        items.forEach(item => {
+          const signalId = item.dataset.signalId;
+          
+          // Mettre à jour l'état
+          item.setAttribute('aria-checked', selected);
+          
+          // Mettre à jour le switch
+          const switchContainer = item.children[1];
+          const switchKnob = switchContainer.children[0];
+          
+          switchContainer.style.background = selected ? '#3b82f6' : '#4b5563';
+          switchKnob.style.left = selected ? '14px' : '2px';
+          
+          // Mettre à jour le style de l'item
+          item.style.background = selected ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+          
+          // Mettre à jour le texte
+          const content = item.children[2];
+          const label = content.children[0];
+          
+          label.style.fontWeight = selected ? '500' : '400';
+          label.style.color = selected ? '#f1f5f9' : '#d1d5db';
+          
+          if (selected) {
+            selectedSignals.push(signalId);
+          }
+        });
+        
+        // Notifier le changement
+        if (this.onSelectionChange) {
+          this.onSelectionChange(selected ? selectedSignals : []);
+        }
+      }
+
+      handleSignalToggle(signalId) {
+        const item = this.currentMenu?.querySelector(`[data-signal-id="${signalId}"]`);
+        if (!item) return;
+        
+        // Déterminer l'état actuel
+        const currentlyChecked = item.getAttribute('aria-checked') === 'true';
+        const newChecked = !currentlyChecked;
+        
+        // Mettre à jour l'état
+        item.setAttribute('aria-checked', newChecked);
+        
+        // Vérifier que les éléments existent
+        if (item.children.length >= 3) {
+          // Mettre à jour le style du switch
+          const switchContainer = item.children[1]; // Le deuxième élément (après le dot)
+          const switchKnob = switchContainer.children[0];
+          
+          if (switchContainer && switchKnob) {
+            switchContainer.style.background = newChecked ? '#3b82f6' : '#4b5563';
+            switchKnob.style.left = newChecked ? '14px' : '2px';
+          }
+          
+          // Mettre à jour le style de l'item
+          item.style.background = newChecked ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+          
+          // Mettre à jour le texte
+          const content = item.children[2]; // Le contenu (après dot et switch)
+          if (content && content.children.length >= 1) {
+            const label = content.children[0];
+            
+            if (label) {
+              label.style.fontWeight = newChecked ? '500' : '400';
+              label.style.color = newChecked ? '#f1f5f9' : '#d1d5db';
+            }
+          }
+        }
+        
+        // Récupérer tous les signaux sélectionnés
+        const selectedSignals = Array.from(
+          this.currentMenu.querySelectorAll('.context-menu__item[aria-checked="true"]')
+        ).map(item => item.dataset.signalId);
+        
+        // Notifier le changement
+        if (this.onSelectionChange) {
+          this.onSelectionChange(selectedSignals);
+        }
+      }
+
+      handleDocumentClick(event) {
+        if (this.isOpen && this.currentMenu && !this.currentMenu.contains(event.target)) {
+          this.hide();
+        }
+      }
+
+      handleKeyDown(event) {
+        if (!this.isOpen || !this.currentMenu) return;
+        
+        switch (event.key) {
+          case 'Escape':
+            event.preventDefault();
+            this.hide();
+            break;
+            
+          case 'ArrowUp':
+          case 'ArrowDown':
+            event.preventDefault();
+            this.navigateItems(event.key === 'ArrowDown' ? 1 : -1);
+            break;
+        }
+      }
+
+      navigateItems(direction) {
+        const items = Array.from(this.currentMenu.querySelectorAll('.context-menu__item[tabindex="0"]'));
+        const focused = document.activeElement;
+        const currentIndex = items.indexOf(focused);
+        
+        if (currentIndex === -1) {
+          const targetIndex = direction > 0 ? 0 : items.length - 1;
+          if (items[targetIndex]) {
+            items[targetIndex].focus();
+          }
+        } else {
+          let newIndex = currentIndex + direction;
+          
+          if (newIndex < 0) {
+            newIndex = items.length - 1;
+          } else if (newIndex >= items.length) {
+            newIndex = 0;
+          }
+          
+          if (items[newIndex]) {
+            items[newIndex].focus();
+          }
+        }
+      }
+
+      destroy() {
+        this.hide();
+        document.removeEventListener('click', this.handleDocumentClick);
+        document.removeEventListener('keydown', this.handleKeyDown);
+      }
+    }
+
+    // === INLINE VERSION DE ZoomPanController.js ===
+    class ZoomPanController {
+      constructor(chartInstance, options = {}) {
+        this.chart = chartInstance;
+        this.canvas = chartInstance.canvas;
+        
+        // Configuration
+        this.config = {
+          pan: {
+            enabled: true,
+            mode: 'x',
+            threshold: 5,
+            ...options.pan
+          },
+          zoom: {
+            enabled: true,
+            wheel: {
+              enabled: true,
+              speed: 0.1,
+              modifierKey: null
+            },
+            pinch: {
+              enabled: true
+            },
+            ...options.zoom
+          }
+        };
+        
+        // État interne
+        this.isPanning = false;
+        this.panStart = null;
+        this.originalBounds = null;
+        
+        // Bindings
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
+        this.handleWheel = this.handleWheel.bind(this);
+        this.handleTouchStart = this.handleTouchStart.bind(this);
+        this.handleTouchMove = this.handleTouchMove.bind(this);
+        this.handleTouchEnd = this.handleTouchEnd.bind(this);
+        
+        this.init();
+      }
+      
+      init() {
+        if (!this.canvas) return;
+        
+        this.canvas.addEventListener('mousedown', this.handleMouseDown);
+        this.canvas.addEventListener('mousemove', this.handleMouseMove);
+        this.canvas.addEventListener('mouseup', this.handleMouseUp);
+        this.canvas.addEventListener('mouseleave', this.handleMouseUp);
+        this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+        
+        this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+        this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        this.canvas.addEventListener('touchend', this.handleTouchEnd);
+      }
+      
+      setBounds(bounds) {
+        this.originalBounds = bounds;
+      }
+      
+      getRelativePosition(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top
+        };
+      }
+      
+      isOnYAxis(relativePos) {
+        const chartArea = this.chart.chartArea;
+        const margin = 60;
+        
+        return relativePos.x < chartArea.left + margin || 
+               relativePos.x > chartArea.right - margin;
+      }
+      
+      handleMouseDown(event) {
+        if (!this.config.pan.enabled) return;
+        if (event.button !== 0) return;
+        
+        event.preventDefault();
+        
+        const pos = this.getRelativePosition(event);
+        
+        this.isPanning = true;
+        this.panStart = {
+          x: event.clientX,
+          y: event.clientY,
+          canvasX: pos.x,
+          canvasY: pos.y,
+          scaleX: this.chart.scales.x?.min || 0,
+          scaleY: this.chart.scales.y?.min || 0
+        };
+        
+        this.canvas.style.cursor = 'grabbing';
+      }
+      
+      handleMouseMove(event) {
+        if (!this.isPanning || !this.panStart) return;
+        
+        event.preventDefault();
+        
+        const deltaX = event.clientX - this.panStart.x;
+        const chartArea = this.chart.chartArea;
+        const xScale = this.chart.scales.x;
+        
+        if (!xScale || !chartArea) return;
+        
+        const chartWidth = chartArea.right - chartArea.left;
+        const currentRange = xScale.max - xScale.min;
+        const panFactor = (currentRange / chartWidth) * deltaX;
+        
+        const newMin = this.panStart.scaleX - panFactor;
+        const newMax = newMin + currentRange;
+        
+        const { clampedMin, clampedMax } = this.clampToBounds(newMin, newMax, 'x');
+        
+        xScale.options.min = clampedMin;
+        xScale.options.max = clampedMax;
+        
+        this.chart.update('none');
+      }
+      
+      handleMouseUp(event) {
+        if (this.isPanning) {
+          this.isPanning = false;
+          this.panStart = null;
+          this.canvas.style.cursor = 'default';
+        }
+      }
+      
+      handleWheel(event) {
+        if (!this.config.zoom.enabled || !this.config.zoom.wheel.enabled) return;
+        
+        event.preventDefault();
+        
+        const pos = this.getRelativePosition(event);
+        const isOnY = this.isOnYAxis(pos);
+        const zoomAxis = isOnY ? 'y' : 'x';
+        
+        const scale = this.chart.scales[zoomAxis];
+        if (!scale) return;
+        
+        const direction = event.deltaY > 0 ? 1 : -1;
+        const zoomFactor = 1 + (direction * this.config.zoom.wheel.speed);
+        
+        let pivotValue;
+        if (zoomAxis === 'x') {
+          pivotValue = scale.getValueForPixel(pos.x);
+        } else {
+          pivotValue = scale.getValueForPixel(pos.y);
+        }
+        
+        if (!Number.isFinite(pivotValue)) return;
+        
+        const currentMin = scale.min;
+        const currentMax = scale.max;
+        const currentRange = currentMax - currentMin;
+        const newRange = currentRange * zoomFactor;
+        
+        const pivotRatio = (pivotValue - currentMin) / currentRange;
+        
+        const newMin = pivotValue - (newRange * pivotRatio);
+        const newMax = pivotValue + (newRange * (1 - pivotRatio));
+        
+        const { clampedMin, clampedMax } = this.clampToBounds(newMin, newMax, zoomAxis);
+        
+        scale.options.min = clampedMin;
+        scale.options.max = clampedMax;
+        
+        this.chart.update('none');
+      }
+      
+      handleTouchStart(event) {
+        if (!this.config.zoom.pinch.enabled) return;
+        
+        if (event.touches.length === 2) {
+          event.preventDefault();
+          
+          const touch1 = event.touches[0];
+          const touch2 = event.touches[1];
+          
+          this.touchState = {
+            initialDistance: this.getTouchDistance(touch1, touch2),
+            initialMidpoint: this.getTouchMidpoint(touch1, touch2),
+            initialScale: {
+              x: { min: this.chart.scales.x?.min, max: this.chart.scales.x?.max },
+              y: { min: this.chart.scales.y?.min, max: this.chart.scales.y?.max }
+            }
+          };
+        }
+      }
+      
+      handleTouchMove(event) {
+        if (!this.config.zoom.pinch.enabled || !this.touchState) return;
+        
+        if (event.touches.length === 2) {
+          event.preventDefault();
+          
+          const touch1 = event.touches[0];
+          const touch2 = event.touches[1];
+          
+          const currentDistance = this.getTouchDistance(touch1, touch2);
+          const zoomFactor = this.touchState.initialDistance / currentDistance;
+          
+          ['x', 'y'].forEach(axis => {
+            const scale = this.chart.scales[axis];
+            if (!scale) return;
+            
+            const initialMin = this.touchState.initialScale[axis].min;
+            const initialMax = this.touchState.initialScale[axis].max;
+            const initialRange = initialMax - initialMin;
+            const newRange = initialRange * zoomFactor;
+            
+            const center = (initialMin + initialMax) / 2;
+            const newMin = center - newRange / 2;
+            const newMax = center + newRange / 2;
+            
+            const { clampedMin, clampedMax } = this.clampToBounds(newMin, newMax, axis);
+            
+            scale.options.min = clampedMin;
+            scale.options.max = clampedMax;
+          });
+          
+          this.chart.update('none');
+        }
+      }
+      
+      handleTouchEnd(event) {
+        if (event.touches.length < 2) {
+          this.touchState = null;
+        }
+      }
+      
+      getTouchDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+      
+      getTouchMidpoint(touch1, touch2) {
+        return {
+          x: (touch1.clientX + touch2.clientX) / 2,
+          y: (touch1.clientY + touch2.clientY) / 2
+        };
+      }
+      
+      clampToBounds(min, max, axis) {
+        if (!this.originalBounds || !this.originalBounds[axis]) {
+          return { clampedMin: min, clampedMax: max };
+        }
+        
+        const bounds = this.originalBounds[axis];
+        const proposedRange = max - min;
+        const maxRange = bounds.max - bounds.min;
+        
+        let clampedMin = min;
+        let clampedMax = max;
+        
+        if (proposedRange >= maxRange) {
+          clampedMin = bounds.min;
+          clampedMax = bounds.max;
+        } else {
+          if (clampedMin < bounds.min) {
+            const shift = bounds.min - clampedMin;
+            clampedMin += shift;
+            clampedMax += shift;
+          }
+          
+          if (clampedMax > bounds.max) {
+            const shift = clampedMax - bounds.max;
+            clampedMin -= shift;
+            clampedMax -= shift;
+          }
+          
+          clampedMin = Math.max(clampedMin, bounds.min);
+          clampedMax = Math.min(clampedMax, bounds.max);
+        }
+        
+        return { clampedMin, clampedMax };
+      }
+      
+      resetZoom() {
+        if (!this.originalBounds) return;
+        
+        ['x', 'y'].forEach(axis => {
+          const scale = this.chart.scales[axis];
+          const bounds = this.originalBounds[axis];
+          
+          if (scale && bounds) {
+            scale.options.min = bounds.min;
+            scale.options.max = bounds.max;
+          }
+        });
+        
+        this.chart.update('none');
+      }
+      
+      setPanEnabled(enabled) {
+        this.config.pan.enabled = enabled;
+      }
+      
+      setZoomEnabled(enabled) {
+        this.config.zoom.enabled = enabled;
+      }
+      
+      destroy() {
+        if (!this.canvas) return;
+        
+        this.canvas.removeEventListener('mousedown', this.handleMouseDown);
+        this.canvas.removeEventListener('mousemove', this.handleMouseMove);
+        this.canvas.removeEventListener('mouseup', this.handleMouseUp);
+        this.canvas.removeEventListener('mouseleave', this.handleMouseUp);
+        this.canvas.removeEventListener('wheel', this.handleWheel);
+        
+        this.canvas.removeEventListener('touchstart', this.handleTouchStart);
+        this.canvas.removeEventListener('touchmove', this.handleTouchMove);
+        this.canvas.removeEventListener('touchend', this.handleTouchEnd);
+      }
+    }
+
+    // === INLINE VERSION DE ChartHost.js ===
+    class ChartHost {
+      constructor(canvasId, options = {}) {
+        this.canvasId = canvasId;
+        this.canvas = document.getElementById(canvasId);
+        
+        if (!this.canvas) {
+          throw new Error(`Canvas #${canvasId} introuvable`);
+        }
+        
+        // Options par défaut (thème sombre, décimation, formats)
+        this.defaultOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          parsing: false,
+          
+          datasets: {
+            line: {
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              borderWidth: 2,
+              spanGaps: true,
+              tension: 0.1
+            }
+          },
+          
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                tooltipFormat: 'HH:mm:ss',
+                displayFormats: {
+                  millisecond: 'HH:mm:ss.SSS',
+                  second: 'HH:mm:ss',
+                  minute: 'HH:mm',
+                  hour: 'HH:mm',
+                  day: 'dd/MM',
+                  month: 'MM/yyyy'
+                }
+              },
+              ticks: {
+                color: '#e2e8f0',
+                font: { size: 11 }
+              },
+              grid: {
+                color: 'rgba(148,163,184,0.15)',
+                borderColor: 'rgba(148,163,184,0.3)'
+              }
+            },
+            y: {
+              ticks: {
+                color: '#e2e8f0',
+                font: { size: 11 }
+              },
+              grid: {
+                color: 'rgba(148,163,184,0.1)',
+                borderColor: 'rgba(148,163,184,0.3)'
+              }
+            }
+          },
+          
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: '#e2e8f0',
+                font: { size: 12 }
+              }
+            },
+            tooltip: TooltipFormatter.getTooltipConfig(),
+            crosshair: {
+              enabled: true,
+              color: 'rgba(226, 232, 240, 0.6)',
+              width: 1,
+              style: 'solid',
+              snapToData: false
+            }
+          },
+          
+          hover: {
+            mode: 'index',
+            intersect: false
+          }
+        };
+        
+        this.options = this.mergeDeep(this.defaultOptions, options);
+        this.chart = null;
+        this.originalBounds = null;
+        this.datasets = [];
+        this.zoomPanController = null;
+        this.contextMenu = null;
+        this.signalService = null;
+        this.currentSignals = [];
+        
+        this.init();
+      }
+      
+      init() {
+        const ctx = this.canvas.getContext('2d');
+        
+        
+        // Enregistrer le plugin crosshair
+        Chart.register(CrosshairPlugin);
+        
+        this.chart = new Chart(ctx, {
+          type: 'line',
+          data: { datasets: [] },
+          options: this.options
+        });
+        
+        // Initialiser le contrôleur zoom/pan
+        this.zoomPanController = new ZoomPanController(this.chart, {
+          pan: {
+            enabled: true,
+            mode: 'x'
+          },
+          zoom: {
+            enabled: true,
+            wheel: {
+              enabled: true,
+              speed: 0.1
+            },
+            pinch: {
+              enabled: true
+            }
+          }
+        });
+        
+        // Initialiser le service de signaux et le menu contextuel
+        this.signalService = new SignalService();
+        this.contextMenu = new ContextMenu(this.signalService);
+        
+        // Binder la méthode
+        this.handleContextMenu = this.handleContextMenu.bind(this);
+        
+        // Event listener pour clic droit
+        this.canvas.addEventListener('contextmenu', this.handleContextMenu);
+      }
+      
+      setData(datasets) {
+        if (!Array.isArray(datasets)) {
+          console.warn('[ChartHost] setData: datasets doit être un array');
+          return;
+        }
+        
+        this.datasets = datasets;
+        this.chart.data.datasets = [...datasets];
+        this.calculateBounds();
+        this.chart.update('none');
+      }
+      
+      calculateBounds() {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        
+        this.datasets.forEach(dataset => {
+          if (!Array.isArray(dataset.data)) return;
+          
+          dataset.data.forEach(point => {
+            if (!point || typeof point.x === 'undefined' || typeof point.y === 'undefined') return;
+            
+            const x = new Date(point.x).getTime();
+            const y = Number(point.y);
+            
+            if (Number.isFinite(x)) {
+              minX = Math.min(minX, x);
+              maxX = Math.max(maxX, x);
+            }
+            
+            if (Number.isFinite(y)) {
+              minY = Math.min(minY, y);
+              maxY = Math.max(maxY, y);
+            }
+          });
+        });
+        
+        const yRange = maxY - minY;
+        const yMargin = yRange * 0.05;
+        
+        this.originalBounds = {
+          x: { min: minX, max: maxX },
+          y: { min: minY - yMargin, max: maxY + yMargin }
+        };
+        
+        // Transmettre les bornes au contrôleur zoom/pan
+        if (this.zoomPanController) {
+          this.zoomPanController.setBounds(this.originalBounds);
+        }
+      }
+      
+      resetView() {
+        if (this.zoomPanController) {
+          // Utiliser le reset du contrôleur pour une cohérence
+          this.zoomPanController.resetZoom();
+        } else if (this.originalBounds) {
+          // Fallback si pas de contrôleur
+          this.chart.options.scales.x.min = this.originalBounds.x.min;
+          this.chart.options.scales.x.max = this.originalBounds.x.max;
+          this.chart.options.scales.y.min = this.originalBounds.y.min;
+          this.chart.options.scales.y.max = this.originalBounds.y.max;
+          
+          this.chart.update('none');
+        }
+      }
+      
+      getView() {
+        const scales = this.chart.scales;
+        return {
+          x: { 
+            min: scales.x?.min || this.originalBounds?.x.min,
+            max: scales.x?.max || this.originalBounds?.x.max
+          },
+          y: { 
+            min: scales.y?.min || this.originalBounds?.y.min,
+            max: scales.y?.max || this.originalBounds?.y.max
+          }
+        };
+      }
+      
+      setView(range) {
+        if (!range || typeof range !== 'object') return;
+        
+        if (range.x) {
+          if (range.x.min !== undefined) this.chart.options.scales.x.min = range.x.min;
+          if (range.x.max !== undefined) this.chart.options.scales.x.max = range.x.max;
+        }
+        
+        if (range.y) {
+          if (range.y.min !== undefined) this.chart.options.scales.y.min = range.y.min;
+          if (range.y.max !== undefined) this.chart.options.scales.y.max = range.y.max;
+        }
+        
+        this.chart.update('none');
+      }
+      
+      /**
+       * Gère le clic droit sur le canvas
+       */
+      handleContextMenu(event) {
+        if (!this.contextMenu) return;
+        
+        const currentSignalIds = this.datasets.map(dataset => dataset.signalId || dataset.label).filter(Boolean);
+        this.contextMenu.show(
+          event, 
+          this.chart, 
+          currentSignalIds, 
+          (selectedSignalIds) => this.onSignalSelectionChange(selectedSignalIds)
+        );
+      }
+      
+      /**
+       * Gère le changement de sélection des signaux
+       */
+      async onSignalSelectionChange(selectedSignalIds) {
+        if (!this.signalService || selectedSignalIds.length === 0) {
+          // Vider le graphique si aucun signal sélectionné
+          this.setData([]);
+          return;
+        }
+        
+        try {
+          // Calculer la plage de temps (dernières 24h par défaut)
+          const to = new Date();
+          const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
+          
+          // Récupérer les données
+          const seriesData = await this.signalService.getSeriesData(selectedSignalIds, from, to);
+          
+          // Ajouter les IDs aux datasets pour le suivi
+          const datasetsWithIds = seriesData.datasets.map((dataset, index) => ({
+            ...dataset,
+            signalId: selectedSignalIds[index] || dataset.label
+          }));
+          
+          // Mettre à jour les données (sans perdre le zoom)
+          const currentView = this.getView();
+          this.setData(datasetsWithIds);
+          
+          // Restaurer le zoom si il y en avait un
+          if (currentView && (currentView.x.min !== currentView.x.max || currentView.y.min !== currentView.y.max)) {
+            setTimeout(() => {
+              this.setView(currentView);
+            }, 50);
+          }
+          
+          this.currentSignals = selectedSignalIds;
+          
+        } catch (error) {
+          console.error('[ChartHost] Erreur chargement signaux:', error);
+        }
+      }
+      
+      /**
+       * Obtient les signaux actuellement sélectionnés
+       */
+      getCurrentSignals() {
+        return [...this.currentSignals];
+      }
+      
+      destroy() {
+        // Cleanup du menu contextuel
+        if (this.contextMenu) {
+          this.contextMenu.destroy();
+          this.contextMenu = null;
+        }
+        
+        if (this.zoomPanController) {
+          this.zoomPanController.destroy();
+          this.zoomPanController = null;
+        }
+        
+        if (this.chart) {
+          this.chart.destroy();
+          this.chart = null;
+        }
+        
+        // Cleanup event listeners
+        if (this.canvas) {
+          this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
+        }
+        
+      }
+      
+      mergeDeep(target, source) {
+        const result = { ...target };
+        
+        for (const key in source) {
+          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            result[key] = this.mergeDeep(result[key] || {}, source[key]);
+          } else {
+            result[key] = source[key];
+          }
+        }
+        
+        return result;
+      }
+    }
+
+    // === GESTIONNAIRE GLOBAL ===
+    const chartInstances = new Map();
+    
+    function initChart(cardId, canvasId, config = {}) {
+      try {
+        if (chartInstances.has(cardId)) {
+          console.warn(`[Charts] Carte ${cardId} déjà initialisée`);
+          return chartInstances.get(cardId);
+        }
+        
+        const chartHost = new ChartHost(canvasId, config.options);
+        
+        chartInstances.set(cardId, {
+          host: chartHost,
+          config: config,
+          cardId: cardId,
+          canvasId: canvasId
+        });
+        
+        console.log(`[Charts] Carte ${cardId} initialisée`);
+        return chartInstances.get(cardId);
+        
+      } catch (error) {
+        console.error(`[Charts] Erreur lors de l'initialisation de ${cardId}:`, error);
+        return null;
+      }
+    }
+    
+    function updateChart(cardId, datasets) {
+      const instance = chartInstances.get(cardId);
+      if (!instance) {
+        console.warn(`[Charts] Carte ${cardId} non trouvée pour mise à jour`);
+        return false;
+      }
+      
+      instance.host.setData(datasets);
+      return true;
+    }
+    
+    
+    // === GÉNÉRATEUR DE DONNÉES TEST ===
+    const TestDataGenerator = {
+      generateSineWave(label, color, points = 100, amplitude = 100, offset = 0) {
+        const data = [];
+        const now = Date.now();
+        const timeSpan = 3600000; // 1 heure
+        
+        for (let i = 0; i < points; i++) {
+          const x = now - timeSpan + (i * timeSpan / points);
+          const y = offset + amplitude * Math.sin((i / points) * 4 * Math.PI) + (Math.random() - 0.5) * 10;
+          
+          data.push({ x: x, y: Number(y.toFixed(2)) });
+        }
+        
+        return {
+          label: label,
+          data: data,
+          borderColor: color,
+          backgroundColor: 'transparent',
+          unit: 'kW'
+        };
+      },
+      
+      generateTR1Data() {
+        return [
+          this.generateSineWave('Puissance TR1', '#6366f1', 120, 80, 420),
+          this.generateSineWave('Puissance Réactive TR1', '#f97316', 120, 30, 120)
+        ];
+      },
+      
+      generateTR2Data() {
+        return [
+          this.generateSineWave('Puissance TR2', '#f43f5e', 120, 75, 470),
+          this.generateSineWave('Puissance Réactive TR2', '#f59e0b', 120, 35, 110)
+        ];
+      }
+    };
+
+    // === FONCTIONS GLOBALES EXPOSÉES ===
+    // Fonction Reset globale
+    window.resetChart = (cardId) => {
+      console.log(`🔄 Tentative de reset pour ${cardId}`);
+      const instance = chartInstances.get(cardId);
+      if (!instance) {
+        console.error(`❌ Carte ${cardId} non trouvée pour reset`);
+        return false;
+      }
+      
+      try {
+        instance.host.resetView();
+        console.log(`✅ Reset de la carte ${cardId} réussi`);
+        return true;
+      } catch (error) {
+        console.error(`❌ Erreur lors du reset de ${cardId}:`, error);
+        return false;
+      }
+    };
+
+    // Fonction Export globale  
+    window.exportChart = (cardId) => {
+      console.log(`📊 Export demandé pour ${cardId}`);
+      const instance = chartInstances.get(cardId);
+      if (!instance) {
+        console.error(`❌ Carte ${cardId} non trouvée pour export`);
+        return false;
+      }
+      
+      try {
+        // Export PNG du canvas
+        const canvas = instance.host.canvas;
+        const url = canvas.toDataURL('image/png', 1.0);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${cardId}-${new Date().toISOString().slice(0, 16).replace(':', '-')}.png`;
+        link.click();
+        console.log(`✅ Export PNG de ${cardId} réussi`);
+        return true;
+      } catch (error) {
+        console.error(`❌ Erreur lors de l'export de ${cardId}:`, error);
+        return false;
+      }
+    };
+
+    // Fonction Settings globale
+    window.openSettings = () => {
+      console.log('⚙️ Ouverture des paramètres globaux');
+      
+      // Créer une modal simple pour les paramètres
+      const existingModal = document.getElementById('settings-modal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
+      const modal = document.createElement('div');
+      modal.id = 'settings-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      `;
+      
+      modal.innerHTML = `
+        <div style="
+          background: #1e293b;
+          border: 1px solid #334155;
+          border-radius: 12px;
+          padding: 2rem;
+          max-width: 500px;
+          width: 90%;
+          color: white;
+        ">
+          <h3 style="margin: 0 0 1rem 0; font-size: 1.5rem; color: #e2e8f0;">⚙️ Paramètres</h3>
+          <div style="margin-bottom: 1.5rem; line-height: 1.6;">
+            <p><strong>Interactions :</strong></p>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+              <li>Clic + glisser = Pan horizontal</li>
+              <li>Molette sur courbe = Zoom X</li>
+              <li>Molette sur axe = Zoom Y</li>
+              <li>Pincement tactile = Zoom X/Y</li>
+              <li>Survol = Crosshair vertical</li>
+              <li><strong>Clic droit = Menu contextuel signaux</strong></li>
+            </ul>
+            
+            <p><strong>Menu Contextuel :</strong></p>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+              <li><strong>Sélection multi-signaux</strong> (checkboxes)</li>
+              <li>Signaux groupés par catégorie</li>
+              <li>Navigation clavier (Tab/Flèches/Enter/Escape)</li>
+              <li>Boutons "Tout/Rien" pour sélection rapide</li>
+              <li><strong>Préservation du zoom actuel</strong></li>
+            </ul>
+            
+            <p><strong>Tooltips :</strong></p>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+              <li>Format HH:mm:ss garanti</li>
+              <li>Unités précises (kW, V, A, etc.)</li>
+              <li>Valeurs adaptatives (kW → MW si > 1000)</li>
+              <li>Format français (espaces pour milliers)</li>
+            </ul>
+            
+            <p><strong>Boutons :</strong></p>
+            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+              <li>Reset = Vue d'origine</li>
+              <li>Export = PNG horodaté</li>
+            </ul>
+            
+            <p style="margin-top: 1rem;"><strong>Version :</strong> Étape 4 - Menu Contextuel Signaux</p>
+          </div>
+          <button onclick="document.getElementById('settings-modal').remove()" style="
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+          ">Fermer</button>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Fermer avec clic sur overlay
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+      
+      // Fermer avec Escape
+      const handleKeydown = (e) => {
+        if (e.key === 'Escape') {
+          modal.remove();
+          document.removeEventListener('keydown', handleKeydown);
+        }
+      };
+      document.addEventListener('keydown', handleKeydown);
+    };
+
+    // === INITIALISATION ===
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Initialisation de la démo des courbes');
+
+      try {
+        // Vérifier que Chart.js est chargé
+        if (typeof Chart === 'undefined') {
+          throw new Error('Chart.js non chargé');
+        }
+
+        // Initialiser les deux cartes
+        const tr1Instance = initChart('tr1-power', 'chart-tr1-power', {
+          options: {
+            scales: {
+              y: {
+                title: {
+                  display: true,
+                  text: 'Puissance (kW)',
+                  color: '#e2e8f0',
+                  font: { size: 13, weight: '500' }
+                }
+              }
+            }
+          }
+        });
+
+        const tr2Instance = initChart('tr2-power', 'chart-tr2-power', {
+          options: {
+            scales: {
+              y: {
+                title: {
+                  display: true,
+                  text: 'Puissance (kW)',
+                  color: '#e2e8f0',
+                  font: { size: 13, weight: '500' }
+                }
+              }
+            }
+          }
+        });
+
+        if (!tr1Instance || !tr2Instance) {
+          throw new Error('Impossible d\'initialiser les courbes');
+        }
+
+        // Charger des données de test
+        console.log('📊 Chargement des données de test...');
+        
+        updateChart('tr1-power', TestDataGenerator.generateTR1Data());
+        updateChart('tr2-power', TestDataGenerator.generateTR2Data());
+
+        // Mettre à jour le timestamp
+        const updateTime = () => {
+          const now = new Date();
+          document.getElementById('last-update').textContent = now.toLocaleTimeString('fr-FR');
+        };
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        console.log('✅ Démo initialisée avec succès');
+
+      } catch (error) {
+        console.error('❌ Erreur lors de l\'initialisation:', error);
+        alert('Erreur d\'initialisation - Consultez la console pour plus de détails');
+      }
+    });
+  </script>
+</body>
+</html>

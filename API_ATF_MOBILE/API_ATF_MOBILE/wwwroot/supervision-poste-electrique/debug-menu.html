@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Menu</title>
+    <style>
+        body { 
+            background: #0f172a; 
+            color: white; 
+            font-family: system-ui; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .test-area {
+            width: 400px;
+            height: 200px;
+            background: #1e293b;
+            border: 2px solid #4b5563;
+            margin: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        /* Test menu - EXACTEMENT le même que dans demo-charts.html */
+        .debug-menu {
+            position: fixed;
+            z-index: 99999;
+            background: #1e293b;
+            border: 2px solid #6366f1;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
+            min-width: 300px;
+            max-width: 350px;
+            opacity: 1;
+            display: block;
+            visibility: visible;
+            font-size: 14px;
+            color: #f1f5f9;
+        }
+        
+        .debug-menu-header {
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+            color: #ffffff;
+            background: #374151;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+            border-bottom: 1px solid #4b5563;
+        }
+        
+        .debug-menu-content {
+            padding: 12px;
+            max-height: 300px;
+            background: #1e293b;
+        }
+        
+        .debug-menu-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: #334155;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .debug-menu-item:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 Test Debug Menu</h1>
+    <p>Clic droit sur la zone ci-dessous pour tester le menu :</p>
+    
+    <div class="test-area" id="testArea">
+        Clic droit ici !
+    </div>
+    
+    <button onclick="forceShowMenu()" style="background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+        🔧 Forcer l'affichage du menu
+    </button>
+    
+    <button onclick="showMenuInCorner()" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-left: 10px;">
+        📍 Menu en haut-gauche
+    </button>
+    
+    <div id="info" style="background: #111827; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-top: 20px;"></div>
+    
+    <script>
+        const info = document.getElementById('info');
+        
+        function log(message) {
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            info.appendChild(div);
+            info.scrollTop = info.scrollHeight;
+        }
+        
+        function createDebugMenu(x, y) {
+            // Supprimer menu existant
+            const existing = document.getElementById('debug-menu');
+            if (existing) existing.remove();
+            
+            // Créer nouveau menu
+            const menu = document.createElement('div');
+            menu.id = 'debug-menu';
+            menu.className = 'debug-menu';
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+            
+            menu.innerHTML = `
+                <div class="debug-menu-header">
+                    🎯 Menu Debug
+                </div>
+                <div class="debug-menu-content">
+                    <div class="debug-menu-item">✅ Item 1 - Visible ?</div>
+                    <div class="debug-menu-item">✅ Item 2 - Test</div>
+                    <div class="debug-menu-item">✅ Item 3 - Cliquable ?</div>
+                    <div class="debug-menu-item" onclick="log('✅ Item cliqué!'); closeMenu();">🎯 Cliquer ici</div>
+                </div>
+            `;
+            
+            document.body.appendChild(menu);
+            log('📋 Menu créé et ajouté au DOM');
+            log('📍 Position: ' + x + ', ' + y);
+            log('📊 Style left/top: ' + menu.style.left + ', ' + menu.style.top);
+            log('📊 Computed display: ' + window.getComputedStyle(menu).display);
+            log('📊 Computed opacity: ' + window.getComputedStyle(menu).opacity);
+            log('📊 Computed visibility: ' + window.getComputedStyle(menu).visibility);
+            log('📊 Z-index: ' + window.getComputedStyle(menu).zIndex);
+            
+            // Test de détection dans DOM
+            const foundMenu = document.getElementById('debug-menu');
+            log('🔍 Menu trouvé dans DOM: ' + !!foundMenu);
+            log('🔍 Parent: ' + (foundMenu ? foundMenu.parentNode.tagName : 'N/A'));
+            
+            return menu;
+        }
+        
+        function closeMenu() {
+            const menu = document.getElementById('debug-menu');
+            if (menu) {
+                menu.remove();
+                log('❌ Menu fermé');
+            }
+        }
+        
+        function forceShowMenu() {
+            log('🔧 Forçage affichage menu au centre...');
+            const x = window.innerWidth / 2 - 150;
+            const y = window.innerHeight / 2 - 100;
+            createDebugMenu(x, y);
+        }
+        
+        function showMenuInCorner() {
+            log('📍 Affichage menu en haut-gauche...');
+            createDebugMenu(50, 50);
+        }
+        
+        // Event listener clic droit
+        document.getElementById('testArea').addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            log('🖱️ Clic droit détecté à: ' + e.clientX + ', ' + e.clientY);
+            createDebugMenu(e.clientX, e.clientY);
+        });
+        
+        // Fermeture par clic extérieur
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('debug-menu');
+            if (menu && !menu.contains(e.target)) {
+                closeMenu();
+            }
+        });
+        
+        log('🚀 Debug menu initialisé');
+        log('👉 Essaie:');
+        log('   1. Clic droit sur zone bleue');
+        log('   2. Bouton "Forcer affichage"');
+        log('   3. Bouton "Menu haut-gauche"');
+    </script>
+</body>
+</html>
