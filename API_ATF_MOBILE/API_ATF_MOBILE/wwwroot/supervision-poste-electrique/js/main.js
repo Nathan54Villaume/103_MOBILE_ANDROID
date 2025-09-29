@@ -314,13 +314,25 @@ function refreshNewChartSystem() {
           y: item.y   // Format correct selon appendUnique()
         }));
         
+        // Récupérer les paramètres sauvegardés
+        const savedSettings = chartInstance.host.currentSettings;
+        const lineWidth = savedSettings?.lineWidth || 2;
+        const tension = savedSettings?.tension || 0.1;
+        const alpha = savedSettings?.alpha || 20;
+        
+        // Calculer la couleur de fond avec transparence
+        const baseColor = colors[index] || '#3b82f6';
+        const alphaHex = Math.round(alpha * 2.55).toString(16).padStart(2, '0');
+        const backgroundColor = baseColor + alphaHex;
+        
         datasets.push({
           label: labels[index] || bufferKey,
           data: data,
-          borderColor: colors[index] || '#3b82f6',
-          backgroundColor: colors[index] + '20' || '#3b82f620',
+          borderColor: baseColor,
+          backgroundColor: backgroundColor,
           fill: false,
-          tension: 0.1,
+          tension: tension,
+          borderWidth: lineWidth,
           pointRadius: 0,           // Pas de points visibles
           pointHoverRadius: 0,      // Pas de points au survol non plus
           pointBorderWidth: 0,      // Pas de bordure de points

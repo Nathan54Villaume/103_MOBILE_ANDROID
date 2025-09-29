@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Persistance Final</title>
+    <style>
+        body { 
+            background: #0f172a; 
+            color: white; 
+            font-family: system-ui; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .test-section {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #4f46e5;
+        }
+        .test-button.success {
+            background: #059669;
+        }
+        .test-button.error {
+            background: #dc2626;
+        }
+        .log {
+            background: #111827;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #065f46;
+            color: #d1fae5;
+        }
+        .status.error {
+            background: #7f1d1d;
+            color: #fecaca;
+        }
+        .status.info {
+            background: #1e3a8a;
+            color: #dbeafe;
+        }
+        .chart-container {
+            width: 600px;
+            height: 300px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            margin: 20px 0;
+            position: relative;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .test-step {
+            background: #374151;
+            border-left: 4px solid #6366f1;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .test-step h4 {
+            margin: 0 0 10px 0;
+            color: #6366f1;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Persistance Final</h1>
+    
+    <div class="test-section">
+        <h2>Instructions de Test</h2>
+        <div class="test-step">
+            <h4>Étape 1 : Créer un chart</h4>
+            <p>Cliquez sur "Créer Chart Test" pour créer un chart avec des données de test.</p>
+        </div>
+        <div class="test-step">
+            <h4>Étape 2 : Modifier les paramètres</h4>
+            <p>Cliquez sur "Ouvrir Paramètres" et modifiez des paramètres comme :</p>
+            <ul>
+                <li>✅ "Y commence à 0" (coché)</li>
+                <li>✅ "Masquer grille" (décoché)</li>
+                <li>✅ "Épaisseur ligne" = 4px</li>
+                <li>✅ "Transparence" = 30%</li>
+            </ul>
+        </div>
+        <div class="test-step">
+            <h4>Étape 3 : Valider et fermer</h4>
+            <p>Cliquez sur "Valider" pour sauvegarder les paramètres.</p>
+        </div>
+        <div class="test-step">
+            <h4>Étape 4 : Simuler le polling</h4>
+            <p>Cliquez sur "Simuler Polling" pour simuler une mise à jour des données.</p>
+        </div>
+        <div class="test-step">
+            <h4>Étape 5 : Vérifier la persistance</h4>
+            <p>Rouvrez les paramètres et vérifiez que vos modifications sont toujours là !</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Chart</h2>
+        <div class="chart-container">
+            <canvas id="test-chart-canvas"></canvas>
+        </div>
+        <button class="test-button" onclick="createTestChart()">Créer Chart Test</button>
+        <button class="test-button" onclick="openTestSettings()">Ouvrir Paramètres</button>
+        <button class="test-button" onclick="simulatePolling()">Simuler Polling</button>
+        <button class="test-button" onclick="checkLocalStorage()">Vérifier localStorage</button>
+        <button class="test-button" onclick="clearAllData()">Vider Données</button>
+        <div id="chartStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Résultats</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="log" id="log">
+        <div>🚀 Test de persistance final initialisé</div>
+        <div>👉 Suivez les étapes ci-dessus pour tester la persistance</div>
+    </div>
+
+    <script type="module">
+        import { ChartHost } from './charts/core/ChartHost.js';
+        import { initChart } from './charts/index.js';
+        
+        const log = document.getElementById('log');
+        let testChart = null;
+        let testData = [];
+        
+        function addLog(message, type = 'info') {
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            div.style.color = type === 'error' ? '#f87171' : type === 'success' ? '#34d399' : '#e5e7eb';
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function setStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function setResult(message, type = 'info') {
+            const element = document.getElementById('testResults');
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        window.createTestChart = function() {
+            addLog('🧪 Création chart test...');
+            
+            try {
+                // Créer des données de test
+                testData = [];
+                const now = Date.now();
+                for (let i = 0; i < 100; i++) {
+                    testData.push({
+                        x: now - (100 - i) * 60000, // 1 minute entre chaque point
+                        y: Math.sin(i * 0.1) * 100 + 200 + Math.random() * 50
+                    });
+                }
+                
+                // Créer le chart via le système
+                testChart = initChart('test-chart', 'test-chart-canvas', {
+                    type: 'power',
+                    tr: 1
+                });
+                
+                if (testChart) {
+                    // Ajouter des données de test
+                    testChart.host.setData([{
+                        label: 'Test Signal',
+                        data: testData,
+                        borderColor: '#6366f1',
+                        backgroundColor: '#6366f120',
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]);
+                    
+                    addLog('✅ Chart test créé avec succès');
+                    setStatus('chartStatus', '✅ Chart test créé', 'success');
+                } else {
+                    addLog('❌ Échec création chart test', 'error');
+                    setStatus('chartStatus', '❌ Échec création chart', 'error');
+                }
+                
+            } catch (error) {
+                addLog('❌ Erreur création chart: ' + error.message, 'error');
+                setStatus('chartStatus', '❌ Erreur création chart: ' + error.message, 'error');
+            }
+        };
+
+        window.openTestSettings = function() {
+            addLog('🧪 Ouverture paramètres test...');
+            
+            if (!testChart) {
+                addLog('❌ Chart test non créé', 'error');
+                return;
+            }
+            
+            try {
+                // Simuler l'événement d'ouverture des paramètres
+                document.dispatchEvent(new CustomEvent('chart:open-settings', {
+                    detail: { chartKey: 'test-chart' }
+                }));
+                
+                addLog('✅ Événement d\'ouverture envoyé');
+                addLog('ℹ️ Modifiez des paramètres et cliquez sur "Valider"');
+                
+            } catch (error) {
+                addLog('❌ Erreur ouverture paramètres: ' + error.message, 'error');
+            }
+        };
+
+        window.simulatePolling = function() {
+            addLog('🧪 Simulation du polling...');
+            
+            if (!testChart) {
+                addLog('❌ Chart test non créé', 'error');
+                return;
+            }
+            
+            try {
+                // Générer de nouvelles données
+                const newData = [];
+                const now = Date.now();
+                for (let i = 0; i < 100; i++) {
+                    newData.push({
+                        x: now - (100 - i) * 60000,
+                        y: Math.sin(i * 0.15) * 120 + 180 + Math.random() * 60
+                    });
+                }
+                
+                // Mettre à jour les données (comme le ferait le polling)
+                testChart.host.setData([{
+                    label: 'Test Signal (Updated)',
+                    data: newData,
+                    borderColor: '#6366f1',
+                    backgroundColor: '#6366f120',
+                    borderWidth: 2,
+                    tension: 0.1
+                }]);
+                
+                addLog('✅ Données mises à jour (simulation polling)');
+                addLog('ℹ️ Vérifiez que les paramètres sont toujours appliqués');
+                
+                // Vérifier les paramètres sauvegardés
+                const settings = testChart.host.currentSettings;
+                if (settings) {
+                    addLog(`📋 Paramètres sauvegardés: Y=0:${settings.yZero}, Grille:${settings.showGrid}, Ligne:${settings.lineWidth}px`);
+                    setResult(`✅ Paramètres préservés après polling: Y=0:${settings.yZero}, Grille:${settings.showGrid}, Ligne:${settings.lineWidth}px`, 'success');
+                } else {
+                    addLog('⚠️ Aucun paramètre sauvegardé trouvé', 'error');
+                    setResult('❌ Aucun paramètre sauvegardé trouvé', 'error');
+                }
+                
+            } catch (error) {
+                addLog('❌ Erreur simulation polling: ' + error.message, 'error');
+            }
+        };
+
+        window.checkLocalStorage = function() {
+            addLog('🧪 Vérification localStorage...');
+            
+            const keys = Object.keys(localStorage);
+            const chartKeys = keys.filter(key => key.includes('chart-'));
+            
+            if (chartKeys.length === 0) {
+                addLog('ℹ️ Aucun paramètre de chart dans localStorage');
+                setResult('ℹ️ Aucun paramètre trouvé dans localStorage', 'info');
+                return;
+            }
+            
+            chartKeys.forEach(key => {
+                try {
+                    const value = localStorage.getItem(key);
+                    addLog(`📋 ${key}: ${value}`);
+                } catch (error) {
+                    addLog(`❌ Erreur lecture ${key}: ${error.message}`, 'error');
+                }
+            });
+            
+            setResult(`✅ ${chartKeys.length} paramètre(s) trouvé(s) dans localStorage`, 'success');
+        };
+
+        window.clearAllData = function() {
+            addLog('🧹 Nettoyage de toutes les données...');
+            
+            // Vider localStorage
+            const keys = Object.keys(localStorage);
+            const chartKeys = keys.filter(key => key.includes('chart-'));
+            chartKeys.forEach(key => {
+                localStorage.removeItem(key);
+                addLog(`🗑️ Supprimé: ${key}`);
+            });
+            
+            // Réinitialiser le chart
+            if (testChart) {
+                testChart.host.currentSettings = null;
+                addLog('🗑️ Paramètres du chart réinitialisés');
+            }
+            
+            addLog(`✅ ${chartKeys.length} paramètre(s) supprimé(s)`);
+            setResult(`✅ ${chartKeys.length} paramètre(s) supprimé(s)`, 'success');
+        };
+
+        // Initialisation
+        addLog('🚀 Test de persistance final initialisé');
+        addLog('👉 Suivez les étapes pour tester la persistance des paramètres');
+        addLog('ℹ️ Le test vérifie que les paramètres persistent après le polling');
+    </script>
+</body>
+</html>

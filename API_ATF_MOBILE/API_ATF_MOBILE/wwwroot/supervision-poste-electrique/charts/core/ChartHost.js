@@ -29,8 +29,12 @@ export class ChartHost {
     this.currentTimeRange = 60; // 1 heure par défaut
     this.persistenceKey = `chart-${canvasId}`;
     
-    // Restaurer la base de temps depuis localStorage
+    // Paramètres sauvegardés
+    this.currentSettings = null;
+    
+    // Restaurer la base de temps et les paramètres depuis localStorage
     this.loadTimeRange();
+    this.loadSettings();
     
     // Options par défaut (thème sombre, décimation, formats)
     this.defaultOptions = {
@@ -169,6 +173,11 @@ export class ChartHost {
       this.handleContextMenu(event);
     });
     
+    // Appliquer les paramètres sauvegardés après initialisation
+    setTimeout(() => {
+      this.applySavedSettings();
+    }, 100);
+    
     console.log(`[ChartHost] Initialisé pour canvas #${this.canvasId}`);
   }
   
@@ -190,10 +199,19 @@ export class ChartHost {
     
     // Mettre à jour les limites des axes selon les données et la base de temps
     this.updateTimeAxis(this.currentTimeRange);
-    this.updateYAxis();
     
     // Mettre à jour le graphique avec animation
     this.chart.update('active');
+    
+    // Réappliquer les paramètres sauvegardés après mise à jour des données
+    // Cela inclut les paramètres Y qui doivent écraser updateYAxis()
+    setTimeout(() => {
+      this.applySavedSettings();
+      // Si pas de paramètres Y spécifiques, alors calculer automatiquement
+      if (!this.currentSettings?.yZero && !this.currentSettings?.yAuto) {
+        this.updateYAxis();
+      }
+    }, 50);
     
     console.log(`[ChartHost] Données mises à jour: ${datasets.length} dataset(s), total points: ${datasets.reduce((sum, ds) => sum + (ds.data?.length || 0), 0)}`);
   }
@@ -505,6 +523,94 @@ export class ChartHost {
     } catch (error) {
       console.warn('[ChartHost] Erreur chargement localStorage:', error);
     }
+  }
+
+  /**
+   * Sauvegarde les paramètres dans localStorage
+   * @param {Object} settings - Paramètres à sauvegarder
+   */
+  saveSettings(settings) {
+    try {
+      localStorage.setItem(`${this.persistenceKey}-settings`, JSON.stringify(settings));
+      this.currentSettings = settings;
+      console.log(`[ChartHost] Paramètres sauvegardés:`, settings);
+    } catch (error) {
+      console.warn('[ChartHost] Erreur sauvegarde localStorage:', error);
+    }
+  }
+
+  /**
+   * Restaure les paramètres depuis localStorage
+   */
+  loadSettings() {
+    try {
+      const saved = localStorage.getItem(`${this.persistenceKey}-settings`);
+      if (saved) {
+        this.currentSettings = JSON.parse(saved);
+        console.log(`[ChartHost] Paramètres restaurés:`, this.currentSettings);
+      }
+    } catch (error) {
+      console.warn('[ChartHost] Erreur chargement paramètres localStorage:', error);
+    }
+  }
+
+  /**
+   * Applique les paramètres sauvegardés au chart
+   */
+  applySavedSettings() {
+    if (!this.currentSettings || !this.chart) return;
+    
+    const settings = this.currentSettings;
+    const chart = this.chart;
+    const options = chart.options;
+    
+    console.log(`[ChartHost] Application des paramètres sauvegardés:`, settings);
+    
+    // Appliquer les paramètres de base
+    if (options.scales?.x?.grid) {
+      options.scales.x.grid.display = settings.showGrid ?? true;
+    }
+    if (options.plugins?.legend) {
+      options.plugins.legend.display = settings.showLegend ?? true;
+    }
+    if (options.plugins?.tooltip) {
+      options.plugins.tooltip.enabled = settings.showTooltips ?? true;
+    }
+    if (options.plugins?.crosshair) {
+      options.plugins.crosshair.enabled = settings.showCrosshair ?? true;
+    }
+    
+    // Appliquer les paramètres Y
+    if (settings.yZero) {
+      options.scales.y.min = 0;
+      options.scales.y.max = undefined;
+    } else if (settings.yAuto) {
+      options.scales.y.min = undefined;
+      options.scales.y.max = undefined;
+    }
+    
+    // Appliquer les paramètres des datasets
+    chart.data.datasets?.forEach(dataset => {
+      if (settings.lineWidth !== undefined) {
+        dataset.borderWidth = settings.lineWidth;
+      }
+      if (settings.tension !== undefined) {
+        dataset.tension = settings.tension;
+      }
+      if (settings.alpha !== undefined && dataset.backgroundColor && dataset.borderColor) {
+        const baseColor = dataset.borderColor;
+        const alphaHex = Math.round(settings.alpha * 2.55).toString(16).padStart(2, '0');
+        dataset.backgroundColor = baseColor + alphaHex;
+      }
+    });
+    
+    // Appliquer les paramètres de zoom/pan
+    if (this.zoomPanController) {
+      this.zoomPanController.setZoomEnabled(settings.enableZoom ?? true);
+      this.zoomPanController.setPanEnabled(settings.enablePan ?? true);
+    }
+    
+    chart.update('none');
   }
 
   /**

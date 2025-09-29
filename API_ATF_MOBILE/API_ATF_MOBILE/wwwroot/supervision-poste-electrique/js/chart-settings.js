@@ -309,6 +309,9 @@ function openNewSystemSettings(chartKey, chartInstance) {
     </div>
   `;
   
+  // === FONCTION D'APPLICATION DES PARAMÈTRES (définie en dehors du setTimeout) ===
+  let applySettingsToChart;
+  
   // === GESTIONNAIRES D'ÉVÉNEMENTS ===
   setTimeout(() => {
     console.log(`[chart-settings] Configuration des gestionnaires pour ${chartKey}`);
@@ -360,7 +363,7 @@ function openNewSystemSettings(chartKey, chartInstance) {
             }
 
             // Fonction d'application des paramètres
-            const applySettingsToChart = (source = 'unknown') => {
+            applySettingsToChart = (source = 'unknown') => {
       console.log(`[chart-settings] applySettingsToChart appelée depuis ${source}`);
       
       if (!chartHost || !chart) {
@@ -468,14 +471,15 @@ function openNewSystemSettings(chartKey, chartInstance) {
         console.log(`[chart-settings] Dataset ${index} mis à jour: largeur=${lineWidth}px, tension=${tension}, alpha=${alpha}%`);
       });
       
-      // 9. Sauvegarder les paramètres dans le ChartHost pour persistance
+      // 9. Sauvegarder les paramètres dans localStorage via ChartHost
       if (chartHost) {
-        chartHost.currentSettings = {
+        const settings = {
           showGrid, showLegend, showTooltips, showCrosshair,
           tension, alpha, yZero, yAuto, timeFormat, yUnit,
           enableZoom, enablePan, zoomSpeed, refreshRate, lineWidth
         };
-        console.log(`[chart-settings] Paramètres sauvegardés dans ChartHost`);
+        chartHost.saveSettings(settings);
+        console.log(`[chart-settings] Paramètres sauvegardés dans localStorage`);
       }
       
       // 10. Mise à jour du graphique
@@ -571,17 +575,41 @@ function openNewSystemSettings(chartKey, chartInstance) {
       
       console.log(`[chart-settings] Chargement de l'état actuel du chart`);
       
-      // TOUJOURS charger depuis l'état actuel du chart, pas depuis les paramètres sauvegardés
-      // Les paramètres sauvegardés ne sont utilisés que pour la persistance, pas pour l'affichage initial
-      const showGrid = options.scales?.x?.grid?.display ?? true;
-      const showLegend = options.plugins?.legend?.display ?? true;
-      const showTooltips = !options.interaction?.intersect ?? true;
-      const showCrosshair = options.plugins?.crosshair?.enabled ?? true;
-      const yZero = options.scales?.y?.min === 0;
-      const yAuto = !options.scales?.y?.min && !options.scales?.y?.max;
-      const timeFormat = options.scales?.x?.time?.tooltipFormat || 'HH:mm:ss';
-      const lineWidth = datasets.length > 0 ? datasets[0].borderWidth || 2 : 2;
-      const tension = datasets.length > 0 ? datasets[0].tension || 0.1 : 0.1;
+      // Charger depuis les paramètres sauvegardés si disponibles, sinon depuis l'état actuel
+      let showGrid, showLegend, showTooltips, showCrosshair, yZero, yAuto, timeFormat, lineWidth, tension;
+      let alpha = 10, enableZoom = true, enablePan = true, zoomSpeed = 0.1, refreshRate = 1000;
+      
+      if (chartHost.currentSettings) {
+        // Utiliser les paramètres sauvegardés
+        const settings = chartHost.currentSettings;
+        showGrid = settings.showGrid ?? true;
+        showLegend = settings.showLegend ?? true;
+        showTooltips = settings.showTooltips ?? true;
+        showCrosshair = settings.showCrosshair ?? true;
+        yZero = settings.yZero ?? false;
+        yAuto = settings.yAuto ?? true;
+        timeFormat = settings.timeFormat || 'HH:mm:ss';
+        lineWidth = settings.lineWidth || 2;
+        tension = settings.tension || 0.1;
+        alpha = settings.alpha || 10;
+        enableZoom = settings.enableZoom ?? true;
+        enablePan = settings.enablePan ?? true;
+        zoomSpeed = settings.zoomSpeed || 0.1;
+        refreshRate = settings.refreshRate || 1000;
+        console.log(`[chart-settings] Paramètres chargés depuis localStorage:`, settings);
+      } else {
+        // Fallback vers l'état actuel du chart
+        showGrid = options.scales?.x?.grid?.display ?? true;
+        showLegend = options.plugins?.legend?.display ?? true;
+        showTooltips = !options.interaction?.intersect ?? true;
+        showCrosshair = options.plugins?.crosshair?.enabled ?? true;
+        yZero = options.scales?.y?.min === 0;
+        yAuto = !options.scales?.y?.min && !options.scales?.y?.max;
+        timeFormat = options.scales?.x?.time?.tooltipFormat || 'HH:mm:ss';
+        lineWidth = datasets.length > 0 ? datasets[0].borderWidth || 2 : 2;
+        tension = datasets.length > 0 ? datasets[0].tension || 0.1 : 0.1;
+        console.log(`[chart-settings] Paramètres chargés depuis l'état actuel du chart`);
+      }
       
       // === APPLIQUER AUX CONTRÔLES ===
       const gridCheckbox = body.querySelector('#new-chart-show-grid');
@@ -593,6 +621,11 @@ function openNewSystemSettings(chartKey, chartInstance) {
       const timeFormatSelect = body.querySelector('#new-chart-time-format');
       const lineWidthSelect = body.querySelector('#new-chart-line-width');
       const tensionSelect = body.querySelector('#new-chart-tension');
+      const alphaRange = body.querySelector('#new-chart-alpha');
+      const zoomCheckbox = body.querySelector('#new-chart-enable-zoom');
+      const panCheckbox = body.querySelector('#new-chart-enable-pan');
+      const zoomSpeedRange = body.querySelector('#new-chart-zoom-speed');
+      const refreshRateSelect = body.querySelector('#new-chart-refresh-rate');
       
       if (gridCheckbox) gridCheckbox.checked = showGrid;
       if (legendCheckbox) legendCheckbox.checked = showLegend;
@@ -603,6 +636,11 @@ function openNewSystemSettings(chartKey, chartInstance) {
       if (timeFormatSelect) timeFormatSelect.value = timeFormat;
       if (lineWidthSelect) lineWidthSelect.value = String(lineWidth);
       if (tensionSelect) tensionSelect.value = String(tension);
+      if (alphaRange) alphaRange.value = String(alpha);
+      if (zoomCheckbox) zoomCheckbox.checked = enableZoom;
+      if (panCheckbox) panCheckbox.checked = enablePan;
+      if (zoomSpeedRange) zoomSpeedRange.value = String(zoomSpeed);
+      if (refreshRateSelect) refreshRateSelect.value = String(refreshRate);
       
       console.log(`[chart-settings] État chargé: grille=${showGrid}, légende=${showLegend}, tooltips=${showTooltips}, largeur=${lineWidth}px`);
     };
@@ -635,103 +673,105 @@ function openNewSystemSettings(chartKey, chartInstance) {
     // Les paramètres seront appliqués seulement quand l'utilisateur clique sur "Valider"
     console.log(`[chart-settings] Contrôles initialisés, en attente des actions utilisateur`);
     
-  }, 100);
-  
-  // Gérer la fermeture avec Escape
-  const handleKeydown = (evt) => {
-    if (evt.key === 'Escape') {
+    // === GESTIONNAIRES D'ÉVÉNEMENTS (définis après applySettingsToChart) ===
+    
+    // Gérer la fermeture avec Escape
+    const handleKeydown = (evt) => {
+      if (evt.key === 'Escape') {
+        evt.preventDefault();
+        closeDialog();
+      }
+    };
+    
+    // Gérer la fermeture avec clic sur overlay
+    const handleBackdropClick = (evt) => {
+      if (evt.target === dialog) {
+        closeDialog();
+      }
+    };
+    
+    // Gérer la fermeture avec le bouton "Fermer"
+    const handleCloseButton = (evt) => {
       evt.preventDefault();
       closeDialog();
+    };
+    
+    // Gérer la fermeture avec le bouton "Valider"
+    const handleSaveButton = (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      console.log(`[chart-settings] Bouton Valider cliqué`);
+      
+      // Appliquer les paramètres une dernière fois avant de fermer
+      applySettingsToChart('save-and-close');
+      
+      // Attendre un peu pour que les paramètres soient appliqués
+      setTimeout(() => {
+        closeDialog();
+      }, 100);
+    };
+    
+    // Gérer le bouton "Réinitialiser"
+    const handleResetButton = (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      console.log(`[chart-settings] Bouton Réinitialiser cliqué`);
+      
+      // Remettre les paramètres par défaut
+      const gridCheckbox = body.querySelector('#new-chart-show-grid');
+      const legendCheckbox = body.querySelector('#new-chart-show-legend');
+      const tooltipsCheckbox = body.querySelector('#new-chart-show-tooltips');
+      const crosshairCheckbox = body.querySelector('#new-chart-show-crosshair');
+      const yZeroCheckbox = body.querySelector('#new-chart-y-zero');
+      const yAutoCheckbox = body.querySelector('#new-chart-y-auto');
+      const timeFormatSelect = body.querySelector('#new-chart-time-format');
+      const lineWidthSelect = body.querySelector('#new-chart-line-width');
+      const tensionSelect = body.querySelector('#new-chart-tension');
+      
+      // Valeurs par défaut
+      if (gridCheckbox) gridCheckbox.checked = true;
+      if (legendCheckbox) legendCheckbox.checked = true;
+      if (tooltipsCheckbox) tooltipsCheckbox.checked = true;
+      if (crosshairCheckbox) crosshairCheckbox.checked = true;
+      if (yZeroCheckbox) yZeroCheckbox.checked = false;
+      if (yAutoCheckbox) yAutoCheckbox.checked = true;
+      if (timeFormatSelect) timeFormatSelect.value = 'HH:mm:ss';
+      if (lineWidthSelect) lineWidthSelect.value = '2';
+      if (tensionSelect) tensionSelect.value = '0.1';
+      
+      // Appliquer les paramètres par défaut
+      applySettingsToChart('reset');
+    };
+    
+    document.addEventListener('keydown', handleKeydown);
+    dialog.addEventListener('click', handleBackdropClick);
+    
+    // Ajouter les gestionnaires pour les boutons
+    const closeBtn = dialog.querySelector('[data-dialog-close]');
+    const saveBtn = dialog.querySelector('#chart-settings-save');
+    const resetBtnDialog = dialog.querySelector('#chart-settings-reset');
+    
+    if (closeBtn) {
+      closeBtn.addEventListener('click', handleCloseButton);
+      console.log(`[chart-settings] Gestionnaire bouton Fermer attaché`);
     }
-  };
-  
-  // Gérer la fermeture avec clic sur overlay
-  const handleBackdropClick = (evt) => {
-    if (evt.target === dialog) {
-      closeDialog();
+    if (saveBtn) {
+      saveBtn.addEventListener('click', handleSaveButton);
+      console.log(`[chart-settings] Gestionnaire bouton Valider attaché`);
     }
-  };
-  
-  // Gérer la fermeture avec le bouton "Fermer"
-  const handleCloseButton = (evt) => {
-    evt.preventDefault();
-    closeDialog();
-  };
-  
-  // Gérer la fermeture avec le bouton "Valider"
-  const handleSaveButton = (evt) => {
-    evt.preventDefault();
-    evt.stopPropagation();
-    console.log(`[chart-settings] Bouton Valider cliqué`);
+    if (resetBtnDialog) {
+      resetBtnDialog.addEventListener('click', handleResetButton);
+      console.log(`[chart-settings] Gestionnaire bouton Réinitialiser attaché`);
+    }
     
-    // Appliquer les paramètres une dernière fois avant de fermer
-    applySettingsToChart('save-and-close');
+    // Stocker les gestionnaires pour les supprimer plus tard
+    dialog._keydownHandler = handleKeydown;
+    dialog._backdropHandler = handleBackdropClick;
+    dialog._closeHandler = handleCloseButton;
+    dialog._saveHandler = handleSaveButton;
+    dialog._resetHandler = handleResetButton;
     
-    // Attendre un peu pour que les paramètres soient appliqués
-    setTimeout(() => {
-      closeDialog();
-    }, 100);
-  };
-  
-  // Gérer le bouton "Réinitialiser"
-  const handleResetButton = (evt) => {
-    evt.preventDefault();
-    evt.stopPropagation();
-    console.log(`[chart-settings] Bouton Réinitialiser cliqué`);
-    
-    // Remettre les paramètres par défaut
-    const gridCheckbox = body.querySelector('#new-chart-show-grid');
-    const legendCheckbox = body.querySelector('#new-chart-show-legend');
-    const tooltipsCheckbox = body.querySelector('#new-chart-show-tooltips');
-    const crosshairCheckbox = body.querySelector('#new-chart-show-crosshair');
-    const yZeroCheckbox = body.querySelector('#new-chart-y-zero');
-    const yAutoCheckbox = body.querySelector('#new-chart-y-auto');
-    const timeFormatSelect = body.querySelector('#new-chart-time-format');
-    const lineWidthSelect = body.querySelector('#new-chart-line-width');
-    const tensionSelect = body.querySelector('#new-chart-tension');
-    
-    // Valeurs par défaut
-    if (gridCheckbox) gridCheckbox.checked = true;
-    if (legendCheckbox) legendCheckbox.checked = true;
-    if (tooltipsCheckbox) tooltipsCheckbox.checked = true;
-    if (crosshairCheckbox) crosshairCheckbox.checked = true;
-    if (yZeroCheckbox) yZeroCheckbox.checked = false;
-    if (yAutoCheckbox) yAutoCheckbox.checked = true;
-    if (timeFormatSelect) timeFormatSelect.value = 'HH:mm:ss';
-    if (lineWidthSelect) lineWidthSelect.value = '2';
-    if (tensionSelect) tensionSelect.value = '0.1';
-    
-    // Appliquer les paramètres par défaut
-    applySettingsToChart('reset');
-  };
-  
-  document.addEventListener('keydown', handleKeydown);
-  dialog.addEventListener('click', handleBackdropClick);
-  
-  // Ajouter les gestionnaires pour les boutons
-  const closeBtn = dialog.querySelector('[data-dialog-close]');
-  const saveBtn = dialog.querySelector('#chart-settings-save');
-  const resetBtn = dialog.querySelector('#chart-settings-reset');
-  
-  if (closeBtn) {
-    closeBtn.addEventListener('click', handleCloseButton);
-    console.log(`[chart-settings] Gestionnaire bouton Fermer attaché`);
-  }
-          if (saveBtn) {
-    saveBtn.addEventListener('click', handleSaveButton);
-    console.log(`[chart-settings] Gestionnaire bouton Valider attaché`);
-  }
-  if (resetBtn) {
-    resetBtn.addEventListener('click', handleResetButton);
-    console.log(`[chart-settings] Gestionnaire bouton Réinitialiser attaché`);
-  }
-  
-  // Stocker les gestionnaires pour les supprimer plus tard
-  dialog._keydownHandler = handleKeydown;
-  dialog._backdropHandler = handleBackdropClick;
-  dialog._closeHandler = handleCloseButton;
-  dialog._saveHandler = handleSaveButton;
-  dialog._resetHandler = handleResetButton;
+  }, 100);
   
   dialog.showModal();
 }
