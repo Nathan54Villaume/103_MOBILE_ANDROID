@@ -329,7 +329,7 @@ export async function fetchDailySummary(dateInput) {
         pfMin,
       };
     }
-    // Endpoint daily-summary n'existe pas, utiliser des données simulées
+    // Utilisation de données simulées
     console.warn('[api] daily-summary endpoint non disponible, utilisation de données simulées');
     const rand = demoRandom(iso.split('-').join('').length * 97);
     const kwh = 12_500 + rand() * 2_000;

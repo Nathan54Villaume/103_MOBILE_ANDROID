@@ -98,7 +98,7 @@ function applySnapshotToBuffers(tr, d, tms) {
   Kpi.update(`${ns}.p_kw`, { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t, unit: 'kW' });
   Kpi.update(`${ns}.q_kvar`, { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t, unit: 'kvar' });
   Kpi.update(`${ns}.pf`, { value: d.pf, avg: d.pf_avg, max: d.pf_max, min: d.pf_min, ts: t });
-  Kpi.update(`${ns}.e_kwh`, { value: d.e_kwh, ts: t, unit: 'kWh' });
+  Kpi.update(`${ns}.e_kwh`, { value: d.e_kwh ? d.e_kwh / 1000 : null, ts: t, unit: 'MWh' });
   ['u12', 'u23', 'u31'].forEach((phase, idx) => {
     const key = `${ns}.u${idx + 1}`;
     const mapKey = phase === 'u12' ? 'u12_v' : phase === 'u23' ? 'u23_v' : 'u31_v';

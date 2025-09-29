@@ -111,32 +111,32 @@ function initWindows() {
 // Créer et initialiser les KPI pour les transformateurs
 // Cette fonction remplace l'ancienne decorateKpiCards() qui ne créait pas les KPI
 function initKPIs() {
-  // Définitions des KPI pour TR1
+  // Définitions des KPI pour TR1 - Ordre selon la photo
   const tr1KpiDefs = [
-    { key: 'tr1.p_kw', title: 'Puissance active', unit: 'kW', kind: 'p_kw', decimals: 1 },
-    { key: 'tr1.q_kvar', title: 'Puissance réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
-    { key: 'tr1.pf', title: 'Facteur de puissance', unit: '', kind: 'pf', decimals: 3 },
-    { key: 'tr1.u1', title: 'Tension U12', unit: 'V', kind: 'u', decimals: 1 },
-    { key: 'tr1.u2', title: 'Tension U23', unit: 'V', kind: 'u', decimals: 1 },
-    { key: 'tr1.u3', title: 'Tension U31', unit: 'V', kind: 'u', decimals: 1 },
-    { key: 'tr1.i1', title: 'Courant I1', unit: 'A', kind: 'i', decimals: 1 },
-    { key: 'tr1.i2', title: 'Courant I2', unit: 'A', kind: 'i', decimals: 1 },
-    { key: 'tr1.i3', title: 'Courant I3', unit: 'A', kind: 'i', decimals: 1 },
-    { key: 'tr1.e_kwh', title: 'Énergie', unit: 'kWh', kind: 'e', decimals: 1 }
+    { key: 'tr1.p_kw', title: 'Puissance', unit: 'kW', kind: 'p_kw', decimals: 1 },
+    { key: 'tr1.u1', title: 'U12', unit: 'V', kind: 'u', decimals: 0 },
+    { key: 'tr1.u2', title: 'U23', unit: 'V', kind: 'u', decimals: 0 },
+    { key: 'tr1.u3', title: 'U31', unit: 'V', kind: 'u', decimals: 0 },
+    { key: 'tr1.pf', title: 'Facteur de Puissance', unit: '', kind: 'pf', decimals: 3 },
+    { key: 'tr1.q_kvar', title: 'Réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
+    { key: 'tr1.i1', title: 'I1', unit: 'A', kind: 'i', decimals: 0 },
+    { key: 'tr1.i2', title: 'I2', unit: 'A', kind: 'i', decimals: 0 },
+    { key: 'tr1.i3', title: 'I3', unit: 'A', kind: 'i', decimals: 0 },
+    { key: 'tr1.e_kwh', title: 'Énergie', unit: 'MWh', kind: 'e', decimals: 1 }
   ];
 
-  // Définitions des KPI pour TR2
+  // Définitions des KPI pour TR2 - Ordre selon la photo
   const tr2KpiDefs = [
-    { key: 'tr2.p_kw', title: 'Puissance active', unit: 'kW', kind: 'p_kw', decimals: 1 },
-    { key: 'tr2.q_kvar', title: 'Puissance réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
-    { key: 'tr2.pf', title: 'Facteur de puissance', unit: '', kind: 'pf', decimals: 3 },
-    { key: 'tr2.u1', title: 'Tension U12', unit: 'V', kind: 'u', decimals: 1 },
-    { key: 'tr2.u2', title: 'Tension U23', unit: 'V', kind: 'u', decimals: 1 },
-    { key: 'tr2.u3', title: 'Tension U31', unit: 'V', kind: 'u', decimals: 1 },
-    { key: 'tr2.i1', title: 'Courant I1', unit: 'A', kind: 'i', decimals: 1 },
-    { key: 'tr2.i2', title: 'Courant I2', unit: 'A', kind: 'i', decimals: 1 },
-    { key: 'tr2.i3', title: 'Courant I3', unit: 'A', kind: 'i', decimals: 1 },
-    { key: 'tr2.e_kwh', title: 'Énergie', unit: 'kWh', kind: 'e', decimals: 1 }
+    { key: 'tr2.p_kw', title: 'Puissance', unit: 'kW', kind: 'p_kw', decimals: 1 },
+    { key: 'tr2.u1', title: 'U12', unit: 'V', kind: 'u', decimals: 0 },
+    { key: 'tr2.u2', title: 'U23', unit: 'V', kind: 'u', decimals: 0 },
+    { key: 'tr2.u3', title: 'U31', unit: 'V', kind: 'u', decimals: 0 },
+    { key: 'tr2.pf', title: 'Facteur de Puissance', unit: '', kind: 'pf', decimals: 3 },
+    { key: 'tr2.q_kvar', title: 'Réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
+    { key: 'tr2.i1', title: 'I1', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr2.i2', title: 'I2', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr2.i3', title: 'I3', unit: 'A', kind: 'i', decimals: 1 },
+    { key: 'tr2.e_kwh', title: 'Énergie', unit: 'MWh', kind: 'e', decimals: 1 }
   ];
 
   // Créer les KPI

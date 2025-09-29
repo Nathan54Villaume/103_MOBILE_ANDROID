@@ -78,22 +78,20 @@ function buildCard(def) {
   card.dataset.key = def.key;
   if (def.kind) card.dataset.kind = def.kind;
 
-  const header = document.createElement('button');
-  header.type = 'button';
+  const header = document.createElement('div');
   header.className = 'kpi-title';
-  header.setAttribute('data-collapsible-trigger', '');
   header.appendChild(createIcon(resolveIcon(def)));
   header.append(def.title || def.key);
 
   const stats = document.createElement('div');
   stats.className = 'kpi-stats';
   stats.innerHTML = `
-    <div>
-      <span class="kpi-stat-label">Moy</span>
-      <span class="kpi-stat-value" data-role="avg">-</span>
+    <div class="kpi-stats-labels">
+      <span class="kpi-stat-label">MOYENNE</span>
+      <span class="kpi-stat-label">MAX</span>
     </div>
-    <div>
-      <span class="kpi-stat-label">Max</span>
+    <div class="kpi-stats-values">
+      <span class="kpi-stat-value" data-role="avg">-</span>
       <span class="kpi-stat-value" data-role="max">-</span>
     </div>`;
 
@@ -107,7 +105,7 @@ function buildCard(def) {
   unitEl.textContent = def.unit || '';
   valueWrap.append(valueEl, unitEl);
 
-  card.append(header, stats, valueWrap);
+  card.append(header, valueWrap, stats);
 
   header.addEventListener('click', () => {
     const dialog = ensureDialog();

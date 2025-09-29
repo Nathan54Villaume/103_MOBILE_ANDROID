@@ -310,6 +310,14 @@ if (dialog) {
     closeDialog();
   });
   dialog.addEventListener('close', () => { currentChartKey = null; });
+  
+  // Gérer le bouton Fermer
+  const closeBtn = dialog.querySelector('[data-dialog-close]');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      closeDialog();
+    });
+  }
 }
 
 document.addEventListener('chart:open-settings', (evt) => {
