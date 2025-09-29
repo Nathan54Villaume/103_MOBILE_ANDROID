@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch Chrome against localhost",
             "url": "http://localhost:8088",
-            "webRoot": "${workspaceFolder}"
+            "webRoot": "${workspaceFolder}/API_ATF_MOBILE/API_ATF_MOBILE/wwwroot/supervision-poste-electrique"
         }
     ]
 }

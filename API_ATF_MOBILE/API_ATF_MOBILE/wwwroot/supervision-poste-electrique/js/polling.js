@@ -1,273 +1,231 @@
-import { $, fmt } from './utils.js';
+﻿import { $, fmt } from './utils.js';
 import { state, bufs, prune } from './state.js';
 import { fetchJSON, normalizeSnapshot, loadSeries } from './api.js';
 import { refreshCharts } from './charts.js';
 import { Kpi } from './kpi.js';
+import { showLoader as uiShowLoader, hideLoader as uiHideLoader, showToast } from './ui.js';
 
-// \u00c9tat connexion
+// Connexion indicator --------------------------------------------------------
 export function setConn(connected, message = '') {
-    const led = $('#conn-led'), txt = $('#conn-text');
-    led.style.backgroundColor = connected ? '#10b981' : '#ef4444';
-    txt.textContent = connected ? 'Connect\u00e9' : (message || 'D\u00e9connect\u00e9');
-    txt.title = connected ? '' : message;
+  const led = $('#conn-led');
+  const txt = $('#conn-text');
+  if (!led || !txt) return;
+  led.style.backgroundColor = connected ? '#10b981' : '#ef4444';
+  txt.textContent = connected ? 'Connecté' : (message || 'Déconnecté');
+  txt.title = connected ? '' : message;
 }
 
-export function hideLoader() {
-    if (state.initialLoad) {
-        state.initialLoad = false;
-        $('#loader').classList.remove('active');
-    }
+function finishInitialLoad() {
+  if (!state.initialLoad) return;
+  state.initialLoad = false;
+  uiHideLoader();
 }
 
-// ===== KPIs (legacy DOM si pr\u00e9sent \u2013 reste compatible) =====
+let lastErrorToastTs = 0;
+
+// ---------------------------------------------------------------------------
 export function updateKPIs(patch) {
-    const map = [
-        ['t1_p_kw', 't1-p', 1], ['t1_q_kvar', 't1-q', 1], ['t1_pf', 't1-pf', 3],
-        ['t1_u12_v', 't1-u12', 0], ['t1_u23_v', 't1-u23', 0], ['t1_u31_v', 't1-u31', 0],
-        ['t1_i1_a', 't1-i1', 1], ['t1_i2_a', 't1-i2', 1], ['t1_i3_a', 't1-i3', 1],
-        ['t1_e_kwh', 't1-e', 0],
-        ['t2_p_kw', 't2-p', 1], ['t2_q_kvar', 't2-q', 1], ['t2_pf', 't2-pf', 3],
-        ['t2_u12_v', 't2-u12', 0], ['t2_u23_v', 't2-u23', 0], ['t2_u31_v', 't2-u31', 0],
-        ['t2_i1_a', 't2-i1', 1], ['t2_i2_a', 't2-i2', 1], ['t2_i3_a', 't2-i3', 1],
-        ['t2_e_kwh', 't2-e', 0],
-
-        ['t1_p_kw_avg', 't1-p-avg', 1], ['t1_p_kw_max', 't1-p-max', 1],
-        ['t1_q_kvar_avg', 't1-q-avg', 1], ['t1_q_kvar_max', 't1-q-max', 1],
-        ['t1_u12_v_avg', 't1-u12-avg', 0], ['t1_u12_v_max', 't1-u12-max', 0],
-        ['t1_u23_v_avg', 't1-u23-avg', 0], ['t1_u23_v_max', 't1-u23-max', 0],
-        ['t1_u31_v_avg', 't1-u31-avg', 0], ['t1_u31_v_max', 't1-u31-max', 0],
-        ['t1_i1_a_avg', 't1-i1-avg', 1], ['t1_i1_a_max', 't1-i1-max', 1],
-        ['t1_i2_a_avg', 't1-i2-avg', 1], ['t1_i2_a_max', 't1-i2-max', 1],
-        ['t1_i3_a_avg', 't1-i3-avg', 1], ['t1_i3_a_max', 't1-i3-max', 1],
-
-        ['t2_p_kw_avg', 't2-p-avg', 1], ['t2_p_kw_max', 't2-p-max', 1],
-        ['t2_q_kvar_avg', 't2-q-avg', 1], ['t2_q_kvar_max', 't2-q-max', 1],
-        ['t2_u12_v_avg', 't2-u12-avg', 0], ['t2_u12_v_max', 't2-u12-max', 0],
-        ['t2_u23_v_avg', 't2-u23-avg', 0], ['t2_u23_v_max', 't2-u23-max', 0],
-        ['t2_u31_v_avg', 't2-u31-avg', 0], ['t2_u31_v_max', 't2-u31-max', 0],
-        ['t2_i1_a_avg', 't2-i1-avg', 1], ['t2_i1_a_max', 't2-i1-max', 1],
-        ['t2_i2_a_avg', 't2-i2-avg', 1], ['t2_i2_a_max', 't2-i2-max', 1],
-        ['t2_i3_a_avg', 't2-i3-avg', 1], ['t2_i3_a_max', 't2-i3-max', 1],
-
-        ['t1_pf_avg', 't1-pf-avg', 3], ['t1_pf_min', 't1-pf-min', 3],
-        ['t2_pf_avg', 't2-pf-avg', 3], ['t2_pf_min', 't2-pf-min', 3],
-    ];
-    for (const [key, id, dec] of map) {
-        if (Object.prototype.hasOwnProperty.call(patch, key)) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = fmt(patch[key], dec);
-        }
+  const map = [
+    ['t1_p_kw', 't1-p', 1], ['t1_q_kvar', 't1-q', 1], ['t1_pf', 't1-pf', 3],
+    ['t1_u12_v', 't1-u12', 0], ['t1_u23_v', 't1-u23', 0], ['t1_u31_v', 't1-u31', 0],
+    ['t1_i1_a', 't1-i1', 1], ['t1_i2_a', 't1-i2', 1], ['t1_i3_a', 't1-i3', 1],
+    ['t1_e_kwh', 't1-e', 0],
+    ['t2_p_kw', 't2-p', 1], ['t2_q_kvar', 't2-q', 1], ['t2_pf', 't2-pf', 3],
+    ['t2_u12_v', 't2-u12', 0], ['t2_u23_v', 't2-u23', 0], ['t2_u31_v', 't2-u31', 0],
+    ['t2_i1_a', 't2-i1', 1], ['t2_i2_a', 't2-i2', 1], ['t2_i3_a', 't2-i3', 1],
+    ['t2_e_kwh', 't2-e', 0],
+    ['t1_p_kw_avg', 't1-p-avg', 1], ['t1_p_kw_max', 't1-p-max', 1],
+    ['t1_q_kvar_avg', 't1-q-avg', 1], ['t1_q_kvar_max', 't1-q-max', 1],
+    ['t1_u12_v_avg', 't1-u12-avg', 0], ['t1_u12_v_max', 't1-u12-max', 0],
+    ['t1_u23_v_avg', 't1-u23-avg', 0], ['t1_u23_v_max', 't1-u23-max', 0],
+    ['t1_u31_v_avg', 't1-u31-avg', 0], ['t1_u31_v_max', 't1-u31-max', 0],
+    ['t1_i1_a_avg', 't1-i1-avg', 1], ['t1_i1_a_max', 't1-i1-max', 1],
+    ['t1_i2_a_avg', 't1-i2-avg', 1], ['t1_i2_a_max', 't1-i2-max', 1],
+    ['t1_i3_a_avg', 't1-i3-avg', 1], ['t1_i3_a_max', 't1-i3-max', 1],
+    ['t2_p_kw_avg', 't2-p-avg', 1], ['t2_p_kw_max', 't2-p-max', 1],
+    ['t2_q_kvar_avg', 't2-q-avg', 1], ['t2_q_kvar_max', 't2-q-max', 1],
+    ['t2_u12_v_avg', 't2-u12-avg', 0], ['t2_u12_v_max', 't2-u12-max', 0],
+    ['t2_u23_v_avg', 't2-u23-avg', 0], ['t2_u23_v_max', 't2-u23-max', 0],
+    ['t2_u31_v_avg', 't2-u31-avg', 0], ['t2_u31_v_max', 't2-u31-max', 0],
+    ['t2_i1_a_avg', 't2-i1-avg', 1], ['t2_i1_a_max', 't2-i1-max', 1],
+    ['t2_i2_a_avg', 't2-i2-avg', 1], ['t2_i2_a_max', 't2-i2-max', 1],
+    ['t2_i3_a_avg', 't2-i3-avg', 1], ['t2_i3_a_max', 't2-i3-max', 1],
+    ['t1_pf_avg', 't1-pf-avg', 3], ['t1_pf_min', 't1-pf-min', 3],
+    ['t2_pf_avg', 't2-pf-avg', 3], ['t2_pf_min', 't2-pf-min', 3],
+  ];
+  for (const [key, id, dec] of map) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = fmt(patch[key], dec);
     }
-    if ('t1_pf_avg' in patch || 't1_pf_min' in patch) { const row = document.getElementById('t1-pf-stats'); if (row) row.classList.remove('hidden'); }
-    if ('t2_pf_avg' in patch || 't2_pf_min' in patch) { const row = document.getElementById('t2-pf-stats'); if (row) row.classList.remove('hidden'); }
+  }
+  if ('t1_pf_avg' in patch || 't1_pf_min' in patch) {
+    const row = document.getElementById('t1-pf-stats');
+    if (row) row.classList.remove('hidden');
+  }
+  if ('t2_pf_avg' in patch || 't2_pf_min' in patch) {
+    const row = document.getElementById('t2-pf-stats');
+    if (row) row.classList.remove('hidden');
+  }
 }
 
-// Helpers LIVE
 function appendUnique(buf, x, y) {
-    const last = buf.length ? buf[buf.length - 1] : null;
-    if (last && x <= last.x) { if (x === last.x) last.y = y; return; }
-    buf.push({ x, y });
+  const last = buf.length ? buf[buf.length - 1] : null;
+  if (last && x <= last.x) {
+    if (x === last.x) last.y = y;
+    return;
+  }
+  buf.push({ x, y });
 }
 
 function applySnapshotToBuffers(tr, d, tms) {
-    const t = tms ?? (d.ts ? new Date(d.ts).getTime() : Date.now());
+  const t = tms ?? (d.ts ? new Date(d.ts).getTime() : Date.now());
+  const target = tr === 'tr1'
+    ? { p: 'p1', q: 'q1', pf: 'pf1', u12: 'u1_12', u23: 'u1_23', u31: 'u1_31', i1: 'i1_1', i2: 'i1_2', i3: 'i1_3' }
+    : { p: 'p2', q: 'q2', pf: 'pf2', u12: 'u2_12', u23: 'u2_23', u31: 'u2_31', i1: 'i2_1', i2: 'i2_2', i3: 'i2_3' };
 
-    if (tr === 'tr1') {
-        appendUnique(bufs.p1, t, d.p_kw ?? null);
-        appendUnique(bufs.u1_12, t, d.u12_v ?? null);
-        appendUnique(bufs.u1_23, t, d.u23_v ?? null);
-        appendUnique(bufs.u1_31, t, d.u31_v ?? null);
-        appendUnique(bufs.pf1, t, d.pf ?? null);
+  appendUnique(bufs[target.p], t, d.p_kw ?? null);
+  appendUnique(bufs[target.q], t, d.q_kvar ?? null);
+  appendUnique(bufs[target.pf], t, d.pf ?? null);
+  appendUnique(bufs[target.u12], t, d.u12_v ?? null);
+  appendUnique(bufs[target.u23], t, d.u23_v ?? null);
+  appendUnique(bufs[target.u31], t, d.u31_v ?? null);
+  appendUnique(bufs[target.i1], t, d.i1_a ?? null);
+  appendUnique(bufs[target.i2], t, d.i2_a ?? null);
+  appendUnique(bufs[target.i3], t, d.i3_a ?? null);
 
-        updateKPIs({
-            t1_p_kw: d.p_kw, t1_q_kvar: d.q_kvar, t1_pf: d.pf,
-            t1_u12_v: d.u12_v, t1_u23_v: d.u23_v, t1_u31_v: d.u31_v,
-            t1_i1_a: d.i1_a, t1_i2_a: d.i2_a, t1_i3_a: d.i3_a,
-            t1_e_kwh: d.e_kwh
-        });
-        updateKPIs({
-            t1_p_kw_avg: d.p_kw_avg, t1_p_kw_max: d.p_kw_max,
-            t1_q_kvar_avg: d.q_kvar_avg, t1_q_kvar_max: d.q_kvar_max,
-            t1_u12_v_avg: d.u12_v_avg, t1_u12_v_max: d.u12_v_max,
-            t1_u23_v_avg: d.u23_v_avg, t1_u23_v_max: d.u23_v_max,
-            t1_u31_v_avg: d.u31_v_avg, t1_u31_v_max: d.u31_v_max,
-            t1_i1_a_avg: d.i1_a_avg, t1_i1_a_max: d.i1_a_max,
-            t1_i2_a_avg: d.i2_a_avg, t1_i2_a_max: d.i2_a_max,
-            t1_i3_a_avg: d.i3_a_avg, t1_i3_a_max: d.i3_a_max,
-            t1_pf_avg: d.pf_avg, t1_pf_min: d.pf_min
-        });
-
-        // KPI cards
-        Kpi.update('tr1.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t, unit: 'kW' });
-        Kpi.update('tr1.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t, unit: 'kvar' });
-        Kpi.update('tr1.pf', { value: d.pf, avg: d.pf_avg, min: d.pf_min, ts: t });
-        Kpi.update('tr1.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t, unit: 'V' });
-        Kpi.update('tr1.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t, unit: 'V' });
-        Kpi.update('tr1.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t, unit: 'V' });
-        Kpi.update('tr1.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t, unit: 'A' });
-        Kpi.update('tr1.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t, unit: 'A' });
-        Kpi.update('tr1.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t, unit: 'A' });
-        Kpi.update('tr1.e_kwh', { value: d.e_kwh, ts: t });
-
-    } else {
-        appendUnique(bufs.p2, t, d.p_kw ?? null);
-        appendUnique(bufs.u2_12, t, d.u12_v ?? null);
-        appendUnique(bufs.u2_23, t, d.u23_v ?? null);
-        appendUnique(bufs.u2_31, t, d.u31_v ?? null);
-        appendUnique(bufs.pf2, t, d.pf ?? null);
-
-        updateKPIs({
-            t2_p_kw: d.p_kw, t2_q_kvar: d.q_kvar, t2_pf: d.pf,
-            t2_u12_v: d.u12_v, t2_u23_v: d.u23_v, t2_u31_v: d.u31_v,
-            t2_i1_a: d.i1_a, t2_i2_a: d.i2_a, t2_i3_a: d.i3_a,
-            t2_e_kwh: d.e_kwh
-        });
-        updateKPIs({
-            t2_p_kw_avg: d.p_kw_avg, t2_p_kw_max: d.p_kw_max,
-            t2_q_kvar_avg: d.q_kvar_avg, t2_q_kvar_max: d.q_kvar_max,
-            t2_u12_v_avg: d.u12_v_avg, t2_u12_v_max: d.u12_v_max,
-            t2_u23_v_avg: d.u23_v_avg, t2_u23_v_max: d.u23_v_max,
-            t2_u31_v_avg: d.u31_v_avg, t2_u31_v_max: d.u31_v_max,
-            t2_i1_a_avg: d.i1_a_avg, t2_i1_a_max: d.i1_a_max,
-            t2_i2_a_avg: d.i2_a_avg, t2_i2_a_max: d.i2_a_max,
-            t2_i3_a_avg: d.i3_a_avg, t2_i3_a_max: d.i3_a_max,
-            t2_pf_avg: d.pf_avg, t2_pf_min: d.pf_min
-        });
-
-        Kpi.update('tr2.p_kw', { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t, unit: 'kW' });
-        Kpi.update('tr2.q_kvar', { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t, unit: 'kvar' });
-        Kpi.update('tr2.pf', { value: d.pf, avg: d.pf_avg, min: d.pf_min, ts: t });
-        Kpi.update('tr2.u12', { value: d.u12_v, avg: d.u12_v_avg, max: d.u12_v_max, ts: t, unit: 'V' });
-        Kpi.update('tr2.u23', { value: d.u23_v, avg: d.u23_v_avg, max: d.u23_v_max, ts: t, unit: 'V' });
-        Kpi.update('tr2.u31', { value: d.u31_v, avg: d.u31_v_avg, max: d.u31_v_max, ts: t, unit: 'V' });
-        Kpi.update('tr2.i1', { value: d.i1_a, avg: d.i1_a_avg, max: d.i1_a_max, ts: t, unit: 'A' });
-        Kpi.update('tr2.i2', { value: d.i2_a, avg: d.i2_a_avg, max: d.i2_a_max, ts: t, unit: 'A' });
-        Kpi.update('tr2.i3', { value: d.i3_a, avg: d.i3_a_avg, max: d.i3_a_max, ts: t, unit: 'A' });
-        Kpi.update('tr2.e_kwh', { value: d.e_kwh, ts: t });
-    }
+  const ns = tr === 'tr1' ? 'tr1' : 'tr2';
+  Kpi.update(`${ns}.p_kw`, { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t, unit: 'kW' });
+  Kpi.update(`${ns}.q_kvar`, { value: d.q_kvar, avg: d.q_kvar_avg, max: d.q_kvar_max, ts: t, unit: 'kvar' });
+  Kpi.update(`${ns}.pf`, { value: d.pf, avg: d.pf_avg, max: d.pf_max, min: d.pf_min, ts: t });
+  Kpi.update(`${ns}.e_kwh`, { value: d.e_kwh, ts: t, unit: 'kWh' });
+  ['u12', 'u23', 'u31'].forEach((phase, idx) => {
+    const key = `${ns}.u${idx + 1}`;
+    const mapKey = phase === 'u12' ? 'u12_v' : phase === 'u23' ? 'u23_v' : 'u31_v';
+    Kpi.update(key, { value: d[mapKey], avg: d[`${mapKey}_avg`], max: d[`${mapKey}_max`], ts: t, unit: 'V' });
+  });
+  ['i1', 'i2', 'i3'].forEach((phase, idx) => {
+    const key = `${ns}.i${idx + 1}`;
+    const mapKey = `${phase}_a`;
+    Kpi.update(key, { value: d[mapKey], avg: d[`${mapKey}_avg`], max: d[`${mapKey}_max`], ts: t, unit: 'A' });
+  });
 }
 
-// Polling adaptatif
 function pollSecsForWindow(mins) {
-    if (mins <= 15) return 1;
-    if (mins <= 60) return 4;
-    if (mins <= 240) return 10;
-    if (mins <= 1440) return 15;
-    return 20;
+  if (mins <= 15) return 1;
+  if (mins <= 60) return 4;
+  if (mins <= 240) return 10;
+  if (mins <= 1440) return 15;
+  return 20;
 }
 
 export function recomputeAdaptivePolling() {
-    const w = state.win;
-    const mins = Math.min(w.p1, w.u1, w.pf1, w.p2, w.u2, w.pf2);
-    const secs = pollSecsForWindow(mins);
-    const wanted = secs * 1000;
-    if (state.pollMs !== wanted) {
-        state.pollMs = wanted;
-        stopPolling();
-        scheduleNextPoll();
-    }
+  const w = state.win;
+  const mins = Math.min(w.p1, w.u1, w.pf1, w.p2, w.u2, w.pf2);
+  const secs = pollSecsForWindow(mins);
+  const wanted = secs * 1000;
+  if (state.pollMs !== wanted) {
+    state.pollMs = wanted;
+    stopPolling();
+    scheduleNextPoll();
+  }
 }
 
-// setTimeout sans backlog
 let pollTimer = null;
-function stopPolling() { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } }
-function scheduleNextPoll() { pollTimer = setTimeout(pollOnce, state.pollMs); }
+let visibilityPaused = false;
+function stopPolling() {
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+    pollTimer = null;
+  }
+}
+function scheduleNextPoll(force = false) {
+  stopPolling();
+  const delay = force === true ? 200 : (typeof force === 'number' ? force : state.pollMs);
+  pollTimer = setTimeout(pollOnce, delay);
+}
 
-// Boucle polling
 export async function pollOnce() {
-    if (!state.apiBase) { setConn(false, "API non configur\u00e9e"); scheduleNextPoll(); return; }
+  if (!state.apiBase) { setConn(false, 'API non configurée'); scheduleNextPoll(); return; }
 
-    try {
-        const [raw1, raw2] = await Promise.all([
-            fetchJSON(`${state.apiBase}/tr1/snapshot`).catch(e => { setConn(false, `TR1 API: ${e.message}`); return null; }),
-            fetchJSON(`${state.apiBase}/tr2/snapshot`).catch(e => { setConn(false, `TR2 API: ${e.message}`); return null; })
-        ]);
+  try {
+    const [raw1, raw2] = await Promise.all([
+      fetchJSON(`${state.apiBase}/tr1/snapshot`).catch(e => { setConn(false, `TR1 API: ${e.message}`); return null; }),
+      fetchJSON(`${state.apiBase}/tr2/snapshot`).catch(e => { setConn(false, `TR2 API: ${e.message}`); return null; })
+    ]);
 
-        const s1 = raw1 ? normalizeSnapshot(raw1) : null;
-        const s2 = raw2 ? normalizeSnapshot(raw2) : null;
+    const s1 = raw1 ? normalizeSnapshot(raw1) : null;
+    const s2 = raw2 ? normalizeSnapshot(raw2) : null;
 
-        if (s1) applySnapshotToBuffers('tr1', s1);
-        if (s2) applySnapshotToBuffers('tr2', s2);
+    if (s1) applySnapshotToBuffers('tr1', s1);
+    if (s2) applySnapshotToBuffers('tr2', s2);
 
-        if (s1 || s2) setConn(true);
+    if (s1 || s2) setConn(true);
 
-        prune();
-        refreshCharts();
-        $('#last-update').textContent = new Date().toLocaleString('fr-FR');
-        hideLoader();
-    } catch {
-        setConn(false, "Erreur de l'API");
-        hideLoader();
-    } finally {
-        scheduleNextPoll();
+    prune();
+    refreshCharts();
+    $('#last-update').textContent = new Date().toLocaleString('fr-FR');
+    finishInitialLoad();
+  } catch (err) {
+    console.error('[polling] erreur', err);
+    setConn(false, 'Erreur de communication');
+    const now = Date.now();
+    if (now - lastErrorToastTs > 10_000) {
+      showToast("Erreur de communication avec l'API", { variant: 'error', duration: 5000 });
+      lastErrorToastTs = now;
     }
+    finishInitialLoad();
+  }
 }
 
 export async function startPolling() {
-    if (!state.apiBase) { setConn(false, "API non configur\u00e9e"); return; }
+  if (!state.apiBase) { setConn(false, 'API non configurée'); return; }
 
-    recomputeAdaptivePolling();
-    stopPolling();
+  recomputeAdaptivePolling();
+  stopPolling();
 
-    // Si c'est le premier chargement, afficher le loader
-    if (state.initialLoad) { 
-        $('#loader').classList.add('active');
-        // Mettre \u00e0 jour le texte du loader
-        const loaderText = document.querySelector('#loader-text');
-        if (loaderText) {
-            loaderText.textContent = 'Chargement de l\'historique...';
-        }
-        console.log('[polling] Premier chargement, affichage du loader');
+  if (state.initialLoad) {
+    uiShowLoader("Chargement de l'historique...");
+    const loaderText = document.querySelector('#loader-text');
+    if (loaderText) loaderText.textContent = "Chargement de l'historique...";
+  }
+
+  if (state.initialLoad) {
+    try {
+      const loaderText = document.querySelector('#loader-text');
+      if (loaderText) loaderText.textContent = 'Chargement données TR1...';
+      await loadSeries(1);
+      if (loaderText) loaderText.textContent = 'Chargement données TR2...';
+      await loadSeries(2);
+      if (loaderText) loaderText.textContent = 'Mise à jour des graphiques...';
+      refreshCharts();
+    } catch (err) {
+      console.error('[polling] historique echoue', err);
+      setConn(false, 'Erreur historique');
+      const now = Date.now();
+      if (now - lastErrorToastTs > 10_000) {
+        showToast("Erreur de chargement de l'historique", { variant: 'error', duration: 5000 });
+        lastErrorToastTs = now;
+      }
+    } finally {
+      finishInitialLoad();
     }
+  }
 
-    // L'historique est maintenant charg\u00e9 dans main.js avant startPolling
-    // On ne recharge que si c'est vraiment n\u00e9cessaire
-    if (state.initialLoad) {
-        try { 
-            console.log('[polling] Chargement historique...');
-            
-            // Charger TR1
-            const loaderText = document.querySelector('#loader-text');
-            if (loaderText) {
-                loaderText.textContent = 'Chargement données TR1...';
-            }
-            await loadSeries(1);
-            
-            // Charger TR2
-            if (loaderText) {
-                loaderText.textContent = 'Chargement données TR2...';
-            }
-            await loadSeries(2);
-            
-            // Mise \u00e0 jour des graphiques
-            if (loaderText) {
-                loaderText.textContent = 'Mise \u00e0 jour des graphiques...';
-            }
-            refreshCharts();
-            
-            console.log('[polling] Historique charg\u00e9 avec succ\u00e8s');
-        }
-        catch (e) { 
-            console.error("Erreur chargement historique", e); 
-            setConn(false, "Erreur historique"); 
-        }
-        finally { 
-            hideLoader(); 
-            console.log('[polling] Loader masqu\u00e9');
-        }
-    }
-
-    scheduleNextPoll();
-    if (!state.initialLoad) { 
-        console.log('[polling] D\u00e9marrage du polling live...');
-        pollOnce(); 
-    }
+  scheduleNextPoll();
+  if (!state.initialLoad) {
+    pollOnce();
+  }
 }
 
-// Visibilit\u00e9 onglet
 export function attachVisibilityHandler() {
-    document.addEventListener('visibilitychange', async () => {
-        if (document.hidden) { stopPolling(); }
-        else { state.initialLoad = true; await startPolling(); }
-    });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      visibilityPaused = true;
+      stopPolling();
+    } else if (visibilityPaused) {
+      visibilityPaused = false;
+      scheduleNextPoll(true);
+    }
+  });
 }

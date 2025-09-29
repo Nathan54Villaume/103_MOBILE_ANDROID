@@ -1,211 +1,284 @@
-// js/main.js
-import { $ } from './utils.js';
-import { state } from './state.js';
+﻿// js/main.js
+import { $, fmt } from './utils.js';
+import { state, setWindow, setApiBase } from './state.js';
 import { startPolling, attachVisibilityHandler, recomputeAdaptivePolling } from './polling.js';
-import { loadSeries } from './api.js';
-import { refreshCharts, initializeCharts } from './charts.js';
+import { loadSeries, fetchDailySummary } from './api.js';
+import { refreshCharts, initializeCharts, setChartActive, resetChartView, listCharts } from './charts.js';
 import { Kpi, initKpiCollapsibles } from './kpi.js';
 import { initCollapsibles } from './ui-collapsibles.js';
+import { initSettingsDialog } from './settings.js';
+import { initContextMenus } from './contextmenu.js';
+import { initChartSettings } from './chart-settings.js';
+import { showToast } from './ui.js';
 
-// --------- Mapping des ic\u00f4nes du sprite ----------
 const ICONS = {
-    p_kw: '#i-bolt',     // Puissance active
-    u: '#i-wave',        // Tensions de phase
-    pf: '#i-bolt',       // Facteur de puissance (cos \u03c6)
-    q_kvar: '#i-bolt',   // Puissance r\u00e9active
-    i: '#i-gauge',       // Courants
-    e: '#i-battery',     // \u00c9nergie
+  p_kw: '#i-bolt',
+  q_kvar: '#i-bolt',
+  pf: '#i-pf',
+  u: '#i-wave',
+  i: '#i-gauge',
+  e: '#i-battery'
 };
 
-// Ins\u00e8re une ic\u00f4ne <svg><use/></svg> dans un \u00e9l\u00e9ment donn\u00e9.
-function makeIconSvg(iconId, extraClass = 'icon stroke') {
-    const svgNS = 'http://www.w3.org/2000/svg';
-    const xlinkNS = 'http://www.w3.org/1999/xlink';
-    const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('class', extraClass);
-    const use = document.createElementNS(svgNS, 'use');
-    // href pour navigateurs modernes
-    use.setAttributeNS(null, 'href', iconId);
-    // xlink:href pour compat r\u00e9tro
-    use.setAttributeNS(xlinkNS, 'xlink:href', iconId);
-    svg.appendChild(use);
-    return svg;
+function handleCollapsibleChange(event) {
+  const detail = event.detail || {};
+  const { id, expanded, type, element, init } = detail;
+  if (!id) return;
+
+  if (type === 'chart') {
+    setChartActive(id, expanded !== false);
+    if (expanded && !init) refreshCharts();
+    return;
+  }
+
+  if (type === 'section' && element) {
+    element.querySelectorAll('[data-collapsible-type="chart"]').forEach(card => {
+      const canvas = card.querySelector('canvas');
+      if (!canvas || !canvas.id) return;
+      setChartActive(canvas.id, expanded !== false);
+    });
+    if (expanded && !init) refreshCharts();
+  }
 }
 
-// D\u00e9corateur de secours : si kpi.js n'affiche pas l'ic\u00f4ne pass\u00e9e,
-// on l'injecte dans le titre apr\u00e8s rendu.
-function applyKpiIconsFallback(rootIds = ['tr1-kpis', 'tr2-kpis']) {
-    try {
-        rootIds.forEach(rootId => {
-            const root = document.getElementById(rootId);
-            if (!root) return;
+document.addEventListener('collapsible:change', handleCollapsibleChange);
 
-            // On vise chaque carte .kpi
-            root.querySelectorAll('.kpi').forEach(card => {
-                // Cherche le kind via data-kind (pr\u00e9f\u00e9r\u00e9), sinon essaie de le d\u00e9duire via classes connues
-                let kind = card.getAttribute('data-kind');
-                if (!kind) {
-                    // quelques heuristiques si data-kind absent
-                    // ex: on peut parfois retrouver le key/kind dans un attribut data-key ou classe
-                    kind = card.getAttribute('data-key')
-                        || card.dataset?.key
-                        || card.dataset?.kind
-                        || ''; // on laisse vide si inconnu
-                }
-
-                // Trouve le titre plausible
-                const titleEl =
-                    card.querySelector('.kpi-title') ||
-                    card.querySelector('.title') ||
-                    card.querySelector('h4, h3, .card-title, .kpi-header');
-
-                if (!titleEl) return;
-
-                // D\u00e9j\u00e0 une ic\u00f4ne ? On ne duplique pas.
-                if (titleEl.querySelector('svg')) return;
-
-                // S\u00e9lection de l'ic\u00f4ne
-                let iconId = '';
-                if (kind && ICONS[kind]) {
-                    iconId = ICONS[kind];
-                } else {
-                    // fallback doux si on ne conna\u00eet pas le kind : rien
-                    return;
-                }
-
-                // Style: on met fill pour la foudre (bolt) sinon stroke
-                const svg =
-                    iconId === '#i-bolt'
-                        ? makeIconSvg(iconId, 'icon fill')
-                        : makeIconSvg(iconId, 'icon stroke');
-
-                // On ins\u00e8re l'ic\u00f4ne au d\u00e9but du titre
-                titleEl.prepend(svg);
-            });
-        });
-    } catch (e) {
-        console.warn("applyKpiIconsFallback: impossible d'injecter les ic\u00f4nes", e);
+function syncWelcome() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const welcomeEl = $('#welcome-message');
+    const userName = user ? (user.Nom || user.nom || user.NOM) : null;
+    if (userName && welcomeEl) {
+      const firstName = userName.split(' ')[0];
+      welcomeEl.innerHTML = `Bonjour <span class="font-bold">${firstName}</span> !`;
     }
+  } catch (err) {
+    console.warn('[main] welcome failed', err);
+  }
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
-    // ====== Bienvenue ======
-    try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        const welcomeEl = $('#welcome-message');
-        const userName = user ? (user.Nom || user.nom || user.NOM) : null;
-        if (userName && welcomeEl) {
-            const firstName = userName.split(' ')[0];
-            welcomeEl.innerHTML = `Bonjour <span class="font-bold">${firstName}</span> !`;
-        }
-    } catch (e) {
-        console.error("Impossible de r\u00e9cup\u00e9rer l'utilisateur :", e);
+function syncModeIndicator() {
+  const indicator = $('#mode-indicator');
+  if (!indicator) return;
+  if (state.modeDev) {
+    indicator.textContent = state.demoEnabled ? 'Mode développement (mock)' : 'Mode développement';
+    indicator.classList.add('badge-dev-soft');
+  } else {
+    indicator.textContent = 'Mode production';
+    indicator.classList.remove('badge-dev-soft');
+  }
+}
+
+function initClock() {
+  const clockEl = $('#top-clock');
+  const update = () => {
+    if (!clockEl) return;
+    const now = new Date();
+    clockEl.textContent = now.toLocaleString('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  update();
+  setInterval(update, 30_000);
+}
+
+function initWindows() {
+  document.querySelectorAll('.sel').forEach(select => {
+    select.addEventListener('change', async () => {
+      const key = select.id.split('-')[1];
+      setWindow(key, Number(select.value));
+      const trId = key.includes('1') ? 1 : 2;
+      try {
+        await loadSeries(trId);
+        refreshCharts();
+      } catch (err) {
+        console.error('[main] change window failed', err);
+        showToast('Erreur lors de la mise à jour de la fenêtre', { variant: 'error' });
+      }
+      recomputeAdaptivePolling();
+    });
+  });
+
+  const sync = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = String(val);
+  };
+  sync('win-p1', state.win.p1);
+  sync('win-u1', state.win.u1);
+  sync('win-pf1', state.win.pf1);
+  sync('win-p2', state.win.p2);
+  sync('win-u2', state.win.u2);
+  sync('win-pf2', state.win.pf2);
+}
+
+function decorateKpiCards(rootIds = ['tr1-kpis', 'tr2-kpis']) {
+  rootIds.forEach(id => {
+    const root = document.getElementById(id);
+    if (!root) return;
+    root.querySelectorAll('.kpi').forEach(card => {
+      if (card.querySelector('svg')) return;
+      const kind = card.dataset.kind;
+      const title = card.querySelector('.kpi-title');
+      if (!title || !kind || !ICONS[kind]) return;
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('class', 'icon stroke');
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttributeNS(null, 'href', ICONS[kind]);
+      icon.appendChild(use);
+      title.prepend(icon);
+    });
+  });
+}
+
+function updateDailyMetrics(data) {
+  const energy = $('#daily-kwh');
+  const power = $('#daily-kw-max');
+  const pf = $('#daily-pf-min');
+  if (energy) energy.textContent = data?.kwh != null ? fmt(data.kwh, 1) : '\u2014';
+  if (power) power.textContent = data?.kwMax != null ? fmt(data.kwMax, 1) : '\u2014';
+  if (pf) pf.textContent = data?.pfMin != null ? fmt(data.pfMin, 3) : '\u2014';
+}
+
+async function loadDailySummary(date) {
+  try {
+    const summary = await fetchDailySummary(date);
+    updateDailyMetrics(summary);
+  } catch (err) {
+    console.error('[main] daily summary failed', err);
+    showToast("Impossible de charger la vue journalière", { variant: 'error' });
+  }
+}
+
+function initDailyView() {
+  const input = $('#daily-date');
+  const prev = $('#daily-prev');
+  const next = $('#daily-next');
+  if (!input) return;
+
+  const setDate = (date) => {
+    const iso = date.toISOString().slice(0, 10);
+    input.value = iso;
+    loadDailySummary(iso);
+  };
+
+  input.addEventListener('change', () => {
+    const value = input.value;
+    if (value) loadDailySummary(value);
+  });
+
+  prev?.addEventListener('click', () => {
+    if (!input.value) return;
+    const date = new Date(input.value);
+    date.setDate(date.getDate() - 1);
+    setDate(date);
+  });
+
+  next?.addEventListener('click', () => {
+    if (!input.value) return;
+    const date = new Date(input.value);
+    date.setDate(date.getDate() + 1);
+    setDate(date);
+  });
+
+  setDate(new Date());
+}
+
+function initModeBanner() {
+  if (!state.modeDev) return;
+  const banner = document.querySelector('.dev-banner');
+  if (banner) banner.classList.remove('hidden');
+}
+
+function initToolbars() {
+  document.querySelectorAll('.chart-btn[data-action="export"]').forEach(btn => {
+    btn.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      const chartKey = btn.closest('[data-chart]')?.dataset.chart;
+      if (!chartKey) return;
+      document.dispatchEvent(new CustomEvent('chart:export', { detail: { chartKey } }));
+    });
+  });
+
+  document.querySelectorAll('.chart-btn[data-action="settings"]').forEach(btn => {
+    btn.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      const chartKey = btn.closest('[data-chart]')?.dataset.chart;
+      if (!chartKey) return;
+      document.dispatchEvent(new CustomEvent('chart:open-settings', { detail: { chartKey } }));
+    });
+  });
+
+  document.querySelectorAll('.chart-btn[data-action="reset"]').forEach(btn => {
+    btn.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      const chartKey = btn.closest('[data-chart]')?.dataset.chart;
+      if (!chartKey) return;
+      document.dispatchEvent(new CustomEvent('chart:reset-view', { detail: { chartKey } }));
+    });
+  });
+}
+
+function syncSelectorsFromState() {
+  ['p1', 'u1', 'pf1', 'p2', 'u2', 'pf2'].forEach(key => {
+    const element = document.getElementById(`win-${key}`);
+    if (element) element.value = String(state.win[key]);
+  });
+}
+
+function watchSettingsChanges() {
+  document.addEventListener('settings:changed', (evt) => {
+    const { apiBase } = evt.detail || {};
+    if (apiBase) {
+      showToast('API mise à jour, relance du polling', { variant: 'info' });
+      startPolling();
     }
+  });
+}
 
-    // ====== Horloge bandeau top ======
-    const topTimeEl = document.getElementById('top-time');
-    const topDateEl = document.getElementById('top-date');
-    const updateTopClock = () => {
-        const now = new Date();
-        if (topTimeEl) {
-            topTimeEl.textContent = new Intl.DateTimeFormat('fr-FR', {
-                hour: '2-digit',
-                minute: '2-digit'
-            }).format(now);
-        }
-        if (topDateEl) {
-            const formatted = new Intl.DateTimeFormat('fr-FR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            }).format(now);
-            topDateEl.textContent = formatted.charAt(0).toUpperCase() + formatted.slice(1);
-        }
-    };
-    updateTopClock();
-    setInterval(updateTopClock, 30_000);
+document.addEventListener('DOMContentLoaded', async () => {
+  // Initialiser l'API base directement
+  setApiBase('http://10.250.13.4:8088/api/energy');
+  console.log('🌐 API configurée:', state.apiBase);
 
-    // ====== Dialog Param\u00e8tres ======
-    const dlg = $('#settings'), btn = $('#btn-settings'), save = $('#save-settings');
-    if (!btn || !dlg || !save) { console.error('Param\u00e8tres: \u00e9l\u00e9ments introuvables'); return; }
-    if (typeof dlg.showModal !== 'function') {
-        dlg.showModal = function () { dlg.setAttribute('open', 'open'); };
-        dlg.close = function () { dlg.removeAttribute('open'); };
-    }
-    btn.addEventListener('click', () => { $('#api-base').value = state.apiBase; dlg.showModal(); });
-    save.addEventListener('click', () => {
-        state.apiBase = $('#api-base').value.trim();
-        localStorage.setItem('apiBase', state.apiBase);
-        dlg.close();
-        location.reload();
-    });
+  syncWelcome();
+  syncModeIndicator();
+  initModeBanner();
+  initClock();
+  initSettingsDialog();
+  initContextMenus();
+  initChartSettings();
+  initCollapsibles(document);
+  initKpiCollapsibles(['tr1-kpis', 'tr2-kpis']);
+  initToolbars();
+  initDailyView();
+  initWindows();
+  syncSelectorsFromState();
+  decorateKpiCards();
+  watchSettingsChanges();
 
-    // ====== Base de temps ======
-    ['win_p1', 'win_u1', 'win_pf1', 'win_p2', 'win_u2', 'win_pf2'].forEach(k => {
-        if (localStorage.getItem(k) == null) localStorage.setItem(k, '15');
-    });
-    document.querySelectorAll('.sel').forEach(sel => {
-        sel.addEventListener('change', async () => {
-            const key = sel.id.split('-')[1]; // p1/u1/pf1 etc.
-            localStorage.setItem(`win_${key}`, sel.value);
-            state.win[key] = Number(sel.value);
-            const trId = (key.includes('1')) ? 1 : 2;
-            try { await loadSeries(trId); refreshCharts(); } catch (e) { console.error(e); }
-            recomputeAdaptivePolling();
-        });
-    });
-    const sync = (id, val) => { const el = document.getElementById(id); if (el) el.value = String(val); };
-    sync('win-p1', state.win.p1); sync('win-u1', state.win.u1); sync('win-pf1', state.win.pf1);
-    sync('win-p2', state.win.p2); sync('win-u2', state.win.u2); sync('win-pf2', state.win.pf2);
+  initializeCharts();
+  refreshCharts();
 
-    // ====== KPI grids ======
-    // TR1 : ligne 1 = P, U12, U23, U31, PF
-    //       ligne 2 = Q, I1,  I2,  I3,  E
-    Kpi.create('tr1-kpis', [
-        { key: 'tr1.p_kw', title: 'Puissance', unit: 'kW', decimals: 1, showSpark: false, kind: 'p_kw', icon: ICONS.p_kw },
-        { key: 'tr1.u12', title: 'U12', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
-        { key: 'tr1.u23', title: 'U23', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
-        { key: 'tr1.u31', title: 'U31', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
-        { key: 'tr1.pf', title: 'Facteur de Puissance', decimals: 3, showSpark: false, kind: 'pf', icon: ICONS.pf },
+  try {
+    await loadSeries(1);
+    await loadSeries(2);
+    refreshCharts();
+  } catch (err) {
+    console.error('[main] initial load failed', err);
+  }
 
-        { key: 'tr1.q_kvar', title: 'R\u00e9active', unit: 'kvar', decimals: 1, showSpark: false, kind: 'q_kvar', icon: ICONS.q_kvar },
-        { key: 'tr1.i1', title: 'I1', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr1.i2', title: 'I2', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr1.i3', title: 'I3', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr1.e_kwh', title: '\u00c9nergie', unit: 'kWh', decimals: 0, showSpark: false, kind: 'e', icon: ICONS.e },
-    ]);
-    initKpiCollapsibles(['tr1-kpis']);
+  attachVisibilityHandler();
+  await startPolling();
 
-    // TR2 : m\u00eame ordre
-    Kpi.create('tr2-kpis', [
-        { key: 'tr2.p_kw', title: 'Puissance', unit: 'kW', decimals: 1, showSpark: false, kind: 'p_kw', icon: ICONS.p_kw },
-        { key: 'tr2.u12', title: 'U12', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
-        { key: 'tr2.u23', title: 'U23', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
-        { key: 'tr2.u31', title: 'U31', unit: 'V', decimals: 0, showSpark: false, kind: 'u', icon: ICONS.u },
-        { key: 'tr2.pf', title: 'Facteur de Puissance', decimals: 3, showSpark: false, kind: 'pf', icon: ICONS.pf },
-
-        { key: 'tr2.q_kvar', title: 'R\u00e9active', unit: 'kvar', decimals: 1, showSpark: false, kind: 'q_kvar', icon: ICONS.q_kvar },
-        { key: 'tr2.i1', title: 'I1', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr2.i2', title: 'I2', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr2.i3', title: 'I3', unit: 'A', decimals: 1, showSpark: false, kind: 'i', icon: ICONS.i },
-        { key: 'tr2.e_kwh', title: '\u00c9nergie', unit: 'kWh', decimals: 0, showSpark: false, kind: 'e', icon: ICONS.e },
-    ]);
-    initKpiCollapsibles(['tr2-kpis']);
-
-    // Collapsibles (KPI + cartes graphiques)
-    initCollapsibles(document);
-
-    // ====== Initialisation des charts ======
-    initializeCharts();
-
-    // ====== D\u00e9marrage ======
-    attachVisibilityHandler();
-
-    // D\u00e9marre le polling (qui charge l'historique en premier)
-    console.log('[main] D\u00e9marrage du syst\u00e8me de supervision...');
-    await startPolling();
-
-    // Laisse le temps au DOM KPI de se poser puis ins\u00e8re les ic\u00f4nes si non g\u00e9r\u00e9es par kpi.js
-    requestAnimationFrame(() => applyKpiIconsFallback(['tr1-kpis', 'tr2-kpis']));
+  document.body.classList.add('ready');
 });
+
+// expose for other modules if needed
+export function listRegisteredCharts() {
+  return listCharts();
+}

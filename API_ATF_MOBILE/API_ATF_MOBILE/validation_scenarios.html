@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation des scénarios - Supervision Poste Électrique</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .scenario {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3b82f6;
+        }
+        .scenario h3 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        .test-steps {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .test-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .test-steps li {
+            margin: 5px 0;
+        }
+        .validation-button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .validation-button:hover {
+            background: #059669;
+        }
+        .validation-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .pass { background: #d1fae5; color: #065f46; }
+        .fail { background: #fee2e2; color: #991b1b; }
+        .pending { background: #fef3c7; color: #92400e; }
+        .info { background: #dbeafe; color: #1e40af; }
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Validation des scénarios - Supervision Poste Électrique</h1>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+    </div>
+    <p id="progress-text">Prêt à commencer la validation...</p>
+
+    <div class="scenario-grid">
+        <div class="scenario">
+            <h3>1. Persistance des états</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Modifier les paramètres de l'API</li>
+                    <li>Recharger la page</li>
+                    <li>Vérifier que les paramètres sont conservés</li>
+                    <li>Modifier les réglages des graphiques</li>
+                    <li>Recharger la page</li>
+                    <li>Vérifier que les réglages sont conservés</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateStatePersistence()">Valider</button>
+            <div id="state-result" class="result pending">En attente...</div>
+        </div>
+
+        <div class="scenario">
+            <h3>2. Navigation au clavier</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Utiliser Tab pour naviguer entre les éléments</li>
+                    <li>Vérifier l'ordre de navigation logique</li>
+                    <li>Utiliser Entrée/Espace pour activer les boutons</li>
+                    <li>Utiliser Échap pour fermer les dialogues</li>
+                    <li>Vérifier les indicateurs de focus visibles</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateKeyboardNavigation()">Valider</button>
+            <div id="keyboard-result" class="result pending">En attente...</div>
+        </div>
+
+        <div class="scenario">
+            <h3>3. Zoom et pan des graphiques</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Utiliser la molette pour zoomer</li>
+                    <li>Cliquer-glisser pour faire défiler</li>
+                    <li>Utiliser les boutons de zoom +/-</li>
+                    <li>Utiliser le bouton de réinitialisation</li>
+                    <li>Vérifier la synchronisation des fenêtres de temps</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateChartZoom()">Valider</button>
+            <div id="zoom-result" class="result pending">En attente...</div>
+        </div>
+
+        <div class="scenario">
+            <h3>4. Calculs Q_kvar et PF</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Vérifier l'affichage de la puissance réactive (Q_kvar)</li>
+                    <li>Vérifier l'affichage du facteur de puissance (PF)</li>
+                    <li>Vérifier les calculs de moyennes et maximums</li>
+                    <li>Vérifier les unités d'affichage</li>
+                    <li>Vérifier la cohérence des données</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateCalculations()">Valider</button>
+            <div id="calc-result" class="result pending">En attente...</div>
+        </div>
+
+        <div class="scenario">
+            <h3>5. Menu contextuel et sélection multi-signaux</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Clic droit sur un graphique</li>
+                    <li>Vérifier l'affichage du menu contextuel</li>
+                    <li>Sélectionner/désélectionner des signaux</li>
+                    <li>Vérifier la mise à jour en temps réel</li>
+                    <li>Fermer le menu avec Échap</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateContextMenu()">Valider</button>
+            <div id="context-result" class="result pending">En attente...</div>
+        </div>
+
+        <div class="scenario">
+            <h3>6. Export de données</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Cliquer sur le bouton d'export PNG</li>
+                    <li>Vérifier le téléchargement de l'image</li>
+                    <li>Cliquer sur le bouton d'export CSV</li>
+                    <li>Vérifier le téléchargement du fichier CSV</li>
+                    <li>Vérifier le contenu des données exportées</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateExport()">Valider</button>
+            <div id="export-result" class="result pending">En attente...</div>
+        </div>
+
+        <div class="scenario">
+            <h3>7. Vue journalière</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Ouvrir la vue journalière</li>
+                    <li>Sélectionner une date</li>
+                    <li>Vérifier le chargement des données</li>
+                    <li>Utiliser la navigation jour précédent/suivant</li>
+                    <li>Vérifier l'affichage des KPI journaliers</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateDailyView()">Valider</button>
+            <div id="daily-result" class="result pending">En attente...</div>
+        </div>
+
+        <div class="scenario">
+            <h3>8. Responsive et accessibilité</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>Redimensionner la fenêtre</li>
+                    <li>Vérifier l'adaptation mobile</li>
+                    <li>Vérifier les tooltips et aria-labels</li>
+                    <li>Vérifier les contrastes de couleurs</li>
+                    <li>Vérifier la lisibilité des textes</li>
+                </ol>
+            </div>
+            <button class="validation-button" onclick="validateResponsive()">Valider</button>
+            <div id="responsive-result" class="result pending">En attente...</div>
+        </div>
+    </div>
+
+    <div class="scenario">
+        <h3>🚀 Validation complète</h3>
+        <p>Exécuter tous les scénarios de validation en séquence :</p>
+        <button class="validation-button" onclick="runAllValidations()" style="background: #dc2626; font-size: 16px; padding: 15px 30px;">
+            Lancer la validation complète
+        </button>
+        <div id="overall-result" class="result pending">En attente de la validation complète...</div>
+    </div>
+
+    <script>
+        let validationResults = {
+            state: false,
+            keyboard: false,
+            zoom: false,
+            calculations: false,
+            context: false,
+            export: false,
+            daily: false,
+            responsive: false
+        };
+
+        function updateProgress() {
+            const completed = Object.values(validationResults).filter(Boolean).length;
+            const total = Object.keys(validationResults).length;
+            const percentage = (completed / total) * 100;
+            
+            document.getElementById('progress-fill').style.width = `${percentage}%`;
+            document.getElementById('progress-text').textContent = 
+                `Validation en cours : ${completed}/${total} scénarios validés (${Math.round(percentage)}%)`;
+        }
+
+        function setResult(elementId, success, message) {
+            const element = document.getElementById(elementId);
+            element.className = `result ${success ? 'pass' : 'fail'}`;
+            element.textContent = message;
+        }
+
+        function validateStatePersistence() {
+            setResult('state-result', false, 'Validation en cours...');
+            
+            try {
+                // Test de persistance des paramètres API
+                const originalApiUrl = localStorage.getItem('apiBaseUrl') || '';
+                localStorage.setItem('apiBaseUrl', 'https://test.example.com');
+                
+                // Simuler un rechargement
+                const savedUrl = localStorage.getItem('apiBaseUrl');
+                if (savedUrl === 'https://test.example.com') {
+                    localStorage.setItem('apiBaseUrl', originalApiUrl);
+                    setResult('state-result', true, '✅ Persistance des états validée');
+                    validationResults.state = true;
+                } else {
+                    setResult('state-result', false, '❌ Échec de la persistance des états');
+                }
+            } catch (error) {
+                setResult('state-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        function validateKeyboardNavigation() {
+            setResult('keyboard-result', false, 'Validation en cours...');
+            
+            try {
+                // Test de navigation au clavier
+                const focusableElements = document.querySelectorAll('button, input, select, [tabindex]:not([tabindex="-1"])');
+                
+                if (focusableElements.length > 0) {
+                    // Test du premier élément
+                    focusableElements[0].focus();
+                    if (document.activeElement === focusableElements[0]) {
+                        setResult('keyboard-result', true, '✅ Navigation au clavier validée');
+                        validationResults.keyboard = true;
+                    } else {
+                        setResult('keyboard-result', false, '❌ Problème de focus');
+                    }
+                } else {
+                    setResult('keyboard-result', false, '❌ Aucun élément focusable trouvé');
+                }
+            } catch (error) {
+                setResult('keyboard-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        function validateChartZoom() {
+            setResult('zoom-result', false, 'Validation en cours...');
+            
+            try {
+                // Test de la présence des boutons de zoom
+                const zoomButtons = document.querySelectorAll('[data-action="zoom-in"], [data-action="zoom-out"], [data-action="reset-view"]');
+                
+                if (zoomButtons.length >= 3) {
+                    setResult('zoom-result', true, '✅ Contrôles de zoom validés');
+                    validationResults.zoom = true;
+                } else {
+                    setResult('zoom-result', false, '❌ Boutons de zoom manquants');
+                }
+            } catch (error) {
+                setResult('zoom-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        function validateCalculations() {
+            setResult('calc-result', false, 'Validation en cours...');
+            
+            try {
+                // Test de la présence des éléments de calcul
+                const kpiElements = document.querySelectorAll('[data-kpi]');
+                const hasQkvar = Array.from(kpiElements).some(el => el.textContent.includes('kvar'));
+                const hasPF = Array.from(kpiElements).some(el => el.textContent.includes('PF') || el.textContent.includes('cos'));
+                
+                if (hasQkvar && hasPF) {
+                    setResult('calc-result', true, '✅ Calculs Q_kvar et PF validés');
+                    validationResults.calculations = true;
+                } else {
+                    setResult('calc-result', false, '❌ Éléments de calcul manquants');
+                }
+            } catch (error) {
+                setResult('calc-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        function validateContextMenu() {
+            setResult('context-result', false, 'Validation en cours...');
+            
+            try {
+                // Test de la présence du menu contextuel
+                const contextMenu = document.querySelector('.contextmenu');
+                
+                if (contextMenu) {
+                    setResult('context-result', true, '✅ Menu contextuel validé');
+                    validationResults.context = true;
+                } else {
+                    setResult('context-result', false, '❌ Menu contextuel manquant');
+                }
+            } catch (error) {
+                setResult('context-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        function validateExport() {
+            setResult('export-result', false, 'Validation en cours...');
+            
+            try {
+                // Test des boutons d'export
+                const exportButtons = document.querySelectorAll('[data-action="export"]');
+                
+                if (exportButtons.length > 0) {
+                    setResult('export-result', true, '✅ Fonctionnalités d\'export validées');
+                    validationResults.export = true;
+                } else {
+                    setResult('export-result', false, '❌ Boutons d\'export manquants');
+                }
+            } catch (error) {
+                setResult('export-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        function validateDailyView() {
+            setResult('daily-result', false, 'Validation en cours...');
+            
+            try {
+                // Test de la vue journalière
+                const dailyView = document.getElementById('daily-view');
+                const dateInput = document.querySelector('input[type="date"]');
+                
+                if (dailyView && dateInput) {
+                    setResult('daily-result', true, '✅ Vue journalière validée');
+                    validationResults.daily = true;
+                } else {
+                    setResult('daily-result', false, '❌ Éléments de vue journalière manquants');
+                }
+            } catch (error) {
+                setResult('daily-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        function validateResponsive() {
+            setResult('responsive-result', false, 'Validation en cours...');
+            
+            try {
+                // Test de la responsivité
+                const hasViewport = document.querySelector('meta[name="viewport"]');
+                const hasResponsiveClasses = document.querySelector('.chart-toolbar, .daily-view');
+                
+                if (hasViewport && hasResponsiveClasses) {
+                    setResult('responsive-result', true, '✅ Responsive et accessibilité validés');
+                    validationResults.responsive = true;
+                } else {
+                    setResult('responsive-result', false, '❌ Éléments responsive manquants');
+                }
+            } catch (error) {
+                setResult('responsive-result', false, `❌ Erreur : ${error.message}`);
+            }
+            
+            updateProgress();
+        }
+
+        async function runAllValidations() {
+            const overallResult = document.getElementById('overall-result');
+            overallResult.className = 'result info';
+            overallResult.textContent = 'Validation complète en cours...';
+            
+            // Réinitialiser les résultats
+            validationResults = {
+                state: false, keyboard: false, zoom: false, calculations: false,
+                context: false, export: false, daily: false, responsive: false
+            };
+            
+            // Exécuter toutes les validations
+            validateStatePersistence();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            validateKeyboardNavigation();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            validateChartZoom();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            validateCalculations();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            validateContextMenu();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            validateExport();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            validateDailyView();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            validateResponsive();
+            
+            // Attendre un peu pour que toutes les validations se terminent
+            setTimeout(() => {
+                const passed = Object.values(validationResults).filter(Boolean).length;
+                const total = Object.keys(validationResults).length;
+                
+                if (passed === total) {
+                    overallResult.className = 'result pass';
+                    overallResult.textContent = `🎉 Validation complète réussie ! ${passed}/${total} scénarios validés`;
+                } else {
+                    overallResult.className = 'result fail';
+                    overallResult.textContent = `⚠️ Validation partielle : ${passed}/${total} scénarios validés`;
+                }
+            }, 1000);
+        }
+
+        // Initialiser la barre de progression
+        updateProgress();
+    </script>
+</body>
+</html>

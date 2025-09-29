@@ -403,6 +403,87 @@ ORDER BY [timestamp] ASC";
             public decimal val { get; set; }
         }
 
+        // ===================== DAILY SUMMARY =====================
+
+        [HttpGet("daily-summary")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(DailySummaryDto), StatusCodes.Status200OK)]
+        public async Task<ActionResult<DailySummaryDto>> GetDailySummary([FromQuery] string date)
+        {
+            if (string.IsNullOrEmpty(date) || !DateTime.TryParse(date, out var targetDate))
+            {
+                return BadRequest("Date invalide. Format attendu: YYYY-MM-DD");
+            }
+
+            using var db = new SqlConnection(_connStr);
+
+            var startDate = targetDate.Date;
+            var endDate = startDate.AddDays(1);
+
+            // Récupération des données journalières pour les deux transformateurs
+            var dailyData = await db.QueryAsync<DailyDataRow>(@"
+                SELECT 
+                    tr_id,
+                    SUM(CAST([_VAL] AS decimal(18,6))) as total_kwh,
+                    MAX(CAST([_VAL] AS decimal(18,6))) as max_kw,
+                    MIN(CAST([_VAL] AS decimal(18,6))) as min_pf
+                FROM dbo.DATA_LOG
+                WHERE [timestamp] >= @startDate 
+                    AND [timestamp] < @endDate
+                    AND (
+                        point_id LIKE 'OPC.ENERGIE.TR1%PUISSANCE_ACTIVE%' OR
+                        point_id LIKE 'OPC.ENERGIE.TR2%PUISSANCE_ACTIVE%' OR
+                        point_id LIKE 'OPC.ENERGIE.TR1%FACTEUR%PUISSANCE%' OR
+                        point_id LIKE 'OPC.ENERGIE.TR2%FACTEUR%PUISSANCE%' OR
+                        point_id = 'OPC.ENERGIE.DB10.DBD0' OR
+                        point_id = 'OPC.ENERGIE.DB10.DBD4'
+                    )
+                GROUP BY tr_id, point_id", new { startDate, endDate });
+
+            var result = new DailySummaryDto
+            {
+                Date = startDate.ToString("yyyy-MM-dd"),
+                Kwh = 0,
+                KwMax = 0,
+                PfMin = 1.0m
+            };
+
+            foreach (var row in dailyData)
+            {
+                if (row.point_id?.Contains("DBD0") == true || row.point_id?.Contains("DBD4") == true)
+                {
+                    result.Kwh += row.total_kwh ?? 0;
+                }
+                else if (row.point_id?.Contains("PUISSANCE_ACTIVE") == true)
+                {
+                    result.KwMax = Math.Max(result.KwMax, row.max_kw ?? 0);
+                }
+                else if (row.point_id?.Contains("FACTEUR") == true)
+                {
+                    result.PfMin = Math.Min(result.PfMin, row.min_pf ?? 1.0m);
+                }
+            }
+
+            return Ok(result);
+        }
+
+        private class DailyDataRow
+        {
+            public int tr_id { get; set; }
+            public string point_id { get; set; } = string.Empty;
+            public decimal? total_kwh { get; set; }
+            public decimal? max_kw { get; set; }
+            public decimal? min_pf { get; set; }
+        }
+
         private record SignalDescriptor(string Id, string Label, string? Unit);
+    }
+
+    public class DailySummaryDto
+    {
+        public string Date { get; set; } = string.Empty;
+        public decimal Kwh { get; set; }
+        public decimal KwMax { get; set; }
+        public decimal PfMin { get; set; }
     }
 }

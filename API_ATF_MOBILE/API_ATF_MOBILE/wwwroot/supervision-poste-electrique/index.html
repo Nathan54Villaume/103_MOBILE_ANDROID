@@ -1,353 +1,435 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Supervision — Poste Électrique</title>
-
-    <!-- Tailwind + Chart.js -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
-
-    <!-- (optionnel) ton CSS -->
-    <link rel="stylesheet" href="./style.css" />
-
-    <style>
-        .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 1rem;
-            padding: 0.75rem;
-        }
-
-        .card-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: .75rem;
-            padding: .75rem .85rem;
-            border-bottom: 1px solid rgba(255,255,255,.06);
-        }
-
-            .card-head .title {
-                display: flex;
-                align-items: center;
-                gap: .5rem;
-            }
-
-        .card-body {
-            padding: .75rem;
-        }
-
-        .sel {
-            background: rgba(255,255,255,.06);
-            border: 1px solid rgba(255,255,255,.12);
-            border-radius: .6rem;
-            padding: .25rem .5rem;
-        }
-
-        .led {
-            width: 10px;
-            height: 10px;
-            border-radius: 9999px;
-            background: #ef4444;
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .kpi {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 150px;
-            padding: 0.75rem;
-        }
-
-            .kpi .value {
-                text-align: center;
-            }
-
-        /* Icônes sprite */
-        .icon {
-            width: 18px;
-            height: 18px;
-            display: inline-block;
-        }
-
-            .icon.stroke {
-                fill: none;
-                stroke: currentColor;
-                stroke-width: 1.6;
-                stroke-linecap: round;
-                stroke-linejoin: round;
-            }
-
-            .icon.fill {
-                fill: currentColor;
-            }
-
-            .icon.lg {
-                width: 22px;
-                height: 22px;
-            }
-
-        .btn-icon {
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Supervision - Poste Electrique</title>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <link rel="stylesheet" href="./style.css" />
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <script>
+    window.__SPE_MODE__ = 'prod';
+    window.__SPE_DEMO__ = false;
+    // Configuration API via proxy CORS local
+    window.API_CONFIG = {
+      baseUrl: 'http://localhost:8088/proxy/http://10.250.13.4:8088/api/energy'
+    };
+  </script>
 
-    <!-- ===== SPRITE SVG (icônes rétablies) ===== -->
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
-        <!-- Engrenage (Paramètres) -->
-        <symbol id="i-cog" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3.25" class="stroke" />
-            <path class="stroke" d="M19.4 15a7.9 7.9 0 0 0 .09-1l1.86-1.07-1.2-2.08-2.12.5a7.9 7.9 0 0 0-.7-.7l.5-2.12-2.08-1.2L15 4.51a7.9 7.9 0 0 0-1-.09l-1.07-1.86h-1.86L9.94 4.42a7.9 7.9 0 0 0-1 .09L7.86 2.65 5.78 3.86l.5 2.12c-.24.22-.47.45-.7.7l-2.12-.5-1.2 2.08L3.12 10c-.03.33-.03.67 0 1l-1.86 1.07 1.2 2.08 2.12-.5c.22.25.45.48.7.7l-.5 2.12 2.08 1.2L9 19.49c.33.03.67.03 1 0l1.07 1.86h1.86L14 19.58c.33-.03.67-.07 1-.17l1.13 1.79 2.08-1.21-.5-2.12c.25-.22.48-.45.7-.7l2.12.5 1.2-2.08L19.4 15Z" />
-        </symbol>
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-cog" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3.25" />
+      <path d="M19.4 15a7.9 7.9 0 0 0 .09-1l1.86-1.07-1.2-2.08-2.12.5a7.9 7.9 0 0 0-.7-.7l.5-2.12-2.08-1.2L15 4.51a7.9 7.9 0 0 0-1-.09l-1.07-1.86h-1.86L9.94 4.42a7.9 7.9 0 0 0-1 .09L7.86 2.65 5.78 3.86l.5 2.12c-.24.22-.47.45-.7.7l-2.12-.5-1.2 2.08L3.12 10c-.03.33-.03.67 0 1l-1.86 1.07 1.2 2.08 2.12-.5c.22.25.45.48.7.7l-.5 2.12 2.08 1.2L9 19.49c.33.03.67.03 1 0l1.07 1.86h1.86L14 19.58c.33-.03.67-.07 1-.17l1.13 1.79 2.08-1.21-.5-2.12c.25-.22.48-.45.7-.7l2.12.5 1.2-2.08L19.4 15Z" />
+    </symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 7h10v4a5 5 0 1 1-10 0V7Z" />
+      <path d="M9 3v4M15 3v4M12 16v5" />
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24">
+      <polygon points="13 2 4 13.5 10 13.5 9 22 20 9 14 9 13 2" fill="currentColor" />
+    </symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12c3-6 5-6 8 0s5 6 8 0 3-6 4-6" />
+    </symbol>
+    <symbol id="i-pf" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12a7 7 0 1 1 14 0 7 7 0 0 1-14 0Z" />
+      <path d="M9 9h6l-6 6h6" />
+    </symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20a8 8 0 1 1 8-8h-3" />
+      <path d="M12 12l4-4" />
+    </symbol>
+    <symbol id="i-battery" viewBox="0 0 26 14" stroke="currentColor" fill="none" stroke-width="1.5">
+      <rect x="1" y="2" width="20" height="10" rx="2" ry="2" />
+      <rect x="22" y="5" width="3" height="4" rx="1" />
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M20 11a8 8 0 1 0-3 5.9L20 18" />
+      <path d="M20 14v4h-4" />
+    </symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
+      <circle cx="4" cy="13" r="2" />
+      <circle cx="12" cy="10" r="2" />
+      <circle cx="20" cy="7" r="2" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M12 3v14" />
+      <path d="m7 12 5 5 5-5" />
+      <path d="M5 20h14" />
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M15 6l-6 6 6 6" />
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M9 6l6 6-6 6" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </symbol>
+  </svg>
 
-        <!-- Prise / Transformateur -->
-        <symbol id="i-plug" viewBox="0 0 24 24">
-            <path class="stroke" d="M7 7h10v4a5 5 0 1 1-10 0V7Z" />
-            <path class="stroke" d="M9 3v4M15 3v4M12 16v5" />
-        </symbol>
+  <div id="loader" class="loader-overlay" role="status" aria-live="polite" aria-label="Chargement en cours">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <p id="loader-text" class="loader-text">Initialisation...</p>
+  </div>
 
-        <!-- Éclair (Puissance active) -->
-        <symbol id="i-bolt" viewBox="0 0 24 24">
-            <polygon points="13,2 4,13.5 10,13.5 9,22 20,9 14,9 13,2" class="fill" />
-        </symbol>
+  <div id="toast-layer" class="toast-layer" aria-live="polite" aria-atomic="false"></div>
+  <div id="contextmenu-root" class="contextmenu hidden" role="menu" aria-hidden="true"></div>
 
-        <!-- Onde (Tensions de phase) -->
-        <symbol id="i-wave" viewBox="0 0 24 24">
-            <path class="stroke" d="M2 12c3-6 5-6 8 0s5 6 8 0 3-6 4-6" />
-        </symbol>
+  <main class="page mx-auto w-full max-w-screen-2xl px-4 pb-12 pt-6 space-y-8">
+    <header class="page-header flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div class="space-y-1">
+        <h1 class="text-3xl font-semibold tracking-tight">Supervision - Poste Electrique</h1>
+        <p id="welcome-message" class="text-sm text-slate-400">Bienvenue.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="conn-indicator flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2" role="status" aria-live="polite">
+          <span id="conn-led" class="led led-off" aria-hidden="true"></span>
+          <span id="conn-text" class="text-sm font-medium">Déconnecté</span>
+        </div>
+        <div class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 flex items-center gap-2" aria-live="polite">
+          <svg class="icon stroke" aria-hidden="true"><use href="#i-calendar" /></svg>
+          <div class="text-sm" id="top-clock">-</div>
+        </div>
+        <button id="btn-settings" type="button" class="btn btn-primary flex items-center gap-2">
+          <svg class="icon stroke" aria-hidden="true"><use href="#i-cog" /></svg>
+          <span>Paramètres</span>
+        </button>
+      </div>
+    </header>
 
-        <!-- Jauge (FP / indicateurs) -->
-        <symbol id="i-gauge" viewBox="0 0 24 24">
-            <path class="stroke" d="M4 16a8 8 0 1 1 16 0" />
-            <path class="stroke" d="M12 12l4 4" />
-            <circle cx="12" cy="12" r="1.4" class="fill" />
-        </symbol>
+    <section class="card info-bar" aria-live="polite">
+      <div class="flex flex-wrap items-center gap-4">
+        <span class="flex items-center gap-2 text-sm text-slate-300"><svg class="icon stroke" aria-hidden="true"><use href="#i-info" /></svg>Dernière mise à jour : <time id="last-update" datetime="">-</time></span>
+        <span id="mode-indicator" class="badge badge-soft">Mode production</span>
+      </div>
+    </section>
 
-        <!-- Batterie (Énergie) -->
-        <symbol id="i-battery" viewBox="0 0 24 24">
-            <rect x="3" y="8" width="16" height="8" rx="2" class="stroke" />
-            <rect x="5" y="10" width="8" height="4" class="fill" />
-            <rect x="19" y="10" width="2" height="4" class="fill" />
-        </symbol>
-
-        <!-- Chaîne (Lien / Connexion) -->
-        <symbol id="i-link" viewBox="0 0 24 24">
-            <path class="stroke" d="M10.5 13.5l3-3M8 14.5l-1.5 1.5a3.5 3.5 0 1 1-5-5L3 9.5a3.5 3.5 0 0 1 5 0" />
-            <path class="stroke" d="M16 9.5l1.5-1.5a3.5 3.5 0 1 1 5 5L21 14.5a3.5 3.5 0 0 1-5 0" />
-        </symbol>
-
-        <!-- PF (cos φ) simplifié -->
-        <symbol id="i-pf" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="8" class="stroke" />
-            <path class="stroke" d="M12 12l5-2M6 12h6" />
-        </symbol>
-    </svg>
-    <!-- ===== fin sprite ===== -->
-
-    <div id="loader"></div>
-
-    <div class="max-w-7xl mx-auto p-6 space-y-10">
-        <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex items-center gap-2">
-                <svg class="icon stroke lg"><use href="#i-plug" /></svg>
-                <div>
-                    <h1 class="text-2xl font-bold">TRANCANNAGE — Poste Électrique n° 8</h1>
-                    <p class="text-sm text-white/60">2 Transformateurs — Supervision détaillée</p>
-                </div>
+    <section class="deck" data-collapsible-id="transformer-1" data-collapsible-type="section">
+      <div class="deck-head" data-collapsible-trigger>
+        <svg class="icon stroke" aria-hidden="true"><use href="#i-plug" /></svg>
+        <h2 class="text-xl font-semibold">Transformateur 1</h2>
+      </div>
+      <div class="deck-body space-y-6" data-collapsible-content>
+        <div id="tr1-kpis" class="kpi-grid"></div>
+        <article class="card chart-card" data-collapsible-id="chartP1" data-collapsible-type="chart" data-chart="tr1-power">
+          <header class="card-head">
+            <button type="button" class="card-title" data-collapsible-trigger>
+              <svg class="icon fill" aria-hidden="true"><use href="#i-bolt" /></svg>
+              <span>Puissance active - TR1</span>
+            </button>
+            <div class="card-head-controls">
+              <label class="time-range">
+                <span>Base de temps</span>
+                <select id="win-p1" class="sel" autocomplete="off">
+                  <option value="15">15 min</option>
+                  <option value="60">1 h</option>
+                  <option value="240">4 h</option>
+                  <option value="1440">24 h</option>
+                </select>
+              </label>
+              <div class="chart-toolbar" role="group" aria-label="Outils du graphique TR1 puissance">
+                <button type="button" class="chart-btn" data-action="reset" aria-label="Réinitialiser la vue"><svg class="icon stroke" aria-hidden="true"><use href="#i-refresh" /></svg></button>
+                <button type="button" class="chart-btn" data-action="settings" aria-label="Ouvrir les réglages"><svg class="icon stroke" aria-hidden="true"><use href="#i-sliders" /></svg></button>
+                <button type="button" class="chart-btn" data-action="export" aria-label="Exporter les données"><svg class="icon stroke" aria-hidden="true"><use href="#i-download" /></svg></button>
+              </div>
             </div>
-
-            <div class="flex items-center gap-4">
-                <span id="welcome-message" class="text-lg"></span>
-                <div class="flex items-center gap-2">
-                    <span id="conn-led" class="led" title="État connexion"></span>
-                    <span id="conn-text" class="text-white/70 text-sm">Déconnecté</span>
-
-                    <button id="btn-settings" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-sm btn-icon">
-                        <svg class="icon stroke"><use href="#i-cog" /></svg>
-                        <span>Paramètres</span>
-                    </button>
-                </div>
+          </header>
+          <div class="card-body" data-collapsible-content>
+            <div class="chart-wrapper">
+              <canvas id="chartP1" width="600" height="320" aria-label="Graphique puissance active TR1"></canvas>
             </div>
-        </header>
+            <div class="chart-accessories" data-chart-controls="chartP1"></div>
+            <div class="chart-stats" data-chart-stats="chartP1"></div>
+          </div>
+        </article>
 
-        <dialog id="settings" class="backdrop:bg-black/60 rounded-2xl w-full max-w-xl text-white">
-            <form method="dialog" class="rounded-2xl bg-gray-800 border border-white/10 p-5 space-y-4">
-                <h2 class="text-xl font-semibold flex items-center gap-2">
-                    <svg class="icon stroke"><use href="#i-cog" /></svg> Paramètres
-                </h2>
-                <div class="grid grid-cols-1 gap-4">
-                    <label class="block">
-                        <span class="text-sm text-white/70">API Base URL</span>
-                        <input id="api-base" type="text"
-                               class="w-full mt-1 rounded-xl bg-gray-900 border border-white/10 px-3 py-2 outline-none focus:border-indigo-500"
-                               placeholder="http://10.250.13.4:8088/api/energy" />
-                    </label>
-                </div>
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <button class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2">Fermer</button>
-                    <button id="save-settings" type="button" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 btn-icon">
-                        <svg class="icon stroke"><use href="#i-link" /></svg>
-                        <span>Enregistrer</span>
-                    </button>
-                </div>
-            </form>
-        </dialog>
-
-        <!-- ================= TR1 ================= -->
-        <section class="space-y-6">
-            <h2 class="text-xl font-semibold flex items-center gap-2">
-                <svg class="icon stroke"><use href="#i-plug" /></svg> Transformateur 1
-            </h2>
-
-            <!-- Grille KPI TR1 : 10 cartes (remplies via JS ; tu peux y injecter des <svg><use href="#…"/></svg>) -->
-            <div id="tr1-kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch"></div>
-
-            <div class="card">
-                <div class="card-head">
-                    <h3 class="text-lg font-semibold title">
-                        <svg class="icon fill"><use href="#i-bolt" /></svg>
-                        Puissance active — TR1
-                    </h3>
-                    <label class="text-xs text-white/70 flex items-center gap-2">
-                        Base de temps
-                        <select id="win-p1" class="sel">
-                            <option value="15">15 min</option>
-                            <option value="60">1 h</option>
-                            <option value="240">4 h</option>
-                            <option value="1440">24 h</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="card-body"><canvas id="chartP1"></canvas></div>
+        <article class="card chart-card" data-collapsible-id="chartU1" data-collapsible-type="chart" data-chart="tr1-tension">
+          <header class="card-head">
+            <button type="button" class="card-title" data-collapsible-trigger>
+              <svg class="icon stroke" aria-hidden="true"><use href="#i-wave" /></svg>
+              <span>Tensions de phase - TR1</span>
+            </button>
+            <div class="card-head-controls">
+              <label class="time-range">
+                <span>Base de temps</span>
+                <select id="win-u1" class="sel" autocomplete="off">
+                  <option value="15">15 min</option>
+                  <option value="60">1 h</option>
+                  <option value="240">4 h</option>
+                  <option value="1440">24 h</option>
+                </select>
+              </label>
+              <div class="chart-toolbar" role="group" aria-label="Outils du graphique TR1 tensions">
+                <button type="button" class="chart-btn" data-action="reset" aria-label="Réinitialiser la vue"><svg class="icon stroke" aria-hidden="true"><use href="#i-refresh" /></svg></button>
+                <button type="button" class="chart-btn" data-action="settings" aria-label="Ouvrir les réglages"><svg class="icon stroke" aria-hidden="true"><use href="#i-sliders" /></svg></button>
+                <button type="button" class="chart-btn" data-action="export" aria-label="Exporter les données"><svg class="icon stroke" aria-hidden="true"><use href="#i-download" /></svg></button>
+              </div>
             </div>
-
-            <div class="card">
-                <div class="card-head">
-                    <h3 class="text-lg font-semibold title">
-                        <svg class="icon stroke"><use href="#i-wave" /></svg>
-                        Tensions de phase — TR1
-                    </h3>
-                    <label class="text-xs text-white/70 flex items-center gap-2">
-                        Base de temps
-                        <select id="win-u1" class="sel">
-                            <option value="15">15 min</option>
-                            <option value="60">1 h</option>
-                            <option value="240">4 h</option>
-                            <option value="1440">24 h</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="card-body"><canvas id="chartU1"></canvas></div>
+          </header>
+          <div class="card-body" data-collapsible-content>
+            <div class="chart-wrapper">
+              <canvas id="chartU1" width="600" height="320" aria-label="Graphique tensions TR1"></canvas>
             </div>
+            <div class="chart-accessories" data-chart-controls="chartU1"></div>
+            <div class="chart-stats" data-chart-stats="chartU1"></div>
+          </div>
+        </article>
 
-            <div class="card">
-                <div class="card-head">
-                    <h3 class="text-lg font-semibold title">
-                        <svg class="icon stroke"><use href="#i-pf" /></svg>
-                        Facteur de Puissance — TR1
-                    </h3>
-                    <label class="text-xs text-white/70 flex items-center gap-2">
-                        Base de temps
-                        <select id="win-pf1" class="sel">
-                            <option value="15">15 min</option>
-                            <option value="60">1 h</option>
-                            <option value="240">4 h</option>
-                            <option value="1440">24 h</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="card-body"><canvas id="chartPF1"></canvas></div>
+        <article class="card chart-card" data-collapsible-id="chartPF1" data-collapsible-type="chart" data-chart="tr1-pf">
+          <header class="card-head">
+            <button type="button" class="card-title" data-collapsible-trigger>
+              <svg class="icon stroke" aria-hidden="true"><use href="#i-pf" /></svg>
+              <span>Facteur de puissance - TR1</span>
+            </button>
+            <div class="card-head-controls">
+              <label class="time-range">
+                <span>Base de temps</span>
+                <select id="win-pf1" class="sel" autocomplete="off">
+                  <option value="15">15 min</option>
+                  <option value="60">1 h</option>
+                  <option value="240">4 h</option>
+                  <option value="1440">24 h</option>
+                </select>
+              </label>
+              <div class="chart-toolbar" role="group" aria-label="Outils du graphique TR1 facteur de puissance">
+                <button type="button" class="chart-btn" data-action="reset" aria-label="Réinitialiser la vue"><svg class="icon stroke" aria-hidden="true"><use href="#i-refresh" /></svg></button>
+                <button type="button" class="chart-btn" data-action="settings" aria-label="Ouvrir les réglages"><svg class="icon stroke" aria-hidden="true"><use href="#i-sliders" /></svg></button>
+                <button type="button" class="chart-btn" data-action="export" aria-label="Exporter les données"><svg class="icon stroke" aria-hidden="true"><use href="#i-download" /></svg></button>
+              </div>
             </div>
-        </section>
-
-        <!-- ================= TR2 ================= -->
-        <section class="space-y-6">
-            <h2 class="text-xl font-semibold flex items-center gap-2">
-                <svg class="icon stroke"><use href="#i-plug" /></svg> Transformateur 2
-            </h2>
-
-            <!-- Grille KPI TR2 : 10 cartes -->
-            <div id="tr2-kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch"></div>
-
-            <div class="card">
-                <div class="card-head">
-                    <h3 class="text-lg font-semibold title">
-                        <svg class="icon fill"><use href="#i-bolt" /></svg>
-                        Puissance active — TR2
-                    </h3>
-                    <label class="text-xs text-white/70 flex items-center gap-2">
-                        Base de temps
-                        <select id="win-p2" class="sel">
-                            <option value="15">15 min</option>
-                            <option value="60">1 h</option>
-                            <option value="240">4 h</option>
-                            <option value="1440">24 h</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="card-body"><canvas id="chartP2"></canvas></div>
+          </header>
+          <div class="card-body" data-collapsible-content>
+            <div class="chart-wrapper">
+              <canvas id="chartPF1" width="600" height="320" aria-label="Graphique facteur de puissance TR1"></canvas>
             </div>
+            <div class="chart-accessories" data-chart-controls="chartPF1"></div>
+            <div class="chart-stats" data-chart-stats="chartPF1"></div>
+          </div>
+        </article>
+      </div>
+    </section>
 
-            <div class="card">
-                <div class="card-head">
-                    <h3 class="text-lg font-semibold title">
-                        <svg class="icon stroke"><use href="#i-wave" /></svg>
-                        Tensions de phase — TR2
-                    </h3>
-                    <label class="text-xs text-white/70 flex items-center gap-2">
-                        Base de temps
-                        <select id="win-u2" class="sel">
-                            <option value="15">15 min</option>
-                            <option value="60">1 h</option>
-                            <option value="240">4 h</option>
-                            <option value="1440">24 h</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="card-body"><canvas id="chartU2"></canvas></div>
+    <section class="deck" data-collapsible-id="transformer-2" data-collapsible-type="section">
+      <div class="deck-head" data-collapsible-trigger>
+        <svg class="icon stroke" aria-hidden="true"><use href="#i-plug" /></svg>
+        <h2 class="text-xl font-semibold">Transformateur 2</h2>
+      </div>
+      <div class="deck-body space-y-6" data-collapsible-content>
+        <div id="tr2-kpis" class="kpi-grid"></div>
+        <article class="card chart-card" data-collapsible-id="chartP2" data-collapsible-type="chart" data-chart="tr2-power">
+          <header class="card-head">
+            <button type="button" class="card-title" data-collapsible-trigger>
+              <svg class="icon fill" aria-hidden="true"><use href="#i-bolt" /></svg>
+              <span>Puissance active - TR2</span>
+            </button>
+            <div class="card-head-controls">
+              <label class="time-range">
+                <span>Base de temps</span>
+                <select id="win-p2" class="sel" autocomplete="off">
+                  <option value="15">15 min</option>
+                  <option value="60">1 h</option>
+                  <option value="240">4 h</option>
+                  <option value="1440">24 h</option>
+                </select>
+              </label>
+              <div class="chart-toolbar" role="group" aria-label="Outils du graphique TR2 puissance">
+                <button type="button" class="chart-btn" data-action="reset" aria-label="Réinitialiser la vue"><svg class="icon stroke" aria-hidden="true"><use href="#i-refresh" /></svg></button>
+                <button type="button" class="chart-btn" data-action="settings" aria-label="Ouvrir les réglages"><svg class="icon stroke" aria-hidden="true"><use href="#i-sliders" /></svg></button>
+                <button type="button" class="chart-btn" data-action="export" aria-label="Exporter les données"><svg class="icon stroke" aria-hidden="true"><use href="#i-download" /></svg></button>
+              </div>
             </div>
-
-            <div class="card">
-                <div class="card-head">
-                    <h3 class="text-lg font-semibold title">
-                        <svg class="icon stroke"><use href="#i-pf" /></svg>
-                        Facteur de Puissance — TR2
-                    </h3>
-                    <label class="text-xs text-white/70 flex items-center gap-2">
-                        Base de temps
-                        <select id="win-pf2" class="sel">
-                            <option value="15">15 min</option>
-                            <option value="60">1 h</option>
-                            <option value="240">4 h</option>
-                            <option value="1440">24 h</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="card-body"><canvas id="chartPF2"></canvas></div>
+          </header>
+          <div class="card-body" data-collapsible-content>
+            <div class="chart-wrapper">
+              <canvas id="chartP2" width="600" height="320" aria-label="Graphique puissance active TR2"></canvas>
             </div>
-        </section>
+            <div class="chart-accessories" data-chart-controls="chartP2"></div>
+            <div class="chart-stats" data-chart-stats="chartP2"></div>
+          </div>
+        </article>
 
-        <footer class="pt-2 text-xs text-white/50">
-            Auteur : N.Villaume  &nbsp;•&nbsp; Dernière mise à jour : <span id="last-update">—</span>
-        </footer>
+        <article class="card chart-card" data-collapsible-id="chartU2" data-collapsible-type="chart" data-chart="tr2-tension">
+          <header class="card-head">
+            <button type="button" class="card-title" data-collapsible-trigger>
+              <svg class="icon stroke" aria-hidden="true"><use href="#i-wave" /></svg>
+              <span>Tensions de phase - TR2</span>
+            </button>
+            <div class="card-head-controls">
+              <label class="time-range">
+                <span>Base de temps</span>
+                <select id="win-u2" class="sel" autocomplete="off">
+                  <option value="15">15 min</option>
+                  <option value="60">1 h</option>
+                  <option value="240">4 h</option>
+                  <option value="1440">24 h</option>
+                </select>
+              </label>
+              <div class="chart-toolbar" role="group" aria-label="Outils du graphique TR2 tensions">
+                <button type="button" class="chart-btn" data-action="reset" aria-label="Réinitialiser la vue"><svg class="icon stroke" aria-hidden="true"><use href="#i-refresh" /></svg></button>
+                <button type="button" class="chart-btn" data-action="settings" aria-label="Ouvrir les réglages"><svg class="icon stroke" aria-hidden="true"><use href="#i-sliders" /></svg></button>
+                <button type="button" class="chart-btn" data-action="export" aria-label="Exporter les données"><svg class="icon stroke" aria-hidden="true"><use href="#i-download" /></svg></button>
+              </div>
+            </div>
+          </header>
+          <div class="card-body" data-collapsible-content>
+            <div class="chart-wrapper">
+              <canvas id="chartU2" width="600" height="320" aria-label="Graphique tensions TR2"></canvas>
+            </div>
+            <div class="chart-accessories" data-chart-controls="chartU2"></div>
+            <div class="chart-stats" data-chart-stats="chartU2"></div>
+          </div>
+        </article>
+
+        <article class="card chart-card" data-collapsible-id="chartPF2" data-collapsible-type="chart" data-chart="tr2-pf">
+          <header class="card-head">
+            <button type="button" class="card-title" data-collapsible-trigger>
+              <svg class="icon stroke" aria-hidden="true"><use href="#i-pf" /></svg>
+              <span>Facteur de puissance - TR2</span>
+            </button>
+            <div class="card-head-controls">
+              <label class="time-range">
+                <span>Base de temps</span>
+                <select id="win-pf2" class="sel" autocomplete="off">
+                  <option value="15">15 min</option>
+                  <option value="60">1 h</option>
+                  <option value="240">4 h</option>
+                  <option value="1440">24 h</option>
+                </select>
+              </label>
+              <div class="chart-toolbar" role="group" aria-label="Outils du graphique TR2 facteur de puissance">
+                <button type="button" class="chart-btn" data-action="reset" aria-label="Réinitialiser la vue"><svg class="icon stroke" aria-hidden="true"><use href="#i-refresh" /></svg></button>
+                <button type="button" class="chart-btn" data-action="settings" aria-label="Ouvrir les réglages"><svg class="icon stroke" aria-hidden="true"><use href="#i-sliders" /></svg></button>
+                <button type="button" class="chart-btn" data-action="export" aria-label="Exporter les données"><svg class="icon stroke" aria-hidden="true"><use href="#i-download" /></svg></button>
+              </div>
+            </div>
+          </header>
+          <div class="card-body" data-collapsible-content>
+            <div class="chart-wrapper">
+              <canvas id="chartPF2" width="600" height="320" aria-label="Graphique facteur de puissance TR2"></canvas>
+            </div>
+            <div class="chart-accessories" data-chart-controls="chartPF2"></div>
+            <div class="chart-stats" data-chart-stats="chartPF2"></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="daily-view" class="card daily-view">
+      <header class="daily-head">
+        <div class="flex items-center gap-2">
+          <svg class="icon stroke" aria-hidden="true"><use href="#i-calendar" /></svg>
+          <h2 class="text-lg font-semibold">Vue journalière</h2>
+        </div>
+        <div class="daily-controls" role="group" aria-label="Navigation journalière">
+          <button type="button" id="daily-prev" class="btn btn-soft" aria-label="Jour précédent"><svg class="icon stroke" aria-hidden="true"><use href="#i-arrow-left" /></svg></button>
+          <input type="date" id="daily-date" class="daily-date" aria-label="Sélection de la date" />
+          <button type="button" id="daily-next" class="btn btn-soft" aria-label="Jour suivant"><svg class="icon stroke" aria-hidden="true"><use href="#i-arrow-right" /></svg></button>
+        </div>
+      </header>
+      <div class="daily-body">
+        <article class="daily-metric" data-metric="kwh">
+          <h3 class="metric-label">Énergie</h3>
+          <div class="metric-value"><span id="daily-kwh">-</span><small>kWh</small></div>
+        </article>
+        <article class="daily-metric" data-metric="kw-max">
+          <h3 class="metric-label">Puissance max</h3>
+          <div class="metric-value"><span id="daily-kw-max">-</span><small>kW</small></div>
+        </article>
+        <article class="daily-metric" data-metric="pf-min">
+          <h3 class="metric-label">cos φ min</h3>
+          <div class="metric-value"><span id="daily-pf-min">-</span></div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="page-footer text-xs text-slate-500">
+      <p>Interface de supervision &mdash; aucune erreur console toleree.</p>
+    </footer>
+  </main>
+
+  <dialog id="settings-dialog" class="app-dialog">
+    <form method="dialog" class="dialog-content">
+      <header class="dialog-head">
+        <div>
+          <h2 class="text-lg font-semibold">Paramètres API</h2>
+          <p class="text-xs text-slate-400">Configurer l'adresse de base utilisée pour les appels.</p>
+        </div>
+        <button type="button" class="btn btn-soft" data-dialog-close aria-label="Fermer">Fermer</button>
+      </header>
+      <div class="dialog-body space-y-4">
+        <label class="flex flex-col gap-2 text-sm">
+          <span>Adresse API (baseURL)</span>
+          <input id="settings-api-base" name="api-base" type="url" required placeholder="https://serveur/api" class="input" />
+        </label>
+        <div id="settings-feedback" class="text-xs text-slate-400" role="status" aria-live="polite"></div>
+      </div>
+      <footer class="dialog-actions flex flex-wrap justify-end gap-2">
+        <button type="button" id="settings-test" class="btn btn-soft">Tester</button>
+        <button type="button" id="settings-reset" class="btn btn-soft">Réinitialiser</button>
+        <button type="submit" id="settings-save" class="btn btn-primary">Enregistrer</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="chart-settings-dialog" class="app-dialog">
+    <form method="dialog" class="dialog-content">
+      <header class="dialog-head">
+        <div>
+          <h2 class="text-lg font-semibold" id="chart-settings-title">Réglages du graphique</h2>
+          <p class="text-xs text-slate-400" id="chart-settings-sub">-</p>
+        </div>
+        <button type="button" class="btn btn-soft" data-dialog-close aria-label="Fermer">Fermer</button>
+      </header>
+      <div class="dialog-body space-y-4" id="chart-settings-body">
+        <!-- Le contenu est injecte cote JS -->
+      </div>
+      <footer class="dialog-actions flex flex-wrap justify-between gap-2">
+        <button type="button" class="btn btn-soft" id="chart-settings-apply-all">Appliquer à tous</button>
+        <div class="flex gap-2">
+          <button type="button" class="btn btn-soft" id="chart-settings-reset">Réinitialiser</button>
+          <button type="submit" class="btn btn-primary" id="chart-settings-save">Valider</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <template id="contextmenu-template">
+    <div class="contextmenu-panel" role="menu">
+      <header class="contextmenu-head">
+        <strong class="text-sm">Signaux disponibles</strong>
+        <button type="button" class="contextmenu-close" aria-label="Fermer">×</button>
+      </header>
+      <div class="contextmenu-body" data-role="list" tabindex="-1"></div>
+      <footer class="contextmenu-footer">
+        <span class="contextmenu-error hidden">Impossible de charger les signaux - Réessayer</span>
+        <div class="contextmenu-actions">
+          <button type="button" data-role="retry" class="btn btn-soft hidden">Réessayer</button>
+          <button type="button" data-role="apply" class="btn btn-primary">Appliquer</button>
+        </div>
+      </footer>
     </div>
+  </template>
 
-    <!-- JS principal -->
-    <script type="module" src="./js/main.js"></script>
+  <template id="toast-template">
+    <div class="toast" role="status" aria-live="polite">
+      <span data-role="message"></span>
+      <button type="button" class="toast-close" aria-label="Fermer">×</button>
+    </div>
+  </template>
 
-    <!-- Exemple d’utilisation côté JS pour une carte KPI :
-        const icon = '<svg class="icon stroke"><use href="#i-battery"/></svg>';
-        // insérer icon dans l’entête ou près de la valeur KPI
-    -->
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>
