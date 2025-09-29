@@ -1,5 +1,5 @@
 ﻿import { fetchSignals } from './api.js';
-import { applySignals, getChartState } from './charts.js';
+import { getChart } from '../charts/index.js';
 
 let menuElement = null;
 let backdropHandler = null;
@@ -113,13 +113,19 @@ function openMenu(detail) {
   const applyBtn = menuElement.querySelector('[data-role="apply"]');
   const closeBtn = menuElement.querySelector('.contextmenu-close');
 
-  const currentState = getChartState(detail.chartKey);
-  const selected = currentState?.signals || detail.signals || [];
+  // Utiliser le nouveau système de charts
+  const chartInstance = getChart(detail.chartKey);
+  const selected = chartInstance?.host?.getCurrentSignals() || detail.signals || [];
 
   const applySelection = () => {
     const inputs = menuElement.querySelectorAll('input[type="checkbox"]');
     const chosen = Array.from(inputs).filter(input => input.checked).map(input => input.value);
-    applySignals(detail.chartKey, chosen);
+    
+    // Utiliser le nouveau système pour mettre à jour les signaux
+    if (chartInstance?.host) {
+      chartInstance.host.updateSignals(chosen);
+    }
+    
     closeMenu();
   };
 

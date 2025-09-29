@@ -8,6 +8,9 @@
 // Registre des instances ChartHost pour le système de base de temps
 const chartHostInstances = new Map();
 
+// Registre des instances ChartHost pour les paramètres
+const chartSettingsInstances = new Map();
+
 /**
  * Enregistre une instance ChartHost pour la gestion des bases de temps
  * @param {string} chartKey - Clé du chart (ex: 'tr1-power')
@@ -15,7 +18,17 @@ const chartHostInstances = new Map();
  */
 export function registerChartHost(chartKey, chartHost) {
   chartHostInstances.set(chartKey, chartHost);
+  chartSettingsInstances.set(chartKey, chartHost); // Aussi pour les paramètres
   console.log(`[TimeRangeBridge] ChartHost enregistré: ${chartKey}`);
+}
+
+/**
+ * Obtient une instance ChartHost pour les paramètres
+ * @param {string} chartKey - Clé du chart
+ * @returns {ChartHost|null} Instance ChartHost ou null
+ */
+export function getChartHost(chartKey) {
+  return chartSettingsInstances.get(chartKey) || null;
 }
 
 /**

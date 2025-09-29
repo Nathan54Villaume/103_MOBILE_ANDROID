@@ -5,8 +5,6 @@ import { startPolling, attachVisibilityHandler, recomputeAdaptivePolling } from 
 import { loadSeries } from './api.js';
 // NOUVEAU SYSTÈME DE CHARTS
 import { initChart, updateChart, resetChart, getChart } from '../charts/index.js';
-// Ancien système conservé pour compatibilité temporaire
-import { refreshCharts, setChartActive, resetChartView, listCharts } from './charts.js';
 import { bufs } from './state.js';
 import { Kpi, initKpiCollapsibles } from './kpi.js';
 import { initCollapsibles } from './ui-collapsibles.js';
@@ -30,22 +28,14 @@ function handleCollapsibleChange(event) {
   if (!id) return;
 
   if (type === 'chart') {
-    setChartActive(id, expanded !== false);
     if (expanded && !init) {
-      // refreshCharts(); // Ancien système
       refreshNewChartSystem(); // NOUVEAU système
     }
     return;
   }
 
   if (type === 'section' && element) {
-    element.querySelectorAll('[data-collapsible-type="chart"]').forEach(card => {
-      const canvas = card.querySelector('canvas');
-      if (!canvas || !canvas.id) return;
-      setChartActive(canvas.id, expanded !== false);
-    });
     if (expanded && !init) {
-      // refreshCharts(); // Ancien système
       refreshNewChartSystem(); // NOUVEAU système
     }
   }
@@ -104,9 +94,9 @@ function initWindows() {
         const { handleTimeRangeChange } = await import('../charts/bridge/TimeRangeBridge.js');
         handleTimeRangeChange(select.id, minutes);
         
-        // Ancien système de chargement de données
+        // Chargement de données pour le nouveau système
         await loadSeries(trId);
-        refreshCharts();
+        refreshNewChartSystem();
       } catch (err) {
         console.error('[main] change window failed', err);
         showToast('Erreur lors de la mise à jour de la fenêtre', { variant: 'error' });
@@ -236,10 +226,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 [main] Initializing NEW chart system...');
   initializeNewChartSystem();
   
-  // Conserve l'ancien système pour backup temporaire
-  console.log('🔄 [main] Initializing backup chart system...');
-  // initializeCharts(); // Temporairement désactivé
-  // refreshCharts();    // Temporairement désactivé
+  // Système de charts unifié
+  console.log('🔄 [main] Initializing unified chart system...');
   
   // Restaurer les bases de temps depuis localStorage après initialisation
   setTimeout(async () => {
@@ -254,7 +242,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     await loadSeries(1);
     await loadSeries(2);
-    // refreshCharts(); // Ancien système désactivé
     refreshNewChartSystem(); // NOUVEAU système
   } catch (err) {
     console.error('[main] initial load failed', err);
@@ -358,5 +345,7 @@ function refreshNewChartSystem() {
 export { refreshNewChartSystem };
 
 export function listRegisteredCharts() {
-  return listCharts();
+  // Retourner les charts du nouveau système
+  // Cette fonction sera remplacée par l'import direct dans polling.js
+  return [];
 }
