@@ -269,10 +269,17 @@ function updateCpuMemoryChart(metrics) {
     const ctx = document.getElementById('chartCpuMemory');
     if (!ctx) return;
     
+    // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.cpuMemory) {
-        state.charts.cpuMemory.destroy();
+        state.charts.cpuMemory.data.datasets[0].data = [
+            metrics.cpuUsagePercent,
+            (metrics.memoryUsageMB / metrics.totalMemoryMB * 100)
+        ];
+        state.charts.cpuMemory.update('none'); // 'none' = pas d'animation pour meilleures performances
+        return;
     }
     
+    // Créer le graphique la première fois seulement
     state.charts.cpuMemory = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -297,11 +304,16 @@ function updateCpuMemoryChart(metrics) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false, // Désactiver les animations pour de meilleures performances
             scales: {
                 y: {
                     beginAtZero: true,
                     max: 100,
-                    ticks: { color: '#94a3b8' },
+                    min: 0, // Forcer le minimum aussi
+                    ticks: { 
+                        color: '#94a3b8',
+                        stepSize: 20 // Fixer les paliers
+                    },
                     grid: { color: 'rgba(255,255,255,0.1)' }
                 },
                 x: {
@@ -320,10 +332,19 @@ function updateLogsChart(logStats) {
     const ctx = document.getElementById('chartLogs');
     if (!ctx) return;
     
+    // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.logs) {
-        state.charts.logs.destroy();
+        state.charts.logs.data.datasets[0].data = [
+            logStats.infoCount,
+            logStats.warningCount,
+            logStats.errorCount,
+            logStats.criticalCount
+        ];
+        state.charts.logs.update('none'); // 'none' = pas d'animation pour meilleures performances
+        return;
     }
     
+    // Créer le graphique la première fois seulement
     state.charts.logs = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -353,6 +374,7 @@ function updateLogsChart(logStats) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false, // Désactiver les animations pour de meilleures performances
             plugins: {
                 legend: {
                     position: 'right',
