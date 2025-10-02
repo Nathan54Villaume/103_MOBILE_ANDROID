@@ -231,12 +231,16 @@
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div class="card rounded-xl p-5 shadow-glass">
               <h3 class="font-semibold mb-4">Utilisation CPU & Mémoire</h3>
-              <canvas id="chartCpuMemory" height="250"></canvas>
+              <div style="height: 250px; max-height: 250px; position: relative;">
+                <canvas id="chartCpuMemory"></canvas>
+              </div>
             </div>
             
             <div class="card rounded-xl p-5 shadow-glass">
               <h3 class="font-semibold mb-4">Statistiques Logs</h3>
-              <canvas id="chartLogs" height="250"></canvas>
+              <div style="height: 250px; max-height: 250px; position: relative;">
+                <canvas id="chartLogs"></canvas>
+              </div>
             </div>
           </div>
 
