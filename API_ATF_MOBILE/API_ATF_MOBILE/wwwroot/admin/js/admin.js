@@ -55,18 +55,16 @@ async function handleLogin(e) {
     const password = document.getElementById('password').value;
     const errorDiv = document.getElementById('loginError');
     
-    // Vérification des identifiants en dur
-    if (username !== 'admin' || password !== 'aiadmin') {
-        errorDiv.textContent = 'Identifiants incorrects';
-        errorDiv.classList.remove('hidden');
-        return;
-    }
-    
     try {
         errorDiv.classList.add('hidden');
+        console.log('🔐 Tentative de connexion:', username);
+        
         await apiClient.login(username, password);
+        console.log('✅ Connexion réussie');
+        
         await showApp();
     } catch (error) {
+        console.error('❌ Erreur de connexion:', error);
         errorDiv.textContent = error.message;
         errorDiv.classList.remove('hidden');
     }

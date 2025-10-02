@@ -125,18 +125,24 @@ class ApiClient {
      * Authentification
      */
     async login(username, password) {
+        console.log('🔐 [API] Envoi requête login pour:', username);
+        
         const data = await this.request('/api/auth/login', {
             method: 'POST',
             body: JSON.stringify({ username, password })
         });
 
+        console.log('🔐 [API] Réponse login:', data);
+
         if (data.success && data.token) {
             this.token = data.token;
             this.user = data.user;
+            console.log('✅ [API] Token reçu et stocké');
             // SÉCURITÉ : Ne PAS stocker le token dans localStorage
             // La session expire dès que la page est fermée/rechargée
             return data;
         } else {
+            console.error('❌ [API] Login failed:', data);
             throw new Error(data.message || 'Échec de connexion');
         }
     }
