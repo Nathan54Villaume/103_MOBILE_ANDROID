@@ -15,17 +15,24 @@ class ApiClient {
     }
 
     /**
-     * Ajouter une entrée au log des requêtes
+     * EXTENSION: Ajouter une entrée au log des requêtes avec détails enrichis
      */
-    logRequest(method, endpoint, status, duration, error = null) {
+    logRequest(method, endpoint, status, duration, error = null, details = {}) {
         const logEntry = {
+            id: this.generateLogId(),
             timestamp: new Date(),
             method: method || 'GET',
             endpoint,
             status,
             duration,
             error,
-            success: status >= 200 && status < 300
+            success: status >= 200 && status < 300,
+            // EXTENSION: Détails enrichis
+            requestSize: details.requestSize || null,
+            responseSize: details.responseSize || null,
+            requestBody: details.requestBody || null,
+            responseBody: details.responseBody || null,
+            headers: details.headers || null
         };
 
         this.requestLog.unshift(logEntry); // Ajouter au début
@@ -50,6 +57,39 @@ class ApiClient {
         // Dispatch un événement custom pour que l'UI puisse réagir
         window.dispatchEvent(new CustomEvent('api-request', { detail: logEntry }));
     }
+    
+    /**
+     * EXTENSION: Générer un ID unique pour un log
+     */
+    generateLogId() {
+        return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    /**
+     * EXTENSION: Sanitize sensitive data
+     */
+    sanitizeData(data) {
+        if (!data) return data;
+        
+        const sensitiveKeys = ['password', 'token', 'authorization', 'apiKey', 'secret'];
+        const sanitized = JSON.parse(JSON.stringify(data));
+        
+        const sanitizeObject = (obj) => {
+            for (const key in obj) {
+                if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk.toLowerCase()))) {
+                    obj[key] = '****';
+                } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    sanitizeObject(obj[key]);
+                }
+            }
+        };
+        
+        if (typeof sanitized === 'object') {
+            sanitizeObject(sanitized);
+        }
+        
+        return sanitized;
+    }
 
     /**
      * Obtenir l'historique des requêtes
@@ -66,7 +106,7 @@ class ApiClient {
     }
 
     /**
-     * Effectuer une requête HTTP avec gestion du token JWT
+     * EXTENSION: Effectuer une requête HTTP avec gestion du token JWT et capture détaillée
      */
     async request(endpoint, options = {}) {
         const url = `${API_BASE_URL}${endpoint}`;
@@ -83,6 +123,19 @@ class ApiClient {
             headers['Authorization'] = `Bearer ${this.token}`;
         }
 
+        // EXTENSION: Capturer le corps de la requête (sanitized)
+        let requestBody = null;
+        let requestSize = 0;
+        if (options.body) {
+            requestSize = new Blob([options.body]).size;
+            try {
+                const parsedBody = JSON.parse(options.body);
+                requestBody = this.sanitizeData(parsedBody);
+            } catch (e) {
+                // Pas JSON, ignorer
+            }
+        }
+
         try {
             const response = await fetch(url, {
                 ...options,
@@ -91,9 +144,22 @@ class ApiClient {
 
             const duration = Math.round(performance.now() - startTime);
 
+            // EXTENSION: Capturer le corps de la réponse (sanitized)
+            let responseBody = null;
+            let responseSize = 0;
+            const contentLength = response.headers.get('content-length');
+            if (contentLength) {
+                responseSize = parseInt(contentLength, 10);
+            }
+
             // Si 401, le token est invalide
             if (response.status === 401) {
-                this.logRequest(method, endpoint, 401, duration, 'Session expirée');
+                this.logRequest(method, endpoint, 401, duration, 'Session expirée', {
+                    requestSize,
+                    responseSize,
+                    requestBody,
+                    headers: this.sanitizeHeaders(headers)
+                });
                 this.logout();
                 throw new Error('Session expirée. Veuillez vous reconnecter.');
             }
@@ -101,24 +167,58 @@ class ApiClient {
             if (!response.ok) {
                 const error = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
                 const errorMsg = error.message || error.error || `HTTP ${response.status}`;
-                this.logRequest(method, endpoint, response.status, duration, errorMsg);
+                
+                // EXTENSION: Log avec détails d'erreur
+                this.logRequest(method, endpoint, response.status, duration, errorMsg, {
+                    requestSize,
+                    responseSize,
+                    requestBody,
+                    responseBody: this.sanitizeData(error),
+                    headers: this.sanitizeHeaders(headers)
+                });
+                
                 throw new Error(errorMsg);
             }
 
-            // Log success
-            this.logRequest(method, endpoint, response.status, duration);
+            // Lire la réponse
+            const data = await response.json();
+            responseBody = this.sanitizeData(data);
+            
+            // EXTENSION: Log success avec détails
+            this.logRequest(method, endpoint, response.status, duration, null, {
+                requestSize,
+                responseSize,
+                requestBody,
+                responseBody,
+                headers: this.sanitizeHeaders(headers)
+            });
 
-            return await response.json();
+            return data;
         } catch (error) {
             const duration = Math.round(performance.now() - startTime);
             
             // Si erreur réseau (pas de status)
             if (!error.status) {
-                this.logRequest(method, endpoint, 0, duration, error.message);
+                this.logRequest(method, endpoint, 0, duration, error.message, {
+                    requestSize,
+                    requestBody,
+                    headers: this.sanitizeHeaders(headers)
+                });
             }
             
             throw error;
         }
+    }
+    
+    /**
+     * EXTENSION: Sanitize headers (masquer Authorization)
+     */
+    sanitizeHeaders(headers) {
+        const sanitized = { ...headers };
+        if (sanitized['Authorization']) {
+            sanitized['Authorization'] = 'Bearer ****';
+        }
+        return sanitized;
     }
 
     /**

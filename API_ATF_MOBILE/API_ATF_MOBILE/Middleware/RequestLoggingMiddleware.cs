@@ -27,11 +27,26 @@ namespace API_ATF_MOBILE.Middleware
 
             var stopwatch = Stopwatch.StartNew();
             var requestMethod = context.Request.Method;
+            
+            // EXTENSION: Capturer la taille de la requête
+            long? requestSize = context.Request.ContentLength;
 
             try
             {
+                // EXTENSION: Capturer le corps de la réponse si nécessaire (pour logging détaillé)
+                var originalBodyStream = context.Response.Body;
+                using var responseBody = new MemoryStream();
+                context.Response.Body = responseBody;
+                
                 await _next(context);
                 stopwatch.Stop();
+
+                // EXTENSION: Calculer la taille de la réponse
+                long? responseSize = responseBody.Length;
+                
+                // Copier le corps de la réponse vers le stream original
+                responseBody.Seek(0, SeekOrigin.Begin);
+                await responseBody.CopyToAsync(originalBodyStream);
 
                 // Logger uniquement les requêtes API importantes
                 if (requestPath.StartsWith("/api/"))
@@ -44,7 +59,20 @@ namespace API_ATF_MOBILE.Middleware
                     if (stopwatch.ElapsedMilliseconds > 100 || statusCode >= 400)
                     {
                         _logger.Log(statusCode >= 400 ? LogLevel.Warning : LogLevel.Information, message);
-                        logService.AddLog(level, message);
+                        
+                        // EXTENSION: Ajouter les détails HTTP enrichis
+                        var httpDetails = new HttpLogDetails
+                        {
+                            Method = requestMethod,
+                            Url = requestPath,
+                            StatusCode = statusCode,
+                            DurationMs = stopwatch.ElapsedMilliseconds,
+                            RequestSize = requestSize,
+                            ResponseSize = responseSize,
+                            Endpoint = requestPath
+                        };
+                        
+                        logService.AddLog(level, message, null, httpDetails, "API");
                     }
                 }
             }
@@ -54,7 +82,19 @@ namespace API_ATF_MOBILE.Middleware
                 var message = $"{requestMethod} {requestPath} → ERREUR ({stopwatch.ElapsedMilliseconds}ms)";
                 
                 _logger.LogError(ex, message);
-                logService.AddLog("Error", message, ex.Message);
+                
+                // EXTENSION: Ajouter les détails HTTP même en cas d'erreur
+                var httpDetails = new HttpLogDetails
+                {
+                    Method = requestMethod,
+                    Url = requestPath,
+                    StatusCode = context.Response.StatusCode,
+                    DurationMs = stopwatch.ElapsedMilliseconds,
+                    RequestSize = requestSize,
+                    Endpoint = requestPath
+                };
+                
+                logService.AddLog("Error", message, ex.Message, httpDetails, "API");
                 
                 throw;
             }

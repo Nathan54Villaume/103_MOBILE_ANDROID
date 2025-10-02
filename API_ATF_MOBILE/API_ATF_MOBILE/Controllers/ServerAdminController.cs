@@ -408,6 +408,138 @@ namespace API_ATF_MOBILE.Controllers
         }
 
         /// <summary>
+        /// EXTENSION: Exporter les logs au format CSV
+        /// </summary>
+        [HttpGet("logs/export/csv")]
+        public async Task<ActionResult> ExportLogsCsv(
+            [FromQuery] int count = 200,
+            [FromQuery] string? level = null)
+        {
+            try
+            {
+                var logs = await _logReader.GetRecentLogsAsync(count, level);
+                
+                var csv = new System.Text.StringBuilder();
+                csv.AppendLine("Timestamp,Severity,Source,Message,Method,URL,Status,Duration(ms),Exception");
+                
+                foreach (var log in logs)
+                {
+                    var timestamp = log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    var message = EscapeCsv(log.Message);
+                    var exception = EscapeCsv(log.Exception ?? "");
+                    var method = log.HttpDetails?.Method ?? "";
+                    var url = log.HttpDetails?.Url ?? "";
+                    var status = log.HttpDetails?.StatusCode?.ToString() ?? "";
+                    var duration = log.HttpDetails?.DurationMs?.ToString() ?? "";
+                    
+                    csv.AppendLine($"{timestamp},{log.Level},{log.Source},{message},{method},{url},{status},{duration},{exception}");
+                }
+                
+                var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+                return File(bytes, "text/csv", $"logs_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'export CSV des logs");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// EXTENSION: Exporter les logs au format JSON
+        /// </summary>
+        [HttpGet("logs/export/json")]
+        public async Task<ActionResult> ExportLogsJson(
+            [FromQuery] int count = 200,
+            [FromQuery] string? level = null)
+        {
+            try
+            {
+                var logs = await _logReader.GetRecentLogsAsync(count, level);
+                var json = System.Text.Json.JsonSerializer.Serialize(logs, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+                
+                var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                return File(bytes, "application/json", $"logs_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de l'export JSON des logs");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// EXTENSION: Configurer la taille du buffer de logs
+        /// </summary>
+        [HttpPost("logs/buffer-size")]
+        public ActionResult SetLogBufferSize([FromBody] BufferSizeRequest request)
+        {
+            try
+            {
+                if (request.Size < 5000)
+                {
+                    return BadRequest(new { error = "La taille minimale du buffer est 5000" });
+                }
+                
+                _logReader.SetBufferSize(request.Size);
+                
+                return Ok(new
+                {
+                    success = true,
+                    bufferSize = _logReader.GetBufferSize(),
+                    message = $"Taille du buffer mise à jour à {_logReader.GetBufferSize()} entrées"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la configuration du buffer");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// EXTENSION: Obtenir la configuration actuelle du buffer
+        /// </summary>
+        [HttpGet("logs/buffer-size")]
+        public ActionResult GetLogBufferSize()
+        {
+            try
+            {
+                return Ok(new
+                {
+                    bufferSize = _logReader.GetBufferSize(),
+                    maxSize = 50000,
+                    minSize = 5000,
+                    defaultSize = 10000
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération de la configuration du buffer");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        private string EscapeCsv(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            
+            // Échapper les guillemets et les retours à la ligne
+            value = value.Replace("\"", "\"\"");
+            
+            // Entourer de guillemets si contient virgule, guillemet ou retour à la ligne
+            if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            {
+                value = $"\"{value}\"";
+            }
+            
+            return value;
+        }
+
+        /// <summary>
         /// Obtenir la configuration actuelle (sans mots de passe)
         /// </summary>
         [HttpGet("config")]
@@ -616,6 +748,25 @@ namespace API_ATF_MOBILE.Controllers
         public S7ConnectionStatus S7Status { get; set; } = new();
         public LogStatistics LogStats { get; set; } = new();
         public DateTime Timestamp { get; set; }
+    }
+
+    // EXTENSION: DTO pour configurer la taille du buffer
+    public class BufferSizeRequest
+    {
+        public int Size { get; set; }
+    }
+    
+    public class PlcConnectionStatus
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string IpAddress { get; set; } = string.Empty;
+        public int Rack { get; set; }
+        public int Slot { get; set; }
+        public int Port { get; set; }
+        public string CpuType { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
     }
 }
 
