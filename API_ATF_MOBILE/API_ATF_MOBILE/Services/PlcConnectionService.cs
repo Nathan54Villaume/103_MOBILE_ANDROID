@@ -28,7 +28,17 @@ namespace API_ATF_MOBILE.Services
         public PlcConnectionService(IWebHostEnvironment environment, ILogger<PlcConnectionService> logger)
         {
             _logger = logger;
-            _filePath = Path.Combine(environment.ContentRootPath, "plc-connections.json");
+            
+            // SOLUTION : Utiliser un dossier persistant au lieu de ContentRootPath
+            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var appFolder = Path.Combine(appDataPath, "API_ATF_MOBILE");
+            
+            // Créer le dossier s'il n'existe pas
+            Directory.CreateDirectory(appFolder);
+            
+            _filePath = Path.Combine(appFolder, "plc-connections.json");
+            
+            _logger.LogInformation("Stockage PLC configuré dans : {FilePath}", _filePath);
             
             // Créer le fichier avec une connexion par défaut si inexistant
             InitializeDefaultConnections();
@@ -36,23 +46,42 @@ namespace API_ATF_MOBILE.Services
 
         private void InitializeDefaultConnections()
         {
-            if (!File.Exists(_filePath))
+            try
             {
-                var defaultConnections = new List<PlcConnection>
+                if (!File.Exists(_filePath))
                 {
-                    new PlcConnection
+                    _logger.LogInformation("Fichier PLC inexistant, création avec connexion par défaut : {FilePath}", _filePath);
+                    
+                    var defaultConnections = new List<PlcConnection>
                     {
-                        Name = "Concentrateur ATF",
-                        IpAddress = "10.250.13.10",
-                        Rack = 0,
-                        Slot = 1,
-                        Port = 102,
-                        CpuType = "S7-1500"
-                    }
-                };
+                        new PlcConnection
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Name = "Concentrateur ATF",
+                            IpAddress = "10.250.13.10",
+                            Rack = 0,
+                            Slot = 1,
+                            Port = 102,
+                            CpuType = "S7-1500",
+                            CreatedAt = DateTime.Now
+                        }
+                    };
 
-                SaveConnectionsToFile(defaultConnections);
-                _logger.LogInformation("Fichier PLC créé avec connexion par défaut");
+                    SaveConnectionsToFile(defaultConnections);
+                    _logger.LogInformation("✅ Fichier PLC créé avec succès avec 1 connexion par défaut");
+                }
+                else
+                {
+                    // Vérifier que le fichier est lisible
+                    var testRead = File.ReadAllText(_filePath);
+                    var connections = JsonSerializer.Deserialize<List<PlcConnection>>(testRead);
+                    _logger.LogInformation("✅ Fichier PLC existant trouvé avec {Count} connexions", connections?.Count ?? 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ ERREUR lors de l'initialisation du fichier PLC : {FilePath}", _filePath);
+                throw;
             }
         }
 
@@ -202,13 +231,34 @@ namespace API_ATF_MOBILE.Services
 
         private void SaveConnectionsToFile(List<PlcConnection> connections)
         {
-            var options = new JsonSerializerOptions
+            try
             {
-                WriteIndented = true
-            };
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                };
 
-            var json = JsonSerializer.Serialize(connections, options);
-            File.WriteAllText(_filePath, json);
+                var json = JsonSerializer.Serialize(connections, options);
+                
+                // Sauvegarde atomique : écrire dans un fichier temporaire puis renommer
+                var tempPath = _filePath + ".tmp";
+                File.WriteAllText(tempPath, json);
+                
+                // Remplacer l'ancien fichier par le nouveau (opération atomique)
+                if (File.Exists(_filePath))
+                {
+                    File.Delete(_filePath);
+                }
+                File.Move(tempPath, _filePath);
+                
+                _logger.LogDebug("Connexions PLC sauvegardées : {Count} connexions dans {FilePath}", 
+                    connections.Count, _filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ERREUR CRITIQUE : Impossible de sauvegarder les connexions PLC dans {FilePath}", _filePath);
+                throw; // Remonter l'erreur pour que l'appelant sache que la sauvegarde a échoué
+            }
         }
 
         /// <summary>
