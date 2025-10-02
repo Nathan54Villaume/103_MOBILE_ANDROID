@@ -46,7 +46,7 @@ function displayPlcConnections(connections) {
                         <h4 class="font-semibold">${escapeHtml(plc.name)}</h4>
                         <p class="text-xs text-slate-400">${plc.cpuType}</p>
                     </div>
-                </div>`
+                </div>
                 <div class="flex gap-2">
                     <button 
                         onclick="window.editPlc('${plc.id}')" 

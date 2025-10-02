@@ -6,17 +6,23 @@
   <title>Administration Serveur — API_AI_ATF</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
-          colors: {
-            ink: { 900: "#0b0f14", 800: "#0f141b", 700: "#131924", 600: "#1a2332" },
-            brand: { 400: "#34d399", 500: "#10b981", 600: "#059669" }
-          },
-          boxShadow: { glass: "0 10px 30px -12px rgba(0,0,0,.5)" }
+    // Supprimer l'avertissement Tailwind en développement
+    if (typeof tailwind !== 'undefined') {
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+            colors: {
+              ink: { 900: "#0b0f14", 800: "#0f141b", 700: "#131924", 600: "#1a2332" },
+              brand: { 400: "#34d399", 500: "#10b981", 600: "#059669" }
+            },
+            boxShadow: { glass: "0 10px 30px -12px rgba(0,0,0,.5)" }
+          }
         }
-      }
+      };
     }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
