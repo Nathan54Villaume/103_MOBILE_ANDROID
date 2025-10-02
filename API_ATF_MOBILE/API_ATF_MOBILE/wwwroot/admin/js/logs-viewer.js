@@ -113,42 +113,6 @@ function initControls() {
                 });
             }
             
-            // Bouton Générer Test (si présent)
-            const btnGenerateTest = document.getElementById('btnLogGenerateTest');
-            if (btnGenerateTest) {
-                console.log('✅ Bouton Generate Test trouvé');
-                btnGenerateTest.addEventListener('click', async () => {
-                    console.log('🧪 Clic sur Generate Test');
-                    try {
-                        // Appeler l'API pour générer des logs de test côté serveur
-                        const response = await apiClient.request('/api/admin/logs/generate-test', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                count: 3,
-                                level: 'Information',
-                                source: 'Test'
-                            })
-                        });
-                        
-                        console.log('✅ Logs de test générés:', response);
-                        
-                        // Actualiser l'affichage après génération
-                        setTimeout(() => {
-                            if (logService.getState().isPlaying) {
-                                // Si en mode Play, les logs arriveront automatiquement
-                                console.log('🔄 Mode Play actif, les nouveaux logs arriveront automatiquement');
-                            } else {
-                                // Sinon, actualiser manuellement
-                                logService.forceRefresh();
-                            }
-                        }, 500);
-                        
-                    } catch (error) {
-                        console.error('❌ Erreur lors de la génération de logs de test:', error);
-                        alert('Erreur lors de la génération de logs de test: ' + error.message);
-                    }
-                });
-            }
     
     // Bouton Exporter CSV
     const btnExportCsv = document.getElementById('btnLogExportCsv');
@@ -216,12 +180,6 @@ function initFilters() {
     }
     
     // Option regex
-    const regexCheckbox = document.getElementById('logSearchRegex');
-    if (regexCheckbox) {
-        regexCheckbox.addEventListener('change', (e) => {
-            logService.setFilter('useRegex', e.target.checked);
-        });
-    }
 }
 
 // EXTENSION: Mettre à jour l'UI des filtres
@@ -234,9 +192,6 @@ function updateFiltersUI() {
     // Réinitialiser la recherche
     const searchInput = document.getElementById('logSearchText');
     if (searchInput) searchInput.value = '';
-    
-    const regexCheckbox = document.getElementById('logSearchRegex');
-    if (regexCheckbox) regexCheckbox.checked = false;
 }
 
 // EXTENSION: Mettre à jour les compteurs

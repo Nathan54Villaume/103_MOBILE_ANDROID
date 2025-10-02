@@ -21,8 +21,7 @@ class LogService {
             statusRange: null, // { min: 400, max: 599 }
             endpoint: [],
             hasError: null, // true/false/null
-            searchText: '', // Recherche plein texte
-            useRegex: false
+            searchText: '' // Recherche plein texte
         };
         
         // Facettes dynamiques (compteurs)
@@ -480,26 +479,10 @@ class LogService {
         if (this.activeFilters.searchText) {
             const searchTerm = this.activeFilters.searchText.toLowerCase();
             
-            if (this.activeFilters.useRegex) {
-                try {
-                    const regex = new RegExp(searchTerm, 'i');
-                    filtered = filtered.filter(log => 
-                        regex.test(log.message) ||
-                        regex.test(JSON.stringify(log.details))
-                    );
-                } catch (e) {
-                    // Regex invalide, utiliser recherche simple
-                    filtered = filtered.filter(log => 
-                        log.message.toLowerCase().includes(searchTerm) ||
-                        JSON.stringify(log.details).toLowerCase().includes(searchTerm)
-                    );
-                }
-            } else {
-                filtered = filtered.filter(log => 
-                    log.message.toLowerCase().includes(searchTerm) ||
-                    JSON.stringify(log.details).toLowerCase().includes(searchTerm)
-                );
-            }
+            filtered = filtered.filter(log => 
+                log.message.toLowerCase().includes(searchTerm) ||
+                JSON.stringify(log.details).toLowerCase().includes(searchTerm)
+            );
         }
         
         this.displayedLogs = filtered;
@@ -584,8 +567,7 @@ class LogService {
             statusRange: null,
             endpoint: [],
             hasError: null,
-            searchText: '',
-            useRegex: false
+            searchText: ''
         };
         this.applyFilters();
         
