@@ -521,13 +521,37 @@ function stopPolling() {
 
 // =========== UTILITAIRES ===========
 
-function formatUptime(uptimeString) {
-    // uptimeString format: "HH:MM:SS" ou objet TimeSpan
-    if (typeof uptimeString === 'string') {
-        return uptimeString;
+function formatUptime(uptimeData) {
+    let totalSeconds = 0;
+    
+    // Gérer les différents formats d'uptime
+    if (typeof uptimeData === 'string') {
+        // Format TimeSpan .NET: "00:00:25.0335953" ou "1.02:03:04.123"
+        const parts = uptimeData.split('.');
+        let timeStr = parts[0];
+        
+        // Si format avec jours: "1.02:03:04"
+        if (parts.length > 1 && parts[0].includes(':') === false) {
+            const days = parseInt(parts[0]);
+            timeStr = parts[1];
+            totalSeconds += days * 86400;
+        }
+        
+        // Parser HH:MM:SS
+        const timeParts = timeStr.split(':');
+        if (timeParts.length >= 3) {
+            const hours = parseInt(timeParts[0]) || 0;
+            const minutes = parseInt(timeParts[1]) || 0;
+            const seconds = parseInt(timeParts[2]) || 0;
+            totalSeconds += hours * 3600 + minutes * 60 + seconds;
+        }
+    } else if (uptimeData && typeof uptimeData === 'object' && uptimeData.totalSeconds) {
+        // Format objet avec totalSeconds
+        totalSeconds = uptimeData.totalSeconds;
+    } else {
+        return '0 seconde';
     }
     
-    const totalSeconds = uptimeString.totalSeconds || 0;
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
