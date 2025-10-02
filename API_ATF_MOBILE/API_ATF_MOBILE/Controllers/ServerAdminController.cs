@@ -171,18 +171,24 @@ namespace API_ATF_MOBILE.Controllers
             try
             {
                 var connections = await plcService.GetAllConnectionsAsync();
-                var status = connections.Select(c => new PlcConnectionStatus
+                var status = new List<PlcConnectionStatus>();
+                
+                foreach (var connection in connections)
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    IpAddress = c.IpAddress,
-                    Rack = c.Rack,
-                    Slot = c.Slot,
-                    Port = c.Port,
-                    CpuType = c.CpuType,
-                    Status = "Déconnecté",
-                    CreatedAt = c.CreatedAt
-                }).ToList();
+                    var isOnline = await plcService.TestConnectionAsync(connection.Id.ToString());
+                    status.Add(new PlcConnectionStatus
+                    {
+                        Id = connection.Id,
+                        Name = connection.Name,
+                        IpAddress = connection.IpAddress,
+                        Rack = connection.Rack,
+                        Slot = connection.Slot,
+                        Port = connection.Port,
+                        CpuType = connection.CpuType,
+                        Status = isOnline ? "Connecté" : "Déconnecté",
+                        CreatedAt = connection.CreatedAt
+                    });
+                }
 
                 return Ok(status);
             }
@@ -272,6 +278,43 @@ namespace API_ATF_MOBILE.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur lors de la mise à jour de la connexion PLC");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Tester une connexion PLC spécifique
+        /// </summary>
+        [HttpGet("plc/connections/{id}/test")]
+        public async Task<ActionResult<object>> TestPlcConnection(
+            int id,
+            [FromServices] IPlcConnectionService plcService)
+        {
+            try
+            {
+                var connection = await plcService.GetConnectionByIdAsync(id.ToString());
+                if (connection == null)
+                {
+                    return NotFound(new { error = "Connexion PLC non trouvée" });
+                }
+
+                var isOnline = await plcService.TestConnectionAsync(id.ToString());
+                var responseTime = await plcService.GetConnectionResponseTimeAsync(id.ToString());
+
+                return Ok(new
+                {
+                    id = id,
+                    name = connection.Name,
+                    ipAddress = connection.IpAddress,
+                    status = isOnline ? "Connecté" : "Déconnecté",
+                    isOnline = isOnline,
+                    responseTime = responseTime,
+                    lastChecked = DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du test de connexion PLC {Id}", id);
                 return StatusCode(500, new { error = ex.Message });
             }
         }

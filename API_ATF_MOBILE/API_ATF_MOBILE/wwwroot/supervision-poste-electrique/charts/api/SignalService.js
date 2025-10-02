@@ -32,7 +32,7 @@ export class SignalService {
 
     try {
       console.log('[SignalService] Récupération signaux depuis API...');
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/signals`, {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/energy/signals`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

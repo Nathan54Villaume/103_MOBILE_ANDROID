@@ -33,16 +33,20 @@ function displayPlcConnections(connections) {
         return;
     }
     
-    container.innerHTML = connections.map(plc => `
+    container.innerHTML = connections.map(plc => {
+        const statusClass = plc.status === 'Connecté' ? 'online' : 'offline';
+        const statusText = plc.status || 'Déconnecté';
+        
+        return `
         <div class="p-4 bg-white/5 rounded-lg border border-white/10">
             <div class="flex items-start justify-between mb-3">
                 <div class="flex items-center gap-3">
-                    <div class="status-dot offline"></div>
+                    <div class="status-dot ${statusClass}"></div>
                     <div>
                         <h4 class="font-semibold">${escapeHtml(plc.name)}</h4>
                         <p class="text-xs text-slate-400">${plc.cpuType}</p>
                     </div>
-                </div>
+                </div>`
                 <div class="flex gap-2">
                     <button 
                         onclick="window.editPlc('${plc.id}')" 
@@ -84,12 +88,21 @@ function displayPlcConnections(connections) {
                 <span class="text-xs text-slate-500">
                     Ajouté le ${new Date(plc.createdAt).toLocaleDateString('fr-FR')}
                 </span>
-                <span class="px-2 py-1 rounded text-xs font-medium bg-slate-500/20 text-slate-400">
-                    ${plc.status}
-                </span>
+                <div class="flex items-center gap-2">
+                    <button 
+                        onclick="testPlcConnection('${plc.id}')" 
+                        class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors"
+                        title="Tester la connexion"
+                    >
+                        🔍 Test
+                    </button>
+                    <span class="px-2 py-1 rounded text-xs font-medium ${statusClass === 'online' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                        ${statusText}
+                    </span>
+                </div>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 async function handleAddPlc(e) {
@@ -140,6 +153,42 @@ window.deletePlc = async function(id) {
 window.editPlc = function(id) {
     alert('Fonctionnalité de modification à venir');
     // TODO: Implémenter la modification
+};
+
+// Fonction pour tester une connexion PLC individuelle
+window.testPlcConnection = async function(id) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    try {
+        // Feedback visuel
+        button.innerHTML = '⏳ Test...';
+        button.disabled = true;
+        
+        const response = await apiClient.request(`/api/admin/plc/connections/${id}/test`);
+        
+        // Afficher le résultat
+        const statusText = response.isOnline ? 
+            `✅ Connecté (${response.responseTime}ms)` : 
+            '❌ Déconnecté';
+            
+        button.innerHTML = statusText;
+        
+        // Mettre à jour l'affichage après 2 secondes
+        setTimeout(async () => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+            await updateS7Status(); // Rafraîchir la liste
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Erreur lors du test PLC:', error);
+        button.innerHTML = '❌ Erreur';
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 2000);
+    }
 };
 
 function escapeHtml(text) {

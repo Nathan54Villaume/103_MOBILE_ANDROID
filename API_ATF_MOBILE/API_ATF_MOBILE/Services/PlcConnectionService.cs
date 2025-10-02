@@ -10,6 +10,8 @@ namespace API_ATF_MOBILE.Services
         Task<PlcConnection> AddConnectionAsync(PlcConnectionCreateDto dto);
         Task<bool> DeleteConnectionAsync(string id);
         Task<PlcConnection?> UpdateConnectionAsync(string id, PlcConnectionCreateDto dto);
+        Task<bool> TestConnectionAsync(string id);
+        Task<int> GetConnectionResponseTimeAsync(string id);
     }
 
     public class PlcConnectionService : IPlcConnectionService
@@ -40,7 +42,7 @@ namespace API_ATF_MOBILE.Services
                 {
                     new PlcConnection
                     {
-                        Name = "ATF Principal",
+                        Name = "Concentrateur ATF",
                         IpAddress = "10.250.13.10",
                         Rack = 0,
                         Slot = 1,
@@ -207,6 +209,86 @@ namespace API_ATF_MOBILE.Services
 
             var json = JsonSerializer.Serialize(connections, options);
             File.WriteAllText(_filePath, json);
+        }
+
+        /// <summary>
+        /// Tester la connexion à un PLC S7
+        /// </summary>
+        public async Task<bool> TestConnectionAsync(string id)
+        {
+            try
+            {
+                var connection = await GetConnectionByIdAsync(id);
+                if (connection == null)
+                {
+                    _logger.LogWarning("Connexion PLC {Id} non trouvée pour le test", id);
+                    return false;
+                }
+
+                _logger.LogInformation("Test de connexion PLC {Name} ({IpAddress}:{Port})", 
+                    connection.Name, connection.IpAddress, connection.Port);
+
+                // Utilisation d'un simple ping TCP pour tester la connectivité
+                using var tcpClient = new System.Net.Sockets.TcpClient();
+                var connectTask = tcpClient.ConnectAsync(connection.IpAddress, connection.Port);
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5));
+                
+                var completedTask = await Task.WhenAny(connectTask, timeoutTask);
+                
+                if (completedTask == connectTask && tcpClient.Connected)
+                {
+                    _logger.LogInformation("Connexion PLC {Name} : SUCCESS", connection.Name);
+                    return true;
+                }
+                else
+                {
+                    _logger.LogWarning("Connexion PLC {Name} : TIMEOUT ou FAILED", connection.Name);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors du test de connexion PLC {Id}", id);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Obtenir le temps de réponse d'une connexion PLC
+        /// </summary>
+        public async Task<int> GetConnectionResponseTimeAsync(string id)
+        {
+            try
+            {
+                var connection = await GetConnectionByIdAsync(id);
+                if (connection == null)
+                {
+                    return -1;
+                }
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                
+                using var tcpClient = new System.Net.Sockets.TcpClient();
+                var connectTask = tcpClient.ConnectAsync(connection.IpAddress, connection.Port);
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5));
+                
+                var completedTask = await Task.WhenAny(connectTask, timeoutTask);
+                stopwatch.Stop();
+                
+                if (completedTask == connectTask && tcpClient.Connected)
+                {
+                    return (int)stopwatch.ElapsedMilliseconds;
+                }
+                else
+                {
+                    return -1; // Timeout ou erreur
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la mesure du temps de réponse PLC {Id}", id);
+                return -1;
+            }
         }
     }
 }
