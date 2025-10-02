@@ -14,10 +14,7 @@ let virtualScroller = null;
 export function initLogsViewer() {
     console.log('📝 Initialisation du module Event Viewer');
     
-    // Charger les logs initiaux
-    logService.loadInitialLogs();
-    
-    // S'abonner aux changements du service
+    // S'abonner aux changements du service AVANT de charger
     logService.subscribe(handleLogServiceEvent);
     
     // Initialiser les contrôles
@@ -26,9 +23,16 @@ export function initLogsViewer() {
     // Initialiser les filtres dynamiques
     initFilters();
     
-    // Afficher l'état initial (Stop actif, 200 derniers)
+    // Afficher l'état initial avec message de chargement
     renderLogs();
     updateCounters();
+    updatePlayStopButtons();
+    
+    // Charger les logs initiaux (après avoir configuré l'UI)
+    setTimeout(() => {
+        console.log('🔄 Chargement des logs initiaux...');
+        logService.loadInitialLogs();
+    }, 100);
 }
 
 // EXTENSION: Gérer les événements du service de logs
@@ -59,36 +63,98 @@ function handleLogServiceEvent(event) {
 
 // EXTENSION: Initialiser les contrôles (Play, Stop, Clear, Export)
 function initControls() {
+    console.log('🎮 Initialisation des contrôles...');
+    
     // Bouton Play
     const btnPlay = document.getElementById('btnLogPlay');
     if (btnPlay) {
+        console.log('✅ Bouton Play trouvé');
         btnPlay.addEventListener('click', () => {
+            console.log('▶️ Clic sur Play');
             logService.start();
         });
+    } else {
+        console.error('❌ Bouton Play non trouvé');
     }
     
     // Bouton Stop
     const btnStop = document.getElementById('btnLogStop');
     if (btnStop) {
+        console.log('✅ Bouton Stop trouvé');
         btnStop.addEventListener('click', () => {
+            console.log('⏸️ Clic sur Stop');
             logService.stop();
         });
+    } else {
+        console.error('❌ Bouton Stop non trouvé');
     }
     
-    // Bouton Effacer
-    const btnClear = document.getElementById('btnLogClear');
-    if (btnClear) {
-        btnClear.addEventListener('click', () => {
-            if (confirm('Effacer tous les logs de la vue locale ?')) {
-                logService.clearLocal();
+            // Bouton Effacer
+            const btnClear = document.getElementById('btnLogClear');
+            if (btnClear) {
+                console.log('✅ Bouton Clear trouvé');
+                btnClear.addEventListener('click', () => {
+                    console.log('🗑️ Clic sur Clear');
+                    if (confirm('Effacer tous les logs de la vue locale ?')) {
+                        logService.clearLocal();
+                    }
+                });
+            } else {
+                console.error('❌ Bouton Clear non trouvé');
             }
-        });
-    }
+            
+            // Bouton Rafraîchir (si présent)
+            const btnRefresh = document.getElementById('btnLogRefresh');
+            if (btnRefresh) {
+                console.log('✅ Bouton Refresh trouvé');
+                btnRefresh.addEventListener('click', () => {
+                    console.log('🔄 Clic sur Refresh');
+                    logService.forceRefresh();
+                });
+            }
+            
+            // Bouton Générer Test (si présent)
+            const btnGenerateTest = document.getElementById('btnLogGenerateTest');
+            if (btnGenerateTest) {
+                console.log('✅ Bouton Generate Test trouvé');
+                btnGenerateTest.addEventListener('click', async () => {
+                    console.log('🧪 Clic sur Generate Test');
+                    try {
+                        // Appeler l'API pour générer des logs de test côté serveur
+                        const response = await apiClient.request('/api/admin/logs/generate-test', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                count: 3,
+                                level: 'Information',
+                                source: 'Test'
+                            })
+                        });
+                        
+                        console.log('✅ Logs de test générés:', response);
+                        
+                        // Actualiser l'affichage après génération
+                        setTimeout(() => {
+                            if (logService.getState().isPlaying) {
+                                // Si en mode Play, les logs arriveront automatiquement
+                                console.log('🔄 Mode Play actif, les nouveaux logs arriveront automatiquement');
+                            } else {
+                                // Sinon, actualiser manuellement
+                                logService.forceRefresh();
+                            }
+                        }, 500);
+                        
+                    } catch (error) {
+                        console.error('❌ Erreur lors de la génération de logs de test:', error);
+                        alert('Erreur lors de la génération de logs de test: ' + error.message);
+                    }
+                });
+            }
     
     // Bouton Exporter CSV
     const btnExportCsv = document.getElementById('btnLogExportCsv');
     if (btnExportCsv) {
         btnExportCsv.addEventListener('click', () => {
+            console.log('📊 Export CSV');
             logService.exportCsv();
         });
     }
@@ -97,6 +163,7 @@ function initControls() {
     const btnExportJson = document.getElementById('btnLogExportJson');
     if (btnExportJson) {
         btnExportJson.addEventListener('click', () => {
+            console.log('📄 Export JSON');
             logService.exportJson();
         });
     }
@@ -105,6 +172,7 @@ function initControls() {
     const btnResetFilters = document.getElementById('btnResetFilters');
     if (btnResetFilters) {
         btnResetFilters.addEventListener('click', () => {
+            console.log('🔄 Reset filtres');
             logService.resetFilters();
         });
     }
@@ -177,7 +245,9 @@ function updateCounters() {
     
     const counterEl = document.getElementById('logCounter');
     if (counterEl) {
-        counterEl.textContent = `${state.displayedCount} / ${state.totalCount}`;
+        const statusIcon = state.isPlaying ? '🟢' : '🔴';
+        const statusText = state.isPlaying ? 'LIVE' : 'STOP';
+        counterEl.textContent = `${statusIcon} ${state.displayedCount} / ${state.totalCount} (${statusText})`;
     }
 }
 
@@ -193,29 +263,47 @@ function updateFacetsUI() {
 
 // EXTENSION: Rendre les logs avec virtualisation simple
 function renderLogs() {
+    console.log('🖼️ Rendu des logs...');
     const container = document.getElementById('logsList');
-    if (!container) return;
-    
-    const logs = logService.getDisplayedLogs();
-    
-    if (logs.length === 0) {
-        container.innerHTML = '<p class="text-center text-slate-400 py-8">Aucun log. Cliquez sur Play pour démarrer le flux.</p>';
+    if (!container) {
+        console.error('❌ Container logsList non trouvé');
         return;
     }
     
+    const logs = logService.getDisplayedLogs();
+    console.log('📊 Logs à afficher:', logs.length, logs);
+    
+            if (logs.length === 0) {
+                console.log('📭 Aucun log à afficher');
+                const state = logService.getState();
+                const message = state.isPlaying 
+                    ? 'En attente de nouveaux logs de l\'API... (Mode Play actif - Vérifiez que l\'application génère des logs)'
+                    : 'Aucun log disponible. Cliquez sur "Actualiser" pour recharger ou "Play" pour surveiller les nouveaux logs de l\'API.';
+                container.innerHTML = `<p class="text-center text-slate-400 py-8">${message}</p>`;
+                return;
+            }
+    
     // Virtualisation simple: afficher seulement les premiers 500 (optimisation basique)
     const visibleLogs = logs.slice(0, 500);
+    console.log('👁️ Logs visibles:', visibleLogs.length);
     
     // Générer le HTML avec les logs
     const logsHtml = visibleLogs.map(log => renderLogRow(log)).join('');
+    console.log('📝 HTML généré, longueur:', logsHtml.length);
+    
     container.innerHTML = logsHtml;
+    console.log('✅ HTML injecté dans le container');
     
     // Ajouter les écouteurs pour les détails extensibles
-    container.querySelectorAll('.log-row').forEach(row => {
+    const logRows = container.querySelectorAll('.log-row');
+    console.log('🎯 Lignes de logs trouvées:', logRows.length);
+    
+    logRows.forEach(row => {
         row.addEventListener('click', (e) => {
             if (e.target.closest('.copy-btn')) return; // Ignorer le clic sur bouton Copier
             
             const logId = row.dataset.logId;
+            console.log('🖱️ Clic sur log:', logId);
             toggleLogDetails(logId);
         });
     });

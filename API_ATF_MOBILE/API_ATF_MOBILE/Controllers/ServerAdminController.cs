@@ -523,6 +523,54 @@ namespace API_ATF_MOBILE.Controllers
             }
         }
 
+        /// <summary>
+        /// EXTENSION: Déclencher la génération de logs de test (pour démonstration)
+        /// </summary>
+        [HttpPost("logs/generate-test")]
+        public ActionResult GenerateTestLogs([FromBody] TestLogRequest request)
+        {
+            try
+            {
+                var count = Math.Min(request.Count ?? 1, 10); // Max 10 logs à la fois
+                var generatedLogs = new List<object>();
+                
+                for (int i = 0; i < count; i++)
+                {
+                    var logLevel = request.Level ?? "Information";
+                    var message = $"Log de test généré à {DateTime.Now:HH:mm:ss} - #{i + 1}";
+                    var source = request.Source ?? "Test";
+                    
+                    // Ajouter le log au service
+                    _logReader.AddLog(logLevel, message, null, null, source);
+                    
+                    generatedLogs.Add(new
+                    {
+                        level = logLevel,
+                        message = message,
+                        source = source,
+                        timestamp = DateTime.Now
+                    });
+                    
+                    // Petit délai entre les logs pour éviter les doublons de timestamp
+                    if (i < count - 1)
+                        Thread.Sleep(10);
+                }
+                
+                return Ok(new
+                {
+                    success = true,
+                    generated = count,
+                    logs = generatedLogs,
+                    message = $"{count} log(s) de test généré(s) avec succès"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la génération de logs de test");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         private string EscapeCsv(string value)
         {
             if (string.IsNullOrEmpty(value)) return "";
@@ -751,10 +799,17 @@ namespace API_ATF_MOBILE.Controllers
     }
 
     // EXTENSION: DTO pour configurer la taille du buffer
-    public class BufferSizeRequest
-    {
-        public int Size { get; set; }
-    }
+        public class BufferSizeRequest
+        {
+            public int Size { get; set; }
+        }
+
+        public class TestLogRequest
+        {
+            public int? Count { get; set; } = 1;
+            public string? Level { get; set; } = "Information";
+            public string? Source { get; set; } = "Test";
+        }
     
     public class PlcConnectionStatus
     {

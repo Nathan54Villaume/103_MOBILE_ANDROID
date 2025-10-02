@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Logs Dynamiques</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: #e2e8f0; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Test des Logs Dynamiques</h1>
+        
+        <div class="bg-slate-800 rounded-lg p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Contrôles de Test</h2>
+            <div class="flex gap-4 mb-4">
+                <button id="testLoad" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
+                    Charger Initial
+                </button>
+                <button id="testPlay" class="px-4 py-2 bg-green-600 rounded hover:bg-green-700">
+                    Test Play
+                </button>
+                <button id="testStop" class="px-4 py-2 bg-yellow-600 rounded hover:bg-yellow-700">
+                    Test Stop
+                </button>
+                <button id="testClear" class="px-4 py-2 bg-red-600 rounded hover:bg-red-700">
+                    Test Clear
+                </button>
+                <button id="testRefresh" class="px-4 py-2 bg-purple-600 rounded hover:bg-purple-700">
+                    Test Refresh
+                </button>
+            </div>
+            
+            <div id="testStatus" class="text-sm text-slate-400 mb-4">
+                Prêt pour les tests...
+            </div>
+            
+            <div id="testResults" class="bg-slate-900 p-4 rounded text-xs font-mono max-h-60 overflow-y-auto">
+                <div class="text-green-400">Console de test initialisée</div>
+            </div>
+        </div>
+        
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h2 class="text-lg font-semibold mb-4">État du Service</h2>
+            <div id="serviceState" class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <strong>Mode:</strong> <span id="stateMode">-</span>
+                </div>
+                <div>
+                    <strong>Logs Total:</strong> <span id="stateTotal">-</span>
+                </div>
+                <div>
+                    <strong>Logs Affichés:</strong> <span id="stateDisplayed">-</span>
+                </div>
+                <div>
+                    <strong>Initialisé:</strong> <span id="stateInitialized">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Mock API client pour les tests
+        const mockApiClient = {
+            async getLogs(count) {
+                // Simuler une réponse API avec des logs
+                const logs = [];
+                for (let i = 0; i < Math.min(count, 30); i++) {
+                    logs.push({
+                        id: `api-${Date.now()}-${i}`,
+                        timestamp: new Date(Date.now() - i * 1000).toISOString(),
+                        level: ['Information', 'Warning', 'Error'][Math.floor(Math.random() * 3)],
+                        message: `Message API ${i + 1}`,
+                        source: 'API'
+                    });
+                }
+                return logs;
+            }
+        };
+
+        // Créer une instance du service de logs
+        class TestLogService {
+            constructor() {
+                this.isPlaying = false;
+                this.logs = [];
+                this.displayedLogs = [];
+                this.isInitialized = false;
+                this.subscribers = [];
+                this.pollInterval = null;
+                this.pollDelay = 2000;
+            }
+
+            async loadInitialLogs() {
+                if (this.isInitialized) {
+                    this.log('📋 Logs déjà initialisés, utilisation du cache existant');
+                    this.notifySubscribers({ type: 'logsLoaded' });
+                    return;
+                }
+
+                this.log('📥 Chargement des logs initiaux...');
+                const logs = await mockApiClient.getLogs(200);
+                this.log(`📦 Logs reçus: ${logs.length}`);
+
+                this.logs = logs.map(log => this.normalizeLog(log));
+                this.logs.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+                this.displayedLogs = [...this.logs];
+                this.isInitialized = true;
+
+                this.log(`✅ ${this.logs.length} logs chargés`);
+                this.notifySubscribers({ type: 'logsLoaded' });
+            }
+
+            start() {
+                if (this.isPlaying) return;
+                this.log('▶️ Démarrage du flux de logs');
+                this.isPlaying = true;
+                this.pollInterval = setInterval(() => this.fetchNewLogs(), this.pollDelay);
+                this.notifySubscribers({ type: 'stateChanged' });
+            }
+
+            stop() {
+                if (!this.isPlaying) return;
+                this.log('⏸️ Arrêt du flux de logs');
+                this.isPlaying = false;
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
+                }
+                this.notifySubscribers({ type: 'stateChanged' });
+            }
+
+            async fetchNewLogs() {
+                if (!this.isPlaying) return;
+                
+                this.log('🔄 Récupération de nouveaux logs...');
+                const logs = await mockApiClient.getLogs(200);
+                
+                let lastTimestamp = null;
+                if (this.logs.length > 0) {
+                    lastTimestamp = new Date(this.logs[0].ts);
+                }
+
+                let newLogs = logs;
+                if (lastTimestamp) {
+                    newLogs = logs.filter(log => {
+                        const logTime = new Date(log.timestamp);
+                        return logTime > lastTimestamp;
+                    });
+                }
+
+                // Simuler de nouveaux logs
+                if (newLogs.length === 0 && this.logs.length < 50) {
+                    newLogs = [this.generateTestLog()];
+                }
+
+                if (newLogs.length > 0) {
+                    const normalizedLogs = newLogs.map(log => this.normalizeLog(log));
+                    this.logs.unshift(...normalizedLogs);
+                    this.logs.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+                    this.displayedLogs = [...this.logs];
+                    this.log(`🆕 ${newLogs.length} nouveaux logs ajoutés`);
+                    this.notifySubscribers({ type: 'logsUpdated' });
+                }
+            }
+
+            clearLocal() {
+                this.log('🗑️ Effacement de la vue locale');
+                if (this.isPlaying) this.stop();
+                this.logs = [];
+                this.displayedLogs = [];
+                this.isInitialized = false;
+                this.notifySubscribers({ type: 'logsCleared' });
+            }
+
+            async forceRefresh() {
+                this.log('🔄 Rafraîchissement forcé');
+                this.isInitialized = false;
+                this.logs = [];
+                this.displayedLogs = [];
+                await this.loadInitialLogs();
+            }
+
+            generateTestLog() {
+                return {
+                    id: `test-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    timestamp: new Date().toISOString(),
+                    level: ['Information', 'Warning', 'Error'][Math.floor(Math.random() * 3)],
+                    message: 'Nouveau log de test généré',
+                    source: 'Test'
+                };
+            }
+
+            normalizeLog(log) {
+                return {
+                    id: log.id,
+                    ts: log.timestamp,
+                    severity: log.level.toLowerCase(),
+                    source: log.source,
+                    message: log.message
+                };
+            }
+
+            subscribe(callback) {
+                this.subscribers.push(callback);
+            }
+
+            notifySubscribers(event) {
+                this.subscribers.forEach(callback => callback(event));
+                this.updateUI();
+            }
+
+            getState() {
+                return {
+                    isPlaying: this.isPlaying,
+                    totalCount: this.logs.length,
+                    displayedCount: this.displayedLogs.length,
+                    isInitialized: this.isInitialized
+                };
+            }
+
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logElement = document.getElementById('testResults');
+                const div = document.createElement('div');
+                div.className = 'text-blue-400';
+                div.textContent = `[${timestamp}] ${message}`;
+                logElement.appendChild(div);
+                logElement.scrollTop = logElement.scrollHeight;
+                console.log(message);
+            }
+
+            updateUI() {
+                const state = this.getState();
+                document.getElementById('stateMode').textContent = state.isPlaying ? 'Play' : 'Stop';
+                document.getElementById('stateTotal').textContent = state.totalCount;
+                document.getElementById('stateDisplayed').textContent = state.displayedCount;
+                document.getElementById('stateInitialized').textContent = state.isInitialized ? 'Oui' : 'Non';
+            }
+        }
+
+        // Initialiser le service de test
+        const logService = new TestLogService();
+        
+        // Abonnement aux changements
+        logService.subscribe((event) => {
+            logService.log(`📡 Événement: ${event.type}`);
+        });
+
+        // Gestionnaires d'événements
+        document.getElementById('testLoad').addEventListener('click', () => {
+            logService.loadInitialLogs();
+        });
+
+        document.getElementById('testPlay').addEventListener('click', () => {
+            logService.start();
+        });
+
+        document.getElementById('testStop').addEventListener('click', () => {
+            logService.stop();
+        });
+
+        document.getElementById('testClear').addEventListener('click', () => {
+            logService.clearLocal();
+        });
+
+        document.getElementById('testRefresh').addEventListener('click', () => {
+            logService.forceRefresh();
+        });
+
+        // Initialisation
+        logService.updateUI();
+        logService.log('🚀 Service de test initialisé');
+    </script>
+</body>
+</html>
