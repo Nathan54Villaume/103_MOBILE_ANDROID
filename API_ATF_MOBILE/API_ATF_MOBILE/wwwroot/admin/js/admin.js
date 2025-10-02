@@ -230,8 +230,8 @@ async function loadDashboard() {
         // Récupérer les vraies connexions PLC avec test
         const plcConnections = await apiClient.getPlcConnections();
         
-        // Mettre à jour les KPIs
-        updateKPIs(data);
+        // Mettre à jour les KPIs avec les vraies données PLC
+        updateKPIs(data, plcConnections);
         
         // Mettre à jour les graphiques
         updateCharts(data);
@@ -248,7 +248,7 @@ async function loadDashboard() {
     }
 }
 
-function updateKPIs(data) {
+function updateKPIs(data, plcConnections = []) {
     const metrics = data.serverMetrics;
     
     // CPU
@@ -263,11 +263,18 @@ function updateKPIs(data) {
     const uptime = formatUptime(metrics.uptime);
     document.getElementById('kpiUptime').textContent = uptime;
     
-    // Connexions
+    // Connexions - utiliser les vraies données PLC
     const dbConnected = data.databaseHealth.filter(db => db.isConnected).length;
     const dbTotal = data.databaseHealth.length;
-    const s7Connected = data.s7Status.isConnected ? 1 : 0;
-    document.getElementById('kpiConnections').textContent = `${dbConnected + s7Connected}/${dbTotal + 1}`;
+    const plcConnected = plcConnections.filter(plc => plc.status === 'Connecté').length;
+    const plcTotal = plcConnections.length;
+    
+    const totalConnected = dbConnected + plcConnected;
+    const totalConnections = dbTotal + plcTotal;
+    
+    document.getElementById('kpiConnections').textContent = `${totalConnected}/${totalConnections}`;
+    
+    console.log('🔍 [KPI Connexions] BDD:', `${dbConnected}/${dbTotal}`, 'PLC:', `${plcConnected}/${plcTotal}`, 'Total:', `${totalConnected}/${totalConnections}`);
 }
 
 function updateCharts(data) {
