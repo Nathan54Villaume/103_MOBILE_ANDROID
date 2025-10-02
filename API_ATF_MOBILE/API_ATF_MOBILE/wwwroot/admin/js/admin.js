@@ -3,7 +3,7 @@
  */
 
 import apiClient from './api-client.js';
-import { initServerMonitor, updateServerMetrics } from './server-monitor.js';
+import { initServerMonitor, updateServerMetrics, formatDuration } from './server-monitor.js';
 import { initSystemMonitor, updateSystemMetrics } from './system-monitor.js';
 import { initDatabaseManager, updateDatabaseStatus } from './database-manager.js';
 import { initS7Manager, updateS7Status } from './s7-manager.js';
@@ -271,7 +271,7 @@ function updateKPIs(data, plcConnections = []) {
     memoryPercentElement.className = getValueColorClass(parseFloat(memPercent), 'memory');
     
     // Uptime avec couleur dynamique
-    const uptime = formatUptime(metrics.uptime);
+    const uptime = formatDuration(metrics.uptime);
     const uptimeElement = document.getElementById('kpiUptime');
     uptimeElement.textContent = uptime;
     uptimeElement.className = `text-2xl font-bold ${getValueColorClass(uptime, 'uptime')}`;
@@ -314,7 +314,7 @@ function updateMemoryUsageChart(metrics) {
     if (state.charts.memoryUsage) {
         state.charts.memoryUsage.data.labels = [
             `Processus (${processMemoryMB.toFixed(0)} MB)`,
-            `Système disponible (${systemMemoryMB.toFixed(0)} MB)`
+            `Disponible (${systemMemoryMB.toFixed(0)} MB)`
         ];
         state.charts.memoryUsage.data.datasets[0].data = [
             processMemoryMB,
@@ -324,13 +324,13 @@ function updateMemoryUsageChart(metrics) {
         return;
     }
     
-    // Créer le graphique la première fois seulement
+    // Créer le graphique la première fois seulement - utiliser le même template que les logs
     state.charts.memoryUsage = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: [
                 `Processus (${processMemoryMB.toFixed(0)} MB)`,
-                `Système disponible (${systemMemoryMB.toFixed(0)} MB)`
+                `Disponible (${systemMemoryMB.toFixed(0)} MB)`
             ],
             datasets: [{
                 data: [
@@ -338,14 +338,14 @@ function updateMemoryUsageChart(metrics) {
                     systemMemoryMB
                 ],
                 backgroundColor: [
-                    'rgba(239, 68, 68, 0.6)', // Rouge pour processus utilisé
-                    'rgba(16, 185, 129, 0.6)' // Vert pour mémoire disponible
+                    'rgba(239, 68, 68, 0.6)',
+                    'rgba(16, 185, 129, 0.6)'
                 ],
                 borderColor: [
                     'rgba(239, 68, 68, 1)',
                     'rgba(16, 185, 129, 1)'
                 ],
-                borderWidth: 2
+                borderWidth: 1
             }]
         },
         options: {
@@ -354,26 +354,10 @@ function updateMemoryUsageChart(metrics) {
             animation: false, // Désactiver les animations pour de meilleures performances
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: { 
-                        color: '#94a3b8',
-                        padding: 15,
-                        usePointStyle: true
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ${percentage}%`;
-                        }
-                    }
+                    position: 'right',
+                    labels: { color: '#94a3b8' }
                 }
-            },
-            cutout: '60%' // Créer un effet de donut
+            }
         }
     });
 }

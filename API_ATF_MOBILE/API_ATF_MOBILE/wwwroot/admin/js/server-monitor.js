@@ -49,7 +49,7 @@ function displayServerInfo(status, metrics) {
     `).join('');
 }
 
-function formatDuration(duration) {
+export function formatDuration(duration) {
     if (typeof duration === 'string') return duration;
     
     const totalSeconds = duration.totalSeconds || 0;
