@@ -1,126 +1,113 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using System.Data;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using API_ATF_MOBILE.Models;
+using API_ATF_MOBILE.Services;
 
 namespace API_ATF_MOBILE.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IConfiguration _config;
+        private readonly IAuthenticationService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IConfiguration config)
+        public AuthController(IAuthenticationService authService, ILogger<AuthController> logger)
         {
-            _config = config;
+            _authService = authService;
+            _logger = logger;
         }
 
+        /// <summary>
+        /// Authentification admin - Obtenir un token JWT
+        /// </summary>
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        [AllowAnonymous]
+        public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
-            using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-            using var cmd = new SqlCommand(@"
-                SELECT NOM, ROLE, MOTDEPASSE, Source
-                FROM [AI_ATS].[dbo].[vw_EquipeRFID_UniqueFiltre]
-                WHERE MATRICULE = @Matricule
-            ", conn);
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return BadRequest(new LoginResponse
+                    {
+                        Success = false,
+                        Message = "Le nom d'utilisateur et le mot de passe sont requis"
+                    });
+                }
 
-            cmd.Parameters.AddWithValue("@Matricule", request.Matricule);
+                var response = await _authService.AuthenticateAsync(request.Username, request.Password);
 
-            conn.Open();
-            using var reader = cmd.ExecuteReader();
+                if (!response.Success)
+                {
+                    return Unauthorized(response);
+                }
 
-            if (!reader.Read())
-                return Unauthorized("Matricule inconnu.");
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la tentative de connexion");
+                return StatusCode(500, new LoginResponse
+                {
+                    Success = false,
+                    Message = "Erreur interne du serveur"
+                });
+            }
+        }
 
-            var nom = reader["NOM"]?.ToString()?.Trim();
-            var role = reader["ROLE"]?.ToString()?.Trim()?.ToUpperInvariant();
-            var motDePasseEnBase = reader["MOTDEPASSE"]?.ToString()?.Trim();
-            var source = reader["Source"]?.ToString()?.Trim()?.ToUpperInvariant();
-
-            if (string.IsNullOrEmpty(role))
-                return Unauthorized("Rôle manquant ou invalide.");
-
-            if (string.IsNullOrEmpty(motDePasseEnBase) || motDePasseEnBase != request.MotDePasse)
-                return Unauthorized("Mot de passe incorrect.");
+        /// <summary>
+        /// Vérifier si le token est valide
+        /// </summary>
+        [HttpGet("validate")]
+        [Authorize]
+        public ActionResult<object> ValidateToken()
+        {
+            var username = User.Identity?.Name;
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
 
             return Ok(new
             {
-                Matricule = request.Matricule,
-                Nom = nom,
-                Role = role,
-                Source = source
+                valid = true,
+                username = username,
+                role = role,
+                timestamp = DateTime.Now
             });
         }
 
-        [HttpPost("change-password")]
-        public IActionResult ChangePassword([FromBody] ChangePasswordRequest request)
+        /// <summary>
+        /// Déconnexion (côté client supprimera le token)
+        /// </summary>
+        [HttpPost("logout")]
+        [Authorize]
+        public ActionResult Logout()
         {
-            if (string.IsNullOrWhiteSpace(request.Matricule) ||
-                string.IsNullOrWhiteSpace(request.AncienMotDePasse) ||
-                string.IsNullOrWhiteSpace(request.NouveauMotDePasse))
+            var username = User.Identity?.Name;
+            _logger.LogInformation("Déconnexion de {Username}", username);
+
+            return Ok(new
             {
-                return BadRequest("Tous les champs sont obligatoires.");
-            }
-
-            using var conn = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-            conn.Open();
-
-            // Vérifie la source (ATS ou ATR)
-            using var sourceCmd = new SqlCommand(@"
-                SELECT Source
-                FROM [AI_ATS].[dbo].[vw_EquipeRFID_UniqueFiltre]
-                WHERE MATRICULE = @Matricule
-            ", conn);
-            sourceCmd.Parameters.AddWithValue("@Matricule", request.Matricule);
-            var source = sourceCmd.ExecuteScalar()?.ToString()?.Trim()?.ToUpperInvariant();
-
-            if (source == null)
-                return NotFound("Matricule introuvable.");
-
-            if (source != "ATS")
-                return Unauthorized("⚠️ Mot de passe modifiable uniquement pour les comptes ATS.");
-
-            // Vérifie le mot de passe actuel dans la table ATS (seule source modifiable)
-            using var checkCmd = new SqlCommand(@"
-                SELECT MOTDEPASSE 
-                FROM [AI_ATS].[dbo].[EQUIPE_RFID]
-                WHERE MATRICULE = @Matricule
-            ", conn);
-            checkCmd.Parameters.AddWithValue("@Matricule", request.Matricule);
-
-            var motDePasseActuel = checkCmd.ExecuteScalar()?.ToString()?.Trim();
-
-            if (motDePasseActuel == null)
-                return NotFound("Matricule introuvable dans la table ATS.");
-
-            if (motDePasseActuel != request.AncienMotDePasse)
-                return Unauthorized("Ancien mot de passe incorrect.");
-
-            using var updateCmd = new SqlCommand(@"
-                UPDATE [AI_ATS].[dbo].[EQUIPE_RFID]
-                SET MOTDEPASSE = @Nouveau
-                WHERE MATRICULE = @Matricule
-            ", conn);
-            updateCmd.Parameters.AddWithValue("@Nouveau", request.NouveauMotDePasse);
-            updateCmd.Parameters.AddWithValue("@Matricule", request.Matricule);
-
-            int rows = updateCmd.ExecuteNonQuery();
-
-            return Ok(new { Message = "✅ Mot de passe mis à jour avec succès." });
+                success = true,
+                message = "Déconnexion réussie"
+            });
         }
-    }
 
-    public class LoginRequest
-    {
-        public string Matricule { get; set; } = "";
-        public string MotDePasse { get; set; } = "";
-    }
+        /// <summary>
+        /// Obtenir les informations de l'utilisateur connecté
+        /// </summary>
+        [HttpGet("me")]
+        [Authorize]
+        public ActionResult<AdminUserInfo> GetCurrentUser()
+        {
+            var username = User.Identity?.Name ?? "Unknown";
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Unknown";
 
-    public class ChangePasswordRequest
-    {
-        public string Matricule { get; set; } = "";
-        public string AncienMotDePasse { get; set; } = "";
-        public string NouveauMotDePasse { get; set; } = "";
+            return Ok(new AdminUserInfo
+            {
+                Username = username,
+                Role = role,
+                LastLogin = DateTime.Now
+            });
+        }
     }
 }

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Administration Serveur — API_ATF_MOBILE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+          colors: {
+            ink: { 900: "#0b0f14", 800: "#0f141b", 700: "#131924", 600: "#1a2332" },
+            brand: { 400: "#34d399", 500: "#10b981", 600: "#059669" }
+          },
+          boxShadow: { glass: "0 10px 30px -12px rgba(0,0,0,.5)" }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    html, body { background: #0b0f14; min-height: 100vh; }
+    .card { 
+      backdrop-filter: blur(6px); 
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); 
+      border: 1px solid rgba(255,255,255,0.08); 
+    }
+    .card-hover { transition: all 0.2s; }
+    .card-hover:hover { background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05)); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.online { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .status-dot.offline { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+    .status-dot.warning { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    .sidebar { transition: transform 0.3s; }
+    .sidebar.hidden-mobile { transform: translateX(-100%); }
+    @media (min-width: 768px) { .sidebar.hidden-mobile { transform: translateX(0); } }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    #loginScreen { backdrop-filter: blur(10px); }
+  </style>
+</head>
+<body class="h-full text-slate-100 font-sans">
+  
+  <!-- Écran de connexion -->
+  <div id="loginScreen" class="fixed inset-0 z-50 bg-ink-900/95 flex items-center justify-center p-4">
+    <div class="card rounded-2xl p-8 shadow-glass max-w-md w-full">
+      <div class="text-center mb-6">
+        <div class="h-16 w-16 mx-auto rounded-2xl bg-brand-500/20 grid place-items-center text-4xl mb-4">🔐</div>
+        <h2 class="text-2xl font-bold">Administration Serveur</h2>
+        <p class="text-slate-400 text-sm mt-2">API_ATF_MOBILE — Authentification requise</p>
+      </div>
+      
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm text-slate-300 mb-2">Nom d'utilisateur</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            placeholder="admin"
+            required
+          />
+        </div>
+        
+        <div>
+          <label for="password" class="block text-sm text-slate-300 mb-2">Mot de passe</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        
+        <div id="loginError" class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"></div>
+        
+        <button 
+          type="submit" 
+          class="w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 rounded-lg font-semibold transition-colors"
+        >
+          Se connecter
+        </button>
+      </form>
+      
+      <div class="mt-6 text-center text-xs text-slate-500">
+        <p>Identifiants par défaut : admin / admin123</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application principale -->
+  <div id="app" class="hidden h-full flex">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 bg-ink-800 border-r border-white/10 flex flex-col">
+      <div class="p-5 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-xl bg-brand-500/20 grid place-items-center text-2xl">⚙️</div>
+          <div class="flex-1">
+            <h1 class="font-bold text-sm">Administration</h1>
+            <p class="text-xs text-slate-400">API_ATF_MOBILE</p>
+          </div>
+        </div>
+      </div>
+      
+      <nav class="flex-1 p-4 space-y-1">
+        <a href="#dashboard" class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>📊</span>
+          <span class="text-sm font-medium">Dashboard</span>
+        </a>
+        <a href="#server" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>💻</span>
+          <span class="text-sm font-medium">Serveur</span>
+        </a>
+        <a href="#database" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>💾</span>
+          <span class="text-sm font-medium">Bases de données</span>
+        </a>
+        <a href="#s7" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>🔌</span>
+          <span class="text-sm font-medium">PLC S7</span>
+        </a>
+        <a href="#logs" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>📝</span>
+          <span class="text-sm font-medium">Logs</span>
+        </a>
+        <a href="#config" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>⚙️</span>
+          <span class="text-sm font-medium">Configuration</span>
+        </a>
+        <a href="#api" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>🌐</span>
+          <span class="text-sm font-medium">API</span>
+        </a>
+        <a href="#requests" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>📡</span>
+          <span class="text-sm font-medium">Requêtes</span>
+        </a>
+      </nav>
+      
+      <div class="p-4 border-t border-white/10">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-8 w-8 rounded-full bg-brand-500/20 grid place-items-center text-sm">👤</div>
+          <div class="flex-1 min-w-0">
+            <p id="userDisplay" class="text-sm font-medium truncate">admin</p>
+            <p class="text-xs text-slate-400">Administrateur</p>
+          </div>
+        </div>
+        <button id="btnLogout" class="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors">
+          Déconnexion
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar">
+      
+      <!-- Header -->
+      <header class="sticky top-0 z-40 border-b border-white/10 bg-ink-900/80 backdrop-blur">
+        <div class="px-6 py-4 flex items-center justify-between">
+          <div class="flex-1">
+            <h2 id="pageTitle" class="text-xl font-semibold">Dashboard</h2>
+            <p id="pageSubtitle" class="text-sm text-slate-400">Vue d'ensemble du système</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+              <div id="globalStatusDot" class="status-dot online"></div>
+              <span id="globalStatus" class="text-sm">En ligne</span>
+            </div>
+            <button id="btnRefresh" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+              🔄
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="p-6">
+        
+        <!-- Dashboard Section -->
+        <section id="section-dashboard" class="space-y-6">
+          
+          <!-- KPIs -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">CPU</p>
+                <span class="text-xl">💻</span>
+              </div>
+              <p id="kpiCpu" class="text-2xl font-bold">—%</p>
+              <p class="text-xs text-slate-500 mt-1">Utilisation processeur</p>
+            </div>
+            
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">Mémoire</p>
+                <span class="text-xl">🧠</span>
+              </div>
+              <p id="kpiMemory" class="text-2xl font-bold">— MB</p>
+              <p class="text-xs text-slate-500 mt-1"><span id="kpiMemoryPercent">—</span>% utilisée</p>
+            </div>
+            
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">Uptime</p>
+                <span class="text-xl">⏱️</span>
+              </div>
+              <p id="kpiUptime" class="text-2xl font-bold">—</p>
+              <p class="text-xs text-slate-500 mt-1">Temps de fonctionnement</p>
+            </div>
+            
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">Connexions</p>
+                <span class="text-xl">🔌</span>
+              </div>
+              <p id="kpiConnections" class="text-2xl font-bold">—</p>
+              <p class="text-xs text-slate-500 mt-1">BDD + PLC</p>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">Utilisation CPU & Mémoire</h3>
+              <canvas id="chartCpuMemory" height="250"></canvas>
+            </div>
+            
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">Statistiques Logs</h3>
+              <canvas id="chartLogs" height="250"></canvas>
+            </div>
+          </div>
+
+          <!-- Health Status -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">État des services</h3>
+            <div id="servicesStatus" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Server Section (hidden by default) -->
+        <section id="section-server" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Informations Serveur</h3>
+            <div id="serverInfo" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Database Section (hidden by default) -->
+        <section id="section-database" class="hidden space-y-6">
+          <div id="databaseList" class="space-y-4">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- S7 Section (hidden by default) -->
+        <section id="section-s7" class="hidden space-y-6">
+          
+          <!-- Formulaire d'ajout -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">➕ Ajouter un PLC</h3>
+            <form id="addPlcForm" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="plcName" class="block text-sm text-slate-300 mb-2">Nom *</label>
+                  <input 
+                    type="text" 
+                    id="plcName" 
+                    name="name"
+                    placeholder="Ex: ATF Principal"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcIp" class="block text-sm text-slate-300 mb-2">Adresse IP *</label>
+                  <input 
+                    type="text" 
+                    id="plcIp" 
+                    name="ipAddress"
+                    placeholder="Ex: 10.250.13.10"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcRack" class="block text-sm text-slate-300 mb-2">Rack</label>
+                  <input 
+                    type="number" 
+                    id="plcRack" 
+                    name="rack"
+                    value="0"
+                    min="0"
+                    max="7"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcSlot" class="block text-sm text-slate-300 mb-2">Slot</label>
+                  <input 
+                    type="number" 
+                    id="plcSlot" 
+                    name="slot"
+                    value="1"
+                    min="0"
+                    max="31"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcPort" class="block text-sm text-slate-300 mb-2">Port</label>
+                  <input 
+                    type="number" 
+                    id="plcPort" 
+                    name="port"
+                    value="102"
+                    min="1"
+                    max="65535"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcCpuType" class="block text-sm text-slate-300 mb-2">Type CPU</label>
+                  <select 
+                    id="plcCpuType" 
+                    name="cpuType"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="S7-1500">S7-1500</option>
+                    <option value="S7-1200">S7-1200</option>
+                    <option value="S7-400">S7-400</option>
+                    <option value="S7-300">S7-300</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="flex justify-end">
+                <button 
+                  type="submit" 
+                  class="px-6 py-2 bg-brand-500 hover:bg-brand-600 rounded-lg font-semibold transition-colors"
+                >
+                  Ajouter
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Liste des connexions -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Connexion Concentrateur S7 ATF</h3>
+            <div id="plcConnectionsList" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          
+        </section>
+
+        <!-- Logs Section (hidden by default) -->
+        <section id="section-logs" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Logs système</h3>
+              <div class="flex gap-2">
+                <select id="logLevel" class="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm">
+                  <option value="">Tous les niveaux</option>
+                  <option value="Information">Information</option>
+                  <option value="Warning">Warning</option>
+                  <option value="Error">Error</option>
+                </select>
+                <input 
+                  type="text" 
+                  id="logSearch" 
+                  placeholder="Rechercher..." 
+                  class="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+            <div id="logsList" class="space-y-2 max-h-[600px] overflow-y-auto hide-scrollbar">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Config Section (hidden by default) -->
+        <section id="section-config" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Configuration actuelle</h3>
+            <div id="configInfo" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- API Section (hidden by default) -->
+        <section id="section-api" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Contrôleurs API</h3>
+            <div id="controllersList" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Requêtes Section (hidden by default) -->
+        <section id="section-requests" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Requêtes API</h3>
+                <p class="text-xs text-slate-400 mt-1">Historique des 100 dernières requêtes</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="btnClearRequests" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  Vider
+                </button>
+                <button id="btnExportRequests" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  Exporter CSV
+                </button>
+              </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Total</p>
+                <p id="reqStatsTotal" class="text-2xl font-bold">0</p>
+              </div>
+              <div class="p-3 bg-green-500/10 rounded-lg">
+                <p class="text-xs text-green-400">Réussies</p>
+                <p id="reqStatsSuccess" class="text-2xl font-bold text-green-400">0</p>
+              </div>
+              <div class="p-3 bg-red-500/10 rounded-lg">
+                <p class="text-xs text-red-400">Échouées</p>
+                <p id="reqStatsError" class="text-2xl font-bold text-red-400">0</p>
+              </div>
+              <div class="p-3 bg-blue-500/10 rounded-lg">
+                <p class="text-xs text-blue-400">Temps moyen</p>
+                <p id="reqStatsAvgTime" class="text-2xl font-bold text-blue-400">0ms</p>
+              </div>
+            </div>
+
+            <!-- Liste des requêtes -->
+            <div id="requestsList" class="space-y-2 max-h-[600px] overflow-y-auto hide-scrollbar">
+              <p class="text-center text-slate-400 py-8">Aucune requête enregistrée</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
+

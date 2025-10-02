@@ -1,0 +1,213 @@
+using API_ATF_MOBILE.Models;
+using System.Text.Json;
+
+namespace API_ATF_MOBILE.Services
+{
+    public interface IPlcConnectionService
+    {
+        Task<List<PlcConnection>> GetAllConnectionsAsync();
+        Task<PlcConnection?> GetConnectionByIdAsync(string id);
+        Task<PlcConnection> AddConnectionAsync(PlcConnectionCreateDto dto);
+        Task<bool> DeleteConnectionAsync(string id);
+        Task<PlcConnection?> UpdateConnectionAsync(string id, PlcConnectionCreateDto dto);
+    }
+
+    public class PlcConnectionService : IPlcConnectionService
+    {
+        private readonly string _filePath;
+        private readonly ILogger<PlcConnectionService> _logger;
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
+        
+        // OPTIMISATION : Cache en mémoire pour éviter de lire le fichier à chaque fois
+        private List<PlcConnection>? _cachedConnections;
+        private DateTime _lastCacheUpdate = DateTime.MinValue;
+        private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(5);
+
+        public PlcConnectionService(IWebHostEnvironment environment, ILogger<PlcConnectionService> logger)
+        {
+            _logger = logger;
+            _filePath = Path.Combine(environment.ContentRootPath, "plc-connections.json");
+            
+            // Créer le fichier avec une connexion par défaut si inexistant
+            InitializeDefaultConnections();
+        }
+
+        private void InitializeDefaultConnections()
+        {
+            if (!File.Exists(_filePath))
+            {
+                var defaultConnections = new List<PlcConnection>
+                {
+                    new PlcConnection
+                    {
+                        Name = "ATF Principal",
+                        IpAddress = "10.250.13.10",
+                        Rack = 0,
+                        Slot = 1,
+                        Port = 102,
+                        CpuType = "S7-1500"
+                    }
+                };
+
+                SaveConnectionsToFile(defaultConnections);
+                _logger.LogInformation("Fichier PLC créé avec connexion par défaut");
+            }
+        }
+
+        public async Task<List<PlcConnection>> GetAllConnectionsAsync()
+        {
+            // OPTIMISATION : Utiliser le cache si valide
+            if (_cachedConnections != null && DateTime.Now - _lastCacheUpdate < _cacheExpiration)
+            {
+                return new List<PlcConnection>(_cachedConnections); // Retourner une copie
+            }
+
+            await _semaphore.WaitAsync();
+            try
+            {
+                if (!File.Exists(_filePath))
+                {
+                    _cachedConnections = new List<PlcConnection>();
+                    _lastCacheUpdate = DateTime.Now;
+                    return new List<PlcConnection>();
+                }
+
+                var json = await File.ReadAllTextAsync(_filePath);
+                var connections = JsonSerializer.Deserialize<List<PlcConnection>>(json) ?? new List<PlcConnection>();
+                
+                // Mettre à jour le cache
+                _cachedConnections = connections;
+                _lastCacheUpdate = DateTime.Now;
+                
+                return new List<PlcConnection>(connections);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la lecture des connexions PLC");
+                return new List<PlcConnection>();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async Task<PlcConnection?> GetConnectionByIdAsync(string id)
+        {
+            var connections = await GetAllConnectionsAsync();
+            return connections.FirstOrDefault(c => c.Id == id);
+        }
+
+        public async Task<PlcConnection> AddConnectionAsync(PlcConnectionCreateDto dto)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                var connections = await GetAllConnectionsAsync();
+
+                var newConnection = new PlcConnection
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = dto.Name,
+                    IpAddress = dto.IpAddress,
+                    Rack = dto.Rack,
+                    Slot = dto.Slot,
+                    Port = dto.Port,
+                    CpuType = dto.CpuType,
+                    CreatedAt = DateTime.Now
+                };
+
+                connections.Add(newConnection);
+                SaveConnectionsToFile(connections);
+                
+                // Invalider le cache
+                _cachedConnections = null;
+
+                _logger.LogInformation("Nouvelle connexion PLC ajoutée : {Name} ({IpAddress})", newConnection.Name, newConnection.IpAddress);
+
+                return newConnection;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async Task<bool> DeleteConnectionAsync(string id)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                var connections = await GetAllConnectionsAsync();
+                var connection = connections.FirstOrDefault(c => c.Id == id);
+
+                if (connection == null)
+                {
+                    return false;
+                }
+
+                connections.Remove(connection);
+                SaveConnectionsToFile(connections);
+                
+                // Invalider le cache
+                _cachedConnections = null;
+
+                _logger.LogInformation("Connexion PLC supprimée : {Name} ({IpAddress})", connection.Name, connection.IpAddress);
+
+                return true;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async Task<PlcConnection?> UpdateConnectionAsync(string id, PlcConnectionCreateDto dto)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                var connections = await GetAllConnectionsAsync();
+                var connection = connections.FirstOrDefault(c => c.Id == id);
+
+                if (connection == null)
+                {
+                    return null;
+                }
+
+                connection.Name = dto.Name;
+                connection.IpAddress = dto.IpAddress;
+                connection.Rack = dto.Rack;
+                connection.Slot = dto.Slot;
+                connection.Port = dto.Port;
+                connection.CpuType = dto.CpuType;
+                connection.LastModified = DateTime.Now;
+
+                SaveConnectionsToFile(connections);
+                
+                // Invalider le cache
+                _cachedConnections = null;
+
+                _logger.LogInformation("Connexion PLC mise à jour : {Name} ({IpAddress})", connection.Name, connection.IpAddress);
+
+                return connection;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        private void SaveConnectionsToFile(List<PlcConnection> connections)
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            var json = JsonSerializer.Serialize(connections, options);
+            File.WriteAllText(_filePath, json);
+        }
+    }
+}
+

@@ -1,14 +1,19 @@
 // file : Program.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using API_ATF_MOBILE.Data;
+using API_ATF_MOBILE.Services;
+using API_ATF_MOBILE.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1) Connexion SQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("La chaîne de connexion 'DefaultConnection' est introuvable dans appsettings.json");
+    throw new InvalidOperationException("La chaï¿½ne de connexion 'DefaultConnection' est introuvable dans appsettings.json");
 
 // 2) EF Core
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -16,6 +21,41 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // 3) Services
 builder.Services.AddControllers();
+
+// 3.1) Services d'administration
+builder.Services.AddSingleton<IServerMonitorService, ServerMonitorService>();
+builder.Services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
+builder.Services.AddSingleton<IS7MonitorService, S7MonitorService>();
+builder.Services.AddSingleton<ILogReaderService, LogReaderService>();
+builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+builder.Services.AddSingleton<IPlcConnectionService, PlcConnectionService>();
+
+// 3.2) Configuration JWT Authentication
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "VotreCleSecreteTresTresLongueEtComplexePourAPI_ATF_MOBILE_2024!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "API_ATF_MOBILE";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "API_ATF_MOBILE_Admin";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
 
 // 4) CORS (DEV : tout autoriser)
 builder.Services.AddCors(options =>
@@ -50,6 +90,9 @@ var app = builder.Build();
 // a) CORS (avant le reste)
 app.UseCors("AllowAll");
 
+// a.1) Middleware de logging des requÃªtes
+app.UseMiddleware<RequestLoggingMiddleware>();
+
 // b) Swagger
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -83,11 +126,12 @@ app.UseStaticFiles(new StaticFileOptions
         {
             headers["Cache-Control"] = "public, max-age=604800"; // 7 jours
         }
-        // Sinon : laisser le comportement par défaut (pas d'écrasement)
+        // Sinon : laisser le comportement par dï¿½faut (pas d'ï¿½crasement)
     }
 });
 
-// e) AuthN/AuthZ (si besoin)
+// e) AuthN/AuthZ
+app.UseAuthentication();
 app.UseAuthorization();
 
 // f) Routes API

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Projets 2025 — Nathan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+          colors: {
+            ink: { 900: "#0b0f14", 800: "#0f141b", 700: "#131924", 600: "#1a2332" },
+            brand: { 400: "#34d399", 500: "#10b981", 600: "#059669" }
+          },
+          boxShadow: { glass: "0 10px 30px -12px rgba(0,0,0,.5)" }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+    html, body { background: #0b0f14; min-height: 100vh; }
+    .card { backdrop-filter: blur(6px); background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.08); }
+    .chip { border: 1px solid rgba(255,255,255,0.14); }
+    .glow { box-shadow: 0 0 0 1px rgba(16,185,129,.18), 0 0 60px rgba(16,185,129,.08) inset; }
+    .ribbon { position:absolute; top:10px; right:-36px; rotate:45deg; background: linear-gradient(90deg, rgba(234,179,8,.95), rgba(250,204,21,.85)); color:#111827; font-weight:700; font-size:10px; letter-spacing:.08em; padding:4px 40px; border:1px solid rgba(255,255,255,.25); text-transform:uppercase; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+    
+    /* Cacher la barre de défilement */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @media print { .no-print { display:none !important; } .print-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } body { background: #fff; } }
+  </style>
+</head>
+<body class="h-full text-slate-100 font-sans">
+  <header class="no-print sticky top-0 z-50 border-b border-white/10 bg-ink-900/80 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
+      <div class="h-8 w-8 rounded-xl bg-brand-500/20 grid place-items-center text-brand-400">⚙️</div>
+      <div class="flex-1">
+        <h1 class="text-lg sm:text-xl font-semibold tracking-tight">Dashboard Projets 2025 - VILLAUME Nathan</h1>
+        <p class="text-xs text-slate-400">Synthèse interactive — ATS / ATR </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnPrint" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10">Imprimer</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="mx-auto max-w-7xl px-4 pt-6">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div class="card rounded-2xl p-4 shadow-glass">
+        <p class="text-slate-400 text-xs">Projets actifs</p>
+        <p id="kpiProjects" class="text-2xl font-semibold">—</p>
+      </div>
+      <div class="card rounded-2xl p-4 shadow-glass">
+        <p class="text-slate-400 text-xs">Résultats livrés</p>
+        <p id="kpiResults" class="text-2xl font-semibold">—</p>
+      </div>
+      <div class="card rounded-2xl p-4 shadow-glass cursor-pointer hover:bg-white/5 transition-colors" id="kpiSkillsCard">
+        <p class="text-slate-400 text-xs">Compétences mises en jeu 🔍</p>
+        <p id="kpiSkills" class="text-2xl font-semibold">—</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="no-print mx-auto max-w-7xl px-4 py-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs text-slate-400">Filtres :</span>
+      <button data-filter="all" class="chip rounded-full px-3 py-1 text-xs bg-white/10 hover:bg-white/20">Tout</button>
+      <button data-filter="ATS" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">ATS</button>
+      <button data-filter="ATR" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">ATR</button>
+      <span class="mx-2 h-5 w-px bg-white/10"></span>
+      <span class="text-xs text-slate-400">Statut :</span>
+      <button data-status="all" class="chip rounded-full px-3 py-1 text-xs bg-white/10 hover:bg-white/20">Tous</button>
+      <button data-status="en_cours" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">🟡 En cours</button>
+      <button data-status="livre" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">🟢 Terminé</button>
+    </div>
+  </section>
+
+  <main class="mx-auto max-w-7xl px-4 pb-24">
+    <div id="grid" class="grid print-grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </main>
+
+  <div id="drawer" class="fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close></div>
+    <aside class="relative w-full max-w-4xl max-h-[90vh] bg-ink-800 border border-white/10 card overflow-y-auto rounded-2xl shadow-2xl hide-scrollbar">
+      <div class="p-5 flex items-center justify-between border-b border-white/10 sticky top-0 bg-ink-800/80 backdrop-blur z-10">
+        <div>
+          <h3 id="drawerTitle" class="text-lg font-semibold"></h3>
+          <p id="drawerArea" class="text-xs text-slate-400"></p>
+        </div>
+        <button class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20" data-close>Fermer</button>
+      </div>
+      <div class="p-5 space-y-6">
+        <section>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Objectif</h4>
+          <p id="drawerObjective" class="text-slate-200"></p>
+        </section>
+        <section>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Réalisation</h4>
+          <ul id="drawerReal" class="list-disc list-inside marker:text-brand-500 space-y-1"></ul>
+        </section>
+        <section>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Résultats</h4>
+          <ul id="drawerResults" class="list-disc list-inside marker:text-emerald-400 space-y-1"></ul>
+        </section>
+        <section id="drawerSkillsSection">
+          <h4 id="drawerSkillsTitle" class="text-sm uppercase tracking-wide text-slate-400 mb-2">Compétences</h4>
+          <div id="drawerSkills" class="flex flex-wrap gap-2"></div>
+        </section>
+        <section id="drawerImagesSection">
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">📸 Captures d'écran</h4>
+          <div id="drawerImages" class="grid grid-cols-2 gap-3"></div>
+        </section>
+        <section id="drawerMediaSection">
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Démos & médias</h4>
+          <div id="drawerMedia" class="grid grid-cols-2 gap-3"></div>
+        </section>
+        <section class="mt-6 p-4 rounded-xl bg-slate-800/60 border border-slate-600/30">
+          <h4 class="text-sm uppercase tracking-wide text-slate-300 mb-2 flex items-center gap-2">
+            💬 Commentaires du responsable
+          </h4>
+          <textarea id="drawerComment" 
+                    class="w-full min-h-[100px] p-3 rounded-lg bg-ink-700 border border-white/10 text-slate-200 text-sm resize-y focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/30" 
+                    placeholder="Ajoutez vos remarques, observations ou suggestions sur ce projet..."></textarea>
+          <div class="mt-3 flex items-center justify-between">
+            <p class="text-xs text-slate-400">📡 Les commentaires sont partagés sur le réseau</p>
+            <button id="btnSaveComment" class="px-4 py-2 text-sm rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors">
+              💾 Enregistrer
+            </button>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal image agrandie -->
+  <div id="imageModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/90" onclick="closeImageModal()">
+    <button class="absolute top-4 right-4 text-white text-4xl hover:text-brand-400 transition-colors" onclick="closeImageModal()">&times;</button>
+    <div class="relative max-w-7xl max-h-[90vh]">
+      <img id="modalImage" src="" alt="" class="max-w-full max-h-[90vh] object-contain rounded-lg" onclick="event.stopPropagation()" />
+      <p id="modalImageTitle" class="text-center text-white mt-4 text-lg"></p>
+    </div>
+  </div>
+
+  <footer class="fixed bottom-3 right-3 text-[11px] text-slate-400/80 no-print">
+    Dernière mise à jour : <span id="lastUpdate"></span> · Auteur : <span class="font-medium">N.Villaume</span>
+  </footer>
+
+  <script>
+    // --- Données projets ---
+    const DATA = [
+      {
+        id: "suivi-produit-ats",
+        title: "Suivi Produit – ATS",
+        area: "ATS · Supervision · SQL",
+        filters: ["ATS","Supervision","SQL"],
+        status: "livre",
+        objective: "Mettre en place une traçabilité complète des couronnes utilisées pour le treillis soudé, du scan en entrée machine jusqu'au produit fini.",
+        real_short: [
+          "Scan étiquettes des couronnes d'ébauche",
+          "Impression étiquettes roquette",
+          "Base SQL stock roquette"
+        ],
+        real: [
+          "Scan des étiquettes des couronne d'ébauche",
+          "Impression d'étiquettes roquette (poids réel/théorique, lot, coulée…)",
+          "Base SQL pour gestion de stock",
+          "Intégration supervision/production"
+        ],
+        results_short: [
+          "Traçabilité complète",
+          "Réduction erreurs",
+          "Conformité renforcée"
+        ],
+        results: [
+          "Traçabilité complète bout-en-bout du scan d'entrée au produit fini",
+          "Réduction significative des erreurs humaines de saisie",
+          "Optimisation logistique et conformité aux exigences qualité"
+        ],
+        skills: ["SQL Server","Automatisme","RFID","Cimplicity","Basic Script","Gestion projet"],
+        images: [
+          { src: '/images/projets/suivi-produit-1.jpg?v=2', title: 'Étiquette roquette' },
+          { src: '/images/projets/suivi-produit-2.jpg?v=3', title: 'Interface supervision' }
+        ],
+        media: []
+      },
+      {
+        id: "gestion-rfid-ats",
+        title: "Gestion RFID – ATS",
+        area: "ATS · RFID · Sécurité",
+        filters: ["ATS","RFID","SQL","Supervision"],
+        status: "livre",
+        objective: "Chaque démarrage de machine est conditionné par la lecture du badge de pointage SAM, renforçant ainsi la sécurité et assurant une meilleure traçabilité.",
+        real_short: [
+          "Badge obligatoire",
+          "Base SQL équipes",
+          "Stats opérateurs"
+        ],
+        real: [
+          "RFID obligatoire au démarrage de chaque machine",
+          "Badge chef requis en cas de casse-fil pour validation",
+          "Base SQL de gestion d'équipes et personnels",
+          "Statistiques complètes par opérateur et machine"
+        ],
+        results_short: [
+          "Sécurité renforcée",
+          "Discipline accrue",
+          "Traçabilité opérateurs"
+        ],
+        results: [
+          "Sécurité renforcée avec contrôle d'accès systématique",
+          "Discipline accrue et responsabilisation des équipes",
+          "Suivi précis de la productivité par opérateur et par poste"
+        ],
+        skills: ["C#","SQL Server","Cimplicity","Basic Script","RFID"],
+        images: [
+          { src: '/images/projets/Gestion_RFID_ATS-1.jpg?v=2', title: 'Interface RFID' },
+          { src: '/images/projets/Gestion_RFID_ATS-2.jpg?v=2', title: 'Badge opérateur' }
+        ],
+        media: []
+      },
+      {
+        id: "gestion-rfid-atr",
+        title: "Gestion RFID – ATR",
+        area: "ATR · RFID · Sécurité",
+        filters: ["ATR","RFID","SQL","Supervision"],
+        status: "en_cours",
+        objective: "Déployer le même dispositif RFID sur l'unité ATR (projet en cours).",
+        real_short: [
+          "Controle démmarage machines",
+          "Adaptation base SQL existante",
+          "Tracabilité Accrue"
+        ],
+        real: [
+          "Analyse des points de badgeage sur l'unité ATR",
+          "Intégration avec base SQL existante",
+          "Adaptation vues supervision et droits d'accès",
+          "Tracabilité Accrue"
+        ],
+        results_short: [
+          "POC en cours",
+          "Sécurité cross-site",
+          "Traçabilité étendue"
+        ],
+        results: [
+          "Projet en cours (POC + phase de cadrage)",
+          "Sécurité renforcée sur les deux sites (ATS/ATR)",
+          "Traçabilité cross-site unifiée",
+          "Harmonisation des processus entre ATS et ATR"
+        ],
+        skills: ["C#","SQL Server","Cimplicity","Basic Script","RFID","Déploiement multi-site"],
+        images: [
+          { src: '/images/projets/Gestion_RFID_ATR-1.jpg?v=1', title: 'Interface RFID ATR' }
+        ],
+        media: []
+      },
+      {
+        id: "suivis-energies",
+        title: "Suivis des Energies – ATS / ATR",
+        area: "ATS · ATR · Web · DataViz",
+        filters: ["ATS","ATR","SQL","Supervision"],
+        status: "livre",
+        objective: "Donner une vision temps réel des mesure énergétiques pour optimiser les coûts et détecter les anomalies facilement.",
+        real_short: [
+          "Pose compteurs énergie",
+          "Collecte OPC → SQL",
+          "Supervision web"
+        ],
+        real: [
+          "Pose de multiples compteurs d'énergie sur transformateurs et lignes",
+          "Collecte automatique des données via OPC/IGS vers SQL Server",
+          "Supervision ultra détaillée accessible depuis n'importe quel PC connecté au réseau Sam/Riva, simplement via une URL",
+          "Tableaux de bord interactifs avec graphiques temps réel"
+        ],
+        results_short: [
+          "Vision temps réel",
+          "Détection anomalies",
+          "Optimisation coûts"
+        ],
+        results: [
+          "Pilotage précis de l'énergie avec historiques détaillés",
+          "Détection précoce des dérives et anomalies de consommation",
+          "Optimisation significative des coûts énergétiques",
+          "Support décisionnel pour la direction avec KPIs énergétiques"
+        ],
+        skills: ["OPC","S7","HTML5","Tailwind CSS","Chart.js","SQL Server","Communication industrielle"],
+        images: [
+          { src: '/images/projets/Suivis_des_Energies-1.jpg', title: 'Tableau de bord énergétique' }
+        ],
+        media: [
+          { type: "chart", label: "TR1 — conso synthèse" }
+        ]
+      },
+      {
+        id: "app-changement-gamme",
+        title: "Application « Changement de Gamme »",
+        area: "Android · API · UX",
+        filters: ["Android","ATS"],
+        status: "livre",
+        objective: "Concevoir une application mobile destinée à accompagner les équipes de production et de maintenance, afin d'optimiser leur efficacité et d'améliorer la coordination des changements de gammes.",
+        real_short: [
+          "Application Android",
+          "API (Communication)",
+          "Interface multi-devices"
+        ],
+        real: [
+          "Programmation native ANDROID en langage Kotlin",
+          "API   pour communication entre l'application et la base de données",
+          "Navigation multi-écrans adaptée (téléphone / tablette / PC)",
+          "Interface Web d'administration pour gestion de l'utilisation de la tablette",
+          "Système de notifications et guidage étape par étape"
+        ],
+        results_short: [
+          "Gain de temps",
+          "Organisation améliorée",
+          "Tracabilité accrue"
+        ],
+        results: [
+          "Gain de temps significatif pour les équipes, avec une baisse des erreurs de saisie",
+          "Organisation et structure des étapes de changement de gamme simplifiée",
+          "Accès direct aux résultats et rapports de suivi en temps réel"
+        ],
+        skills: ["Android","Kotlin","Retrofit","API REST","Architecture client/serveur","UI/UX"],
+        images: [
+          { src: '/images/projets/Appli_Chgt_Gamme_1.png?v=2', title: 'Écran d\'accueil' },
+          { src: '/images/projets/Appli_Chgt_Gamme_2.png?v=2', title: 'Liste des Gammes' },
+          { src: '/images/projets/Appli_Chgt_Gamme_3.png?v=2', title: 'Validation étapes' },
+          { src: '/images/projets/Appli_Chgt_Gamme_4.png?v=2', title: 'Interface Parametres' }
+        ],
+        media: []
+      },
+      {
+        id: "suivis-soudures-atr",
+        title: "Suivis des Soudures - ATR",
+        area: "ATR · Supervision · Qualité",
+        filters: ["ATR","Supervision","SQL"],
+        status: "livre",
+        objective: "Mettre en place un suivi et une traçabilité complète des soudures.",
+        real_short: [
+          "Table échange SAM/PLC",
+          "Base SQL historique",
+          "Affichage dynamique"
+        ],
+        real: [
+          "Mise en place d'une table d'échange standard entre le réseau SAM et les PLC des soudeuses",
+          "Base SQL dédiée pour historiser toutes les infos de soudure (date, ligne, lot, coulée, soudeur, paramètres de soudage...)",
+          "Affichage dynamique temps réel : liste des soudures + état des soudeuses",
+          "Saisie de commentaires en direct pour l'équipe de maintenance",
+          "Export des données pour analyses qualité"
+        ],
+        results_short: [
+          "Traçabilité soudures",
+          "Visibilité Etat soudeuses",
+          "Analyses qualité"
+        ],
+        results: [
+          "Traçabilité complète des soudures et recuits avec historique détaillé",
+          "Visibilité accrue sur l'état des machines en temps réel",
+          "Communication facilitée entre production et maintenance",
+          "Exploitation des données pour analyses qualité et maintenance prédictive",
+          "Conformité aux exigences de traçabilité industrielle"
+        ],
+        skills: ["Cimplicity","Basic Script","SQL Server","Réseau industriel","Analyse de données"],
+        images: [
+          { src: '/images/projets/SuivisSoudure-1.jpg', title: 'Supervision soudures' },
+          { src: '/images/projets/SuivisSoudure-2.jpg', title: 'Historique paramètres' }
+        ],
+        media: []
+      },
+      {
+        id: "camera-etiquette-atr",
+        title: "Détection d'étiquette par Caméra – ATR",
+        area: "ATR · Vision · Automatisme",
+        filters: ["ATR","Vision","Automatisme"],
+        status: "livre",
+        objective: "Empêcher qu'une bobine sois stockée sans étiquette.",
+        real_short: [
+          "Caméra IFM LIGNE 7",
+          "Détection étiquette",
+          "Intégration Profinet"
+        ],
+        real: [
+          "Installation d'une caméra IFM Vision Assistant sur le bobinoir de la ligne 7",
+          "Paramétrage précis de l'algorithme de détection d'étiquette (ROI, seuils, validation)",
+          "Intégration complète de la caméra à l'automate Siemens en Profinet",
+          "Programmation du trigger pour piloter la caméra au moment exact où l'étiquette est posée",
+          "Suivi statistique détaillé des contrôles: nombre de détections, taux de réussite/échec, temps de cycle",
+          "Interface opérateur pour visualisation en direct"
+        ],
+        results_short: [
+          "Zéro défaut étiquette",
+          "Contrôle automatique",
+          "Fiabilité 100%"
+        ],
+        results: [
+          "Suppression totale des risques d'expédition de bobines sans étiquette",
+          "Contrôle automatisé ultra-rapide sans aucune surcharge pour l'opérateur",
+          "Fiabilité renforcée du processus de production",
+          "Réduction drastique des non-conformités client",
+          "ROI rapide par élimination des reprises et retours"
+        ],
+        skills: ["Vision industrielle","IFM Vision Assistant","Automatisme","Profinet","Statistiques"],
+        images: [
+          { src: '/images/projets/Détection_Etiquette-1.jpg', title: 'Caméra de détection' }
+        ],
+        media: []
+      }
+    ];
+
+    // Fallback
+    DATA.forEach(p => { if (!p.status) p.status = 'livre'; });
+
+    // --- Variables globales ---
+    const grid = document.getElementById('grid');
+    const btnPrint = document.getElementById('btnPrint');
+    const drawer = document.getElementById('drawer');
+    const drawerTitle = document.getElementById('drawerTitle');
+    const drawerArea = document.getElementById('drawerArea');
+    const drawerObjective = document.getElementById('drawerObjective');
+    const drawerReal = document.getElementById('drawerReal');
+    const drawerResults = document.getElementById('drawerResults');
+    const drawerSkills = document.getElementById('drawerSkills');
+    const drawerMedia = document.getElementById('drawerMedia');
+    const drawerMediaSection = document.getElementById('drawerMediaSection');
+    const drawerImages = document.getElementById('drawerImages');
+    const drawerImagesSection = document.getElementById('drawerImagesSection');
+    const drawerSkillsSection = document.getElementById('drawerSkillsSection');
+    const drawerSkillsTitle = document.getElementById('drawerSkillsTitle');
+    const drawerComment = document.getElementById('drawerComment');
+    const btnSaveComment = document.getElementById('btnSaveComment');
+    
+    let currentProjectId = null;
+
+    let activeFilter = 'all';
+    let activeStatus = 'all';
+
+    // --- Fonctions utilitaires ---
+    function chip(txt) {
+      return `<span class="chip text-[11px] px-2 py-1 rounded-full bg-white/5">${txt}</span>`;
+    }
+
+    function uniq(arr) { 
+      return [...new Set(arr)]; 
+    }
+
+    // --- Gestion des commentaires ---
+    let allComments = {};
+    
+    async function loadAllComments() {
+      try {
+        const response = await fetch('/api/Comments');
+        if (response.ok) {
+          const data = await response.text();
+          allComments = JSON.parse(data);
+        }
+      } catch (e) {
+        console.error('Error loading comments:', e);
+      }
+    }
+    
+    function loadComment(projectId) {
+      const commentData = allComments[projectId];
+      if (commentData && commentData.Comment) {
+        return commentData.Comment;
+      }
+      return '';
+    }
+    
+    async function saveComment(projectId, comment) {
+      try {
+        const author = prompt('Votre nom (optionnel):') || 'Anonyme';
+        
+        const response = await fetch('/api/Comments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            projectId: projectId,
+            comment: comment,
+            author: author
+          })
+        });
+
+        if (response.ok) {
+          await loadAllComments(); // Recharger tous les commentaires
+          showToast('💬 Commentaire enregistré avec succès', 'success');
+        } else {
+          showToast('❌ Erreur lors de l\'enregistrement', 'error');
+        }
+      } catch (e) {
+        console.error('Error saving comment:', e);
+        showToast('❌ Erreur lors de l\'enregistrement', 'error');
+      }
+    }
+    
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+      toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // --- Gestion du drawer ---
+    function openDrawer(p) {
+      currentProjectId = p.id;
+      
+      drawerTitle.textContent = p.title;
+      drawerArea.textContent = p.area;
+      drawerObjective.textContent = p.objective;
+      drawerReal.innerHTML = p.real.map(x=>`<li>${x}</li>`).join('');
+      drawerResults.innerHTML = p.results.map(x=>`<li>${x}</li>`).join('');
+      
+      // Réinitialiser la section des compétences pour un projet normal
+      drawerSkillsSection.classList.remove('hidden');
+      drawerSkillsTitle.textContent = 'Compétences';
+      drawerSkills.innerHTML = p.skills.map(chip).join('');
+
+      // Charger le commentaire sauvegardé
+      drawerComment.value = loadComment(p.id);
+
+      // Afficher les images
+      if (!p.images || p.images.length === 0) {
+        drawerImagesSection.classList.add('hidden');
+      } else {
+        drawerImagesSection.classList.remove('hidden');
+        drawerImages.innerHTML = p.images.map((img, i) => {
+          const safeTitle = (img.title || '').replace(/'/g, "\\'");
+          return `
+          <div class="relative group cursor-pointer" onclick="openImageModal('${img.src}', '${safeTitle}')">
+            <img src="${img.src}" alt="${img.title || 'Capture ' + (i+1)}" 
+                 class="w-full h-48 object-cover rounded-xl border border-white/10 transition-transform hover:scale-105" />
+            ${img.title ? `<p class="text-xs text-slate-400 mt-1">${img.title}</p>` : ''}
+          </div>
+        `}).join('');
+      }
+
+      if (!p.media || p.media.length === 0) {
+        drawerMediaSection.classList.add('hidden');
+      } else {
+        drawerMediaSection.classList.remove('hidden');
+        drawerMedia.innerHTML = p.media.map((m,i)=>{
+          if (m.type === 'chart') return `<canvas data-chart-id="${p.id}-media-${i}" height="140" class="rounded-xl bg-ink-700 p-2 border border-white/10"></canvas>`;
+          return '';
+        }).join('');
+
+        p.media?.forEach((m,i)=>{
+          if (m.type === 'chart') {
+            setTimeout(() => {
+              const canvas = document.querySelector(`canvas[data-chart-id="${p.id}-media-${i}"]`);
+              if (canvas) {
+                const ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                    labels: Array.from({length: 12}, (_,k)=>`${k}:00`),
+                    datasets: [{
+                      label: m.label || 'Série',
+                      data: Array.from({length: 12}, ()=>Math.round(Math.random()*100)),
+                      fill: false,
+                      borderColor: '#10b981',
+                      backgroundColor: '#10b981'
+                    }]
+                  },
+                  options: { responsive: true, maintainAspectRatio: false }
+                });
+              }
+            }, 100);
+          }
+        });
+      }
+
+      drawer.classList.remove('hidden');
+    }
+
+    function closeDrawer() { 
+      drawer.classList.add('hidden'); 
+    }
+
+    // --- Gestion du modal image ---
+    function openImageModal(src, title) {
+      const modal = document.getElementById('imageModal');
+      const img = document.getElementById('modalImage');
+      const titleEl = document.getElementById('modalImageTitle');
+      img.src = src;
+      titleEl.textContent = title || '';
+      modal.classList.remove('hidden');
+    }
+
+    function closeImageModal() {
+      document.getElementById('imageModal').classList.add('hidden');
+    }
+
+    // --- Rendu des cartes ---
+    function renderCards(list) {
+      grid.innerHTML = '';
+      list.forEach(p => {
+        const el = document.createElement('article');
+        el.className = 'card relative rounded-2xl p-4 shadow-glass hover:shadow-2xl hover:shadow-black/30 transition-shadow duration-300';
+
+        const isEnCours = (p.status||'livre') === 'en_cours';
+        const statusEmoji = isEnCours ? '🟡' : '🟢';
+        const statusLabel = isEnCours ? 'En cours' : 'Terminé';
+
+        el.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="h-10 w-10 rounded-xl bg-brand-500/15 text-brand-400 grid place-items-center">📌</div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-base font-semibold leading-tight flex items-center gap-2">
+                  ${p.title}
+                  <span class="chip text-[10px] px-2 py-0.5 rounded-full bg-white/5">${statusEmoji} ${statusLabel}</span>
+                </h3>
+                <button class="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20" data-open>Voir</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">${p.area}</p>
+              <div class="mt-4 mb-3 p-3 rounded-lg bg-gradient-to-r from-brand-500/10 to-brand-600/5 border-l-2 border-brand-500">
+                <p class="text-xs uppercase tracking-wide text-brand-400 font-semibold mb-1">🎯 Objectif</p>
+                <p class="text-sm text-slate-100 leading-relaxed">${p.objective}</p>
+              </div>
+              <div class="flex flex-wrap gap-1 mt-3">${p.skills.slice(0,5).map(chip).join('')}</div>
+              <div class="mt-4 grid grid-cols-2 gap-2">
+                <div class="rounded-xl bg-ink-700/60 border border-white/10 p-3">
+                  <p class="text-[10px] text-slate-400">Réalisation</p>
+                  <ul class="mt-1 text-sm list-disc list-inside marker:text-brand-500 space-y-1">
+                    ${(p.real_short || p.real.slice(0,3)).map(x=>`<li>${x}</li>`).join('')}
+                  </ul>
+                </div>
+                <div class="rounded-xl bg-ink-700/60 border border-white/10 p-3">
+                  <p class="text-[10px] text-slate-400">Résultats</p>
+                  <ul class="mt-1 text-sm list-disc list-inside marker:text-emerald-400 space-y-1">
+                    ${(p.results_short || p.results.slice(0,3)).map(x=>`<li>${x}</li>`).join('')}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        el.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openDrawer(p)) );
+        grid.appendChild(el);
+      });
+    }
+
+    // --- Filtrage ---
+    function renderFiltered(){
+      let list = DATA;
+      if (activeFilter !== 'all') list = list.filter(p=>p.filters.includes(activeFilter));
+      if (activeStatus !== 'all') list = list.filter(p=>(p.status||'livre')===activeStatus);
+      renderCards(list);
+      updateKPIs(list);
+    }
+
+    // --- KPIs ---
+    function updateKPIs(list){
+      const projects = list.length;
+      const results = list.reduce((a,p)=> a + (p.results?.length||0), 0);
+      const skills = uniq(list.flatMap(p=>p.skills)).length;
+      document.getElementById('kpiProjects').textContent = projects;
+      document.getElementById('kpiResults').textContent = results;
+      document.getElementById('kpiSkills').textContent = skills;
+    }
+
+    // --- Lexique des compétences ---
+    const skillsLexicon = {
+      "SQL Server": "Système de gestion de base de données relationnelle Microsoft pour stocker, gérer et exploiter les données de production.",
+      "Automatisme": "Programmation et configuration d'automates industriels (PLC) pour piloter les machines et processus de production.",
+      "RFID": "Technologie de Radio-Identification pour l'identification automatique et la traçabilité par badges sans contact.",
+      "Cimplicity": "Logiciel de supervision industrielle GE Digital pour la visualisation et le contrôle des processus en temps réel.",
+      "Basic Script": "Langage de script intégré à Cimplicity pour automatiser les tâches et créer des logiques personnalisées.",
+      "Gestion projet": "Coordination, planification et suivi de projets industriels du cadrage à la livraison.",
+      "C#": "Langage de programmation orienté objet Microsoft pour développer des applications desktop Windows.",
+      "OPC": "Standard de communication industrielle (OPC DA/UA) pour échanger des données entre automates et logiciels.",
+      "S7": "Gamme d'automates programmables Siemens (S7-300, S7-1200, S7-1500) et langage de programmation associé.",
+      "HTML5": "Langage de balisage web moderne pour créer des interfaces utilisateur interactives et responsives.",
+      "Tailwind CSS": "Framework CSS utilitaire pour concevoir rapidement des interfaces web modernes et élégantes.",
+      "Chart.js": "Bibliothèque JavaScript open-source pour créer des graphiques et visualisations de données interactifs.",
+      "Communication industrielle": "Mise en place et exploitation de réseaux industriels (Profinet, Ethernet/IP, Modbus...).",
+      "Android": "Développement d'applications mobiles natives pour la plateforme Android.",
+      "Kotlin": "Langage de programmation moderne et officiel pour le développement d'applications Android.",
+      "Retrofit": "Bibliothèque Android pour gérer les communications HTTP avec des API REST de manière simplifiée.",
+      "API REST": "Conception et utilisation d'interfaces de programmation web pour l'échange de données entre systèmes.",
+      "Architecture client/serveur": "Conception d'applications distribuées avec séparation des responsabilités entre client et serveur.",
+      "UI/UX": "Design d'interfaces utilisateur intuitives et conception d'expériences utilisateur optimales.",
+      "Réseau industriel": "Configuration et exploitation de réseaux dédiés à l'automatisme (Profinet, Ethernet industriel).",
+      "Analyse de données": "Exploitation et interprétation de données industrielles pour optimiser les processus.",
+      "Vision industrielle": "Systèmes de contrôle qualité par caméra pour la détection et l'inspection automatisée.",
+      "IFM Vision Assistant": "Logiciel et système de vision industrielle IFM pour le paramétrage de caméras intelligentes.",
+      "Profinet": "Protocole de communication industriel Siemens basé sur Ethernet pour l'automatisation temps réel.",
+      "Statistiques": "Collecte, analyse et exploitation de données chiffrées pour le pilotage et l'amélioration continue.",
+      "Déploiement multi-site": "Déploiement et harmonisation de solutions techniques sur plusieurs sites de production.",
+      "Impression étiquettes": "Gestion et automatisation de l'impression d'étiquettes de traçabilité.",
+      "C# Desktop": "Développement d'applications Windows desktop avec l'environnement .NET et C#."
+    };
+
+    // --- Affichage de toutes les compétences ---
+    function showAllSkills() {
+      const allSkills = uniq(DATA.flatMap(p=>p.skills)).sort();
+      
+      drawerTitle.textContent = '📚 Lexique des Compétences';
+      drawerArea.textContent = `${allSkills.length} compétences techniques mobilisées`;
+      
+      // Créer les bulles cliquables DANS l'objectif (en haut)
+      const chipsHTML = allSkills.map(skill => {
+        const safeId = skill.replace(/[^a-zA-Z0-9]/g, '_');
+        return `<span class="chip text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-brand-500/30 cursor-pointer transition-colors" onclick="scrollToSkill('${safeId}')">${skill}</span>`;
+      }).join('');
+      
+      drawerObjective.innerHTML = `
+        <p class="text-slate-200 mb-4">Ensemble des savoir-faire techniques mis en œuvre dans les projets 2025.</p>
+        <div class="mt-4 p-3 rounded-lg bg-slate-800/60 border border-slate-600/30">
+          <p class="text-xs uppercase tracking-wide text-slate-400 mb-3">🔍 Cliquez sur une compétence pour voir sa définition</p>
+          <div class="flex flex-wrap gap-2">${chipsHTML}</div>
+        </div>
+      `;
+      
+      // Créer le lexique avec IDs dans REALISATION
+      const lexiqueHTML = allSkills.map(skill => {
+        const description = skillsLexicon[skill] || 'Compétence technique spécialisée.';
+        const safeId = skill.replace(/[^a-zA-Z0-9]/g, '_');
+        return `
+          <div id="skill-${safeId}" class="skill-card mb-4 p-4 rounded-xl bg-ink-700/60 border border-white/10 hover:border-brand-500/30 transition-all">
+            <h4 class="text-base font-semibold text-brand-400 mb-2 flex items-center gap-2">
+              <span class="text-brand-500">▸</span> ${skill}
+            </h4>
+            <p class="text-sm text-slate-300 leading-relaxed">${description}</p>
+          </div>
+        `;
+      }).join('');
+      
+      drawerReal.innerHTML = lexiqueHTML;
+      drawerResults.innerHTML = '';
+      drawerSkillsSection.classList.add('hidden');
+      drawerMediaSection.classList.add('hidden');
+      drawerImagesSection.classList.add('hidden');
+      
+      drawer.classList.remove('hidden');
+    }
+    
+    // Fonction pour scroller vers une compétence et la mettre en surbrillance
+    function scrollToSkill(skillId) {
+      const element = document.getElementById('skill-' + skillId);
+      if (element) {
+        // Enlever le highlight de tous les éléments
+        document.querySelectorAll('.skill-card').forEach(card => {
+          card.classList.remove('bg-brand-500/20', 'border-brand-500', 'scale-105');
+        });
+        
+        // Scroller vers l'élément
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Ajouter le highlight
+        element.classList.add('bg-brand-500/20', 'border-brand-500', 'scale-105');
+        
+        // Retirer le highlight après 2 secondes
+        setTimeout(() => {
+          element.classList.remove('bg-brand-500/20', 'border-brand-500', 'scale-105');
+        }, 2000);
+      }
+    }
+
+    // --- Initialisation ---
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Charger les commentaires depuis le serveur
+      await loadAllComments();
+      
+      // Rendu initial
+      renderCards(DATA);
+      updateKPIs(DATA);
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleString('fr-FR');
+
+      // Event listeners pour les filtres
+      const filterButtons = document.querySelectorAll('[data-filter]');
+      const statusButtons = document.querySelectorAll('[data-status]');
+
+      filterButtons.forEach(btn => btn.addEventListener('click', () => {
+        activeFilter = btn.dataset.filter;
+        filterButtons.forEach(b=> b.classList.remove('bg-white/20'));
+        btn.classList.add('bg-white/20');
+        renderFiltered();
+      }));
+
+      statusButtons.forEach(btn => btn.addEventListener('click', () => {
+        activeStatus = btn.dataset.status;
+        statusButtons.forEach(b=> b.classList.remove('bg-white/20'));
+        btn.classList.add('bg-white/20');
+        renderFiltered();
+      }));
+
+      // Event listeners pour le drawer
+      drawer.addEventListener('click', (e)=>{ if (e.target.dataset.close !== undefined) closeDrawer(); });
+      window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') closeDrawer(); });
+
+      // Event listener pour le KPI compétences
+      document.getElementById('kpiSkillsCard').addEventListener('click', showAllSkills);
+      
+      // Event listener pour sauvegarder les commentaires
+      btnSaveComment.addEventListener('click', () => {
+        if (currentProjectId) {
+          saveComment(currentProjectId, drawerComment.value);
+        }
+      });
+
+      // Event listeners pour les boutons
+      btnPrint.addEventListener('click', () => window.print());
+
+      console.info('✅ Dashboard initialisé avec', DATA.length, 'projets');
+    });
+    </script>
+</body>
+</html>
