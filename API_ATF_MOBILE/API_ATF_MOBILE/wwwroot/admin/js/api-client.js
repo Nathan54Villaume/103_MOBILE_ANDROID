@@ -279,6 +279,13 @@ class ApiClient {
     }
 
     /**
+     * Métriques système détaillées (machine + processus)
+     */
+    async getSystemMetrics() {
+        return await this.request('/api/admin/system-metrics');
+    }
+
+    /**
      * Configuration
      */
     async getConfiguration() {

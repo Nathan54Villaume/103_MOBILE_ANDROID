@@ -23,6 +23,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers();
 
 // 3.1) Services d'administration
+builder.Services.AddSingleton<ISystemMonitorService, SystemMonitorService>();
 builder.Services.AddSingleton<IServerMonitorService, ServerMonitorService>();
 builder.Services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
 builder.Services.AddSingleton<IS7MonitorService, S7MonitorService>();

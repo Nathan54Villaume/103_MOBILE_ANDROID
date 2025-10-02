@@ -71,6 +71,31 @@ namespace API_ATF_MOBILE.Controllers
         }
 
         /// <summary>
+        /// Obtenir les métriques système détaillées (machine hôte + processus)
+        /// </summary>
+        [HttpGet("system-metrics")]
+        public ActionResult<object> GetSystemMetrics([FromServices] ISystemMonitorService systemMonitor)
+        {
+            try
+            {
+                var systemMetrics = systemMonitor.GetSystemMetrics();
+                var processMetrics = systemMonitor.GetProcessMetrics();
+                
+                return Ok(new
+                {
+                    System = systemMetrics,
+                    Process = processMetrics,
+                    Timestamp = DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des métriques système");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Health check général de l'API
         /// </summary>
         [HttpGet("health")]

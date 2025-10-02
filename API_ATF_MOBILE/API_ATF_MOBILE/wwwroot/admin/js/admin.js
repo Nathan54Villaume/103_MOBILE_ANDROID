@@ -4,6 +4,7 @@
 
 import apiClient from './api-client.js';
 import { initServerMonitor, updateServerMetrics } from './server-monitor.js';
+import { initSystemMonitor, updateSystemMetrics } from './system-monitor.js';
 import { initDatabaseManager, updateDatabaseStatus } from './database-manager.js';
 import { initS7Manager, updateS7Status } from './s7-manager.js';
 import { initLogsViewer, updateLogs } from './logs-viewer.js';
@@ -95,6 +96,7 @@ async function initApp() {
     
     // Initialiser les modules
     initServerMonitor();
+    initSystemMonitor();
     initDatabaseManager();
     initS7Manager();
     initLogsViewer();
@@ -494,6 +496,8 @@ function startPolling() {
                 await loadDashboard();
             } else if (state.currentSection === 'server') {
                 await updateServerMetrics();
+            } else if (state.currentSection === 'system') {
+                await updateSystemMetrics();
             } else if (state.currentSection === 'database') {
                 await updateDatabaseStatus();
             } else if (state.currentSection === 's7') {

@@ -148,6 +148,10 @@
           <span>💻</span>
           <span class="text-sm font-medium">Serveur</span>
         </a>
+        <a href="#system" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>🖥️</span>
+          <span class="text-sm font-medium">Système</span>
+        </a>
         <a href="#database" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
           <span>💾</span>
           <span class="text-sm font-medium">Bases de données</span>
@@ -289,6 +293,41 @@
             <h3 class="font-semibold mb-4">Informations Serveur</h3>
             <div id="serverInfo" class="space-y-3">
               <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- System Section (hidden by default) -->
+        <section id="section-system" class="hidden space-y-6">
+          <!-- Machine Metrics -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">🖥️ Métriques Machine</h3>
+            <div id="systemMetrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Process Metrics -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">⚙️ Métriques Processus</h3>
+            <div id="processMetrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- System Charts -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">CPU Système vs Processus</h3>
+              <div style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="chartSystemCpu"></canvas>
+              </div>
+            </div>
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">Mémoire Système vs Processus</h3>
+              <div style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="chartSystemMemory"></canvas>
+              </div>
             </div>
           </div>
         </section>
