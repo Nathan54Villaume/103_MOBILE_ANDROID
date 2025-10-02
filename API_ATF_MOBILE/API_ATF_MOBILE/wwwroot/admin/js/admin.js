@@ -15,7 +15,7 @@ import { initRequestsViewer, updateRequestsDisplay } from './requests-viewer.js'
 const state = {
     currentSection: 'dashboard',
     pollingInterval: null,
-    refreshRate: 10000, // OPTIMISATION : 10 secondes au lieu de 5
+    refreshRate: 1000, // Actualisation toutes les secondes
     charts: {},
     isRefreshing: false // Empêcher les rafraîchissements simultanés
 };
@@ -354,6 +354,12 @@ function updateLogsChart(logStats) {
     
     // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.logs) {
+        state.charts.logs.data.labels = [
+            `Info (${logStats.infoCount})`,
+            `Warning (${logStats.warningCount})`,
+            `Error (${logStats.errorCount})`,
+            `Critical (${logStats.criticalCount})`
+        ];
         state.charts.logs.data.datasets[0].data = [
             logStats.infoCount,
             logStats.warningCount,
@@ -368,7 +374,12 @@ function updateLogsChart(logStats) {
     state.charts.logs = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Info', 'Warning', 'Error', 'Critical'],
+            labels: [
+                `Info (${logStats.infoCount})`,
+                `Warning (${logStats.warningCount})`,
+                `Error (${logStats.errorCount})`,
+                `Critical (${logStats.criticalCount})`
+            ],
             datasets: [{
                 data: [
                     logStats.infoCount,
@@ -481,6 +492,12 @@ function startPolling() {
         try {
             if (state.currentSection === 'dashboard') {
                 await loadDashboard();
+            } else if (state.currentSection === 'server') {
+                await updateServerMetrics();
+            } else if (state.currentSection === 'database') {
+                await updateDatabaseStatus();
+            } else if (state.currentSection === 's7') {
+                await updateS7Status();
             } else if (state.currentSection === 'logs') {
                 await updateLogs();
             } else if (state.currentSection === 'requests') {
@@ -510,17 +527,27 @@ function formatUptime(uptimeString) {
         return uptimeString;
     }
     
-    const days = Math.floor(uptimeString.totalSeconds / 86400);
-    const hours = Math.floor((uptimeString.totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((uptimeString.totalSeconds % 3600) / 60);
+    const totalSeconds = uptimeString.totalSeconds || 0;
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.floor(totalSeconds % 60);
     
+    const parts = [];
     if (days > 0) {
-        return `${days}j ${hours}h`;
-    } else if (hours > 0) {
-        return `${hours}h ${minutes}m`;
-    } else {
-        return `${minutes}m`;
+        parts.push(days === 1 ? '1 jour' : `${days} jours`);
     }
+    if (hours > 0) {
+        parts.push(hours === 1 ? '1 heure' : `${hours} heures`);
+    }
+    if (minutes > 0 && days === 0) { // Afficher les minutes seulement si moins d'un jour
+        parts.push(minutes === 1 ? '1 minute' : `${minutes} minutes`);
+    }
+    if (seconds > 0 && days === 0 && hours === 0) { // Afficher les secondes seulement si moins d'une heure
+        parts.push(seconds === 1 ? '1 seconde' : `${seconds} secondes`);
+    }
+    
+    return parts.length > 0 ? parts.join(', ') : '0 seconde';
 }
 
 function showError(message) {
