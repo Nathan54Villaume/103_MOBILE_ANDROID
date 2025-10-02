@@ -50,20 +50,45 @@ function displayServerInfo(status, metrics) {
 }
 
 export function formatDuration(duration) {
-    if (typeof duration === 'string') return duration;
+    let totalSeconds = 0;
     
-    const totalSeconds = duration.totalSeconds || 0;
+    // Gérer les différents formats d'uptime
+    if (typeof duration === 'string') {
+        // Format TimeSpan .NET: "00:00:25.0335953" ou "1.02:03:04.123"
+        const parts = duration.split('.');
+        let timeStr = parts[0];
+        
+        // Si format avec jours: "1.02:03:04"
+        if (parts.length > 1 && parts[0].includes(':') === false) {
+            const days = parseInt(parts[0]);
+            timeStr = parts[1];
+            totalSeconds += days * 86400;
+        }
+        
+        // Parser HH:MM:SS
+        const timeParts = timeStr.split(':');
+        if (timeParts.length >= 3) {
+            const hours = parseInt(timeParts[0]) || 0;
+            const minutes = parseInt(timeParts[1]) || 0;
+            const seconds = parseInt(timeParts[2]) || 0;
+            totalSeconds += hours * 3600 + minutes * 60 + seconds;
+        }
+    } else if (duration && typeof duration === 'object' && duration.totalSeconds) {
+        // Format objet avec totalSeconds
+        totalSeconds = duration.totalSeconds;
+    }
+    
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = Math.floor(totalSeconds % 60);
+    const secs = Math.floor(totalSeconds % 60);
     
-    const parts = [];
-    if (days > 0) parts.push(`${days}j`);
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (seconds > 0) parts.push(`${seconds}s`);
+    // Format dd:HH:mm:ss
+    const dd = String(days).padStart(2, '0');
+    const HH = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(secs).padStart(2, '0');
     
-    return parts.join(' ') || '0s';
+    return `${dd}:${HH}:${mm}:${ss}`;
 }
 

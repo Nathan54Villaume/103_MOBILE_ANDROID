@@ -227,16 +227,17 @@ async function loadDashboard() {
     console.log('📊 Chargement du dashboard');
     
     try {
-        const data = await apiClient.getDashboard();
-        
-        // Récupérer les vraies connexions PLC avec test
-        const plcConnections = await apiClient.getPlcConnections();
+        const [data, systemData, plcConnections] = await Promise.all([
+            apiClient.getDashboard(),
+            apiClient.getSystemMetrics(),
+            apiClient.getPlcConnections()
+        ]);
         
         // Mettre à jour les KPIs avec les vraies données PLC
         updateKPIs(data, plcConnections);
         
-        // Mettre à jour les graphiques
-        updateCharts(data);
+        // Mettre à jour les graphiques avec les bonnes métriques système
+        updateCharts(data, systemData);
         
         // Mettre à jour l'état des services avec les vraies données PLC
         updateServicesStatus(data, plcConnections);
@@ -260,12 +261,13 @@ function updateKPIs(data, plcConnections = []) {
     cpuElement.className = `text-2xl font-bold ${getValueColorClass(parseFloat(cpuPercent), 'cpu')}`;
     
     // Mémoire avec couleur dynamique
-    const memoryMB = metrics.memoryUsageMB.toFixed(0);
+    const memoryUsedMB = metrics.memoryUsageMB.toFixed(0);
+    const memoryTotalMB = metrics.totalMemoryMB.toFixed(0);
     const memPercent = (metrics.memoryUsageMB / metrics.totalMemoryMB * 100).toFixed(1);
     const memoryElement = document.getElementById('kpiMemory');
     const memoryPercentElement = document.getElementById('kpiMemoryPercent');
     
-    memoryElement.textContent = `${memoryMB} MB`;
+    memoryElement.textContent = `${memoryUsedMB} / ${memoryTotalMB} MB`;
     memoryElement.className = `text-2xl font-bold ${getValueColorClass(parseFloat(memPercent), 'memory')}`;
     memoryPercentElement.textContent = memPercent;
     memoryPercentElement.className = getValueColorClass(parseFloat(memPercent), 'memory');
@@ -293,32 +295,37 @@ function updateKPIs(data, plcConnections = []) {
     console.log('🔍 [KPI Connexions] BDD:', `${dbConnected}/${dbTotal}`, 'PLC:', `${plcConnected}/${plcTotal}`, 'Total:', `${totalConnected}/${totalConnections}`);
 }
 
-function updateCharts(data) {
-    // Chart Mémoire Système vs Processus
-    updateMemoryUsageChart(data.serverMetrics);
+function updateCharts(data, systemData) {
+    // Chart Mémoire Serveur vs Machine avec les bonnes données
+    updateMemoryUsageChart(systemData);
+    
+    // Chart CPU Serveur vs Machine
+    updateCpuUsageChart(systemData);
     
     // Chart Logs
     updateLogsChart(data.logStats);
 }
 
-function updateMemoryUsageChart(metrics) {
+function updateMemoryUsageChart(systemData) {
     const ctx = document.getElementById('chartMemoryUsage');
     if (!ctx) return;
     
-    // Calculer la mémoire processus et système
-    const processMemoryMB = metrics.memoryUsageMB;
-    const totalMemoryMB = metrics.totalMemoryMB;
-    const systemMemoryMB = totalMemoryMB - processMemoryMB;
+    // Utiliser les bonnes métriques système
+    const processMemoryMB = systemData.process.memoryUsageMB; // Mémoire du processus serveur
+    const systemMemoryMB = systemData.system.memoryUsageMB;   // Mémoire utilisée par la machine
+    const freeMemoryMB = systemData.system.availableMemoryMB; // Mémoire libre
     
     // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.memoryUsage) {
         state.charts.memoryUsage.data.labels = [
-            `Processus (${processMemoryMB.toFixed(0)} MB)`,
-            `Disponible (${systemMemoryMB.toFixed(0)} MB)`
+            `Serveur (${processMemoryMB.toFixed(0)} MB)`,
+            `Machine (${systemMemoryMB.toFixed(0)} MB)`,
+            `Libre (${freeMemoryMB.toFixed(0)} MB)`
         ];
         state.charts.memoryUsage.data.datasets[0].data = [
             processMemoryMB,
-            systemMemoryMB
+            systemMemoryMB,
+            freeMemoryMB
         ];
         state.charts.memoryUsage.update('none'); // 'none' = pas d'animation pour meilleures performances
         return;
@@ -329,21 +336,92 @@ function updateMemoryUsageChart(metrics) {
         type: 'doughnut',
         data: {
             labels: [
-                `Processus (${processMemoryMB.toFixed(0)} MB)`,
-                `Disponible (${systemMemoryMB.toFixed(0)} MB)`
+                `Serveur (${processMemoryMB.toFixed(0)} MB)`,
+                `Machine (${systemMemoryMB.toFixed(0)} MB)`,
+                `Libre (${freeMemoryMB.toFixed(0)} MB)`
             ],
             datasets: [{
                 data: [
                     processMemoryMB,
-                    systemMemoryMB
+                    systemMemoryMB,
+                    freeMemoryMB
                 ],
                 backgroundColor: [
-                    'rgba(239, 68, 68, 0.6)',
-                    'rgba(16, 185, 129, 0.6)'
+                    'rgba(251, 146, 60, 0.6)', // Orange pour le serveur
+                    'rgba(59, 130, 246, 0.6)', // Bleu pour la machine
+                    'rgba(34, 197, 94, 0.6)'   // Vert pour la mémoire libre
                 ],
                 borderColor: [
-                    'rgba(239, 68, 68, 1)',
-                    'rgba(16, 185, 129, 1)'
+                    'rgba(251, 146, 60, 1)',
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(34, 197, 94, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false, // Désactiver les animations pour de meilleures performances
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { color: '#94a3b8' }
+                }
+            }
+        }
+    });
+}
+
+function updateCpuUsageChart(systemData) {
+    const ctx = document.getElementById('chartCpuUsage');
+    if (!ctx) return;
+    
+    // Utiliser les métriques CPU système
+    const processCpuPercent = systemData.process.cpuUsagePercent; // CPU du processus serveur
+    const systemCpuPercent = systemData.system.cpuUsagePercent;   // CPU utilisé par la machine
+    const freeCpuPercent = 100 - systemCpuPercent;               // CPU libre (approximation)
+    
+    // Si le graphique existe déjà, mettre à jour les données
+    if (state.charts.cpuUsage) {
+        state.charts.cpuUsage.data.labels = [
+            `Serveur (${processCpuPercent.toFixed(1)}%)`,
+            `Machine (${systemCpuPercent.toFixed(1)}%)`,
+            `Libre (${freeCpuPercent.toFixed(1)}%)`
+        ];
+        state.charts.cpuUsage.data.datasets[0].data = [
+            processCpuPercent,
+            systemCpuPercent,
+            freeCpuPercent
+        ];
+        state.charts.cpuUsage.update('none'); // 'none' = pas d'animation pour meilleures performances
+        return;
+    }
+    
+    // Créer le graphique la première fois seulement - utiliser les mêmes couleurs que la mémoire
+    state.charts.cpuUsage = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                `Serveur (${processCpuPercent.toFixed(1)}%)`,
+                `Machine (${systemCpuPercent.toFixed(1)}%)`,
+                `Libre (${freeCpuPercent.toFixed(1)}%)`
+            ],
+            datasets: [{
+                data: [
+                    processCpuPercent,
+                    systemCpuPercent,
+                    freeCpuPercent
+                ],
+                backgroundColor: [
+                    'rgba(251, 146, 60, 0.6)', // Orange pour le serveur
+                    'rgba(59, 130, 246, 0.6)', // Bleu pour la machine
+                    'rgba(34, 197, 94, 0.6)'   // Vert pour le CPU libre
+                ],
+                borderColor: [
+                    'rgba(251, 146, 60, 1)',
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(34, 197, 94, 1)'
                 ],
                 borderWidth: 1
             }]

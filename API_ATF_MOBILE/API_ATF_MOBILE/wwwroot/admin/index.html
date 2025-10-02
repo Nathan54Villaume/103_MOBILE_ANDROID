@@ -270,16 +270,16 @@
           <!-- Charts -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div class="card rounded-xl p-5 shadow-glass">
-              <h3 class="font-semibold mb-4">Mémoire Système vs Processus</h3>
+              <h3 class="font-semibold mb-4">Mémoire Serveur vs Machine</h3>
               <div style="height: 250px; max-height: 250px; position: relative;">
                 <canvas id="chartMemoryUsage"></canvas>
               </div>
             </div>
             
             <div class="card rounded-xl p-5 shadow-glass">
-              <h3 class="font-semibold mb-4">Statistiques Logs</h3>
+              <h3 class="font-semibold mb-4">CPU Serveur vs Machine</h3>
               <div style="height: 250px; max-height: 250px; position: relative;">
-                <canvas id="chartLogs"></canvas>
+                <canvas id="chartCpuUsage"></canvas>
               </div>
             </div>
           </div>
@@ -289,6 +289,14 @@
             <h3 class="font-semibold mb-4">État des services</h3>
             <div id="servicesStatus" class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Logs Chart moved below services -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Statistiques Logs</h3>
+            <div style="height: 250px; max-height: 250px; position: relative;">
+              <canvas id="chartLogs"></canvas>
             </div>
           </div>
 
