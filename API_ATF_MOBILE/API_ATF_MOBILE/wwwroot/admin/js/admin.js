@@ -227,14 +227,17 @@ async function loadDashboard() {
     try {
         const data = await apiClient.getDashboard();
         
+        // Récupérer les vraies connexions PLC avec test
+        const plcConnections = await apiClient.getPlcConnections();
+        
         // Mettre à jour les KPIs
         updateKPIs(data);
         
         // Mettre à jour les graphiques
         updateCharts(data);
         
-        // Mettre à jour l'état des services
-        updateServicesStatus(data);
+        // Mettre à jour l'état des services avec les vraies données PLC
+        updateServicesStatus(data, plcConnections);
         
         // Mettre à jour le statut global
         updateGlobalStatus(data);
@@ -395,7 +398,7 @@ function updateLogsChart(logStats) {
     });
 }
 
-function updateServicesStatus(data) {
+function updateServicesStatus(data, plcConnections = []) {
     const container = document.getElementById('servicesStatus');
     if (!container) return;
     
@@ -409,13 +412,17 @@ function updateServicesStatus(data) {
             name: `BDD ${db.connectionName}`,
             status: db.isConnected ? 'online' : 'offline',
             details: db.isConnected ? `${db.databaseName} (${db.responseTimeMs}ms)` : db.errorMessage
-        })),
-        {
-            name: 'PLC S7',
-            status: data.s7Status.isConnected ? 'online' : 'offline',
-            details: `${data.s7Status.configuration.ipAddress} - ${data.s7Status.configuration.cpuType}`
-        }
+        }))
     ];
+    
+    // Ajouter les connexions PLC réelles avec test de connexion
+    plcConnections.forEach(plc => {
+        services.push({
+            name: plc.name, // Utiliser le vrai nom (ex: "Concentrateur ATF")
+            status: plc.status === 'Connecté' ? 'online' : 'offline',
+            details: `${plc.ipAddress}:${plc.port} - ${plc.cpuType}`
+        });
+    });
     
     container.innerHTML = services.map(service => `
         <div class="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
