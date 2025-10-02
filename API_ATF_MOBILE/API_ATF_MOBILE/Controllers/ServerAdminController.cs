@@ -287,19 +287,19 @@ namespace API_ATF_MOBILE.Controllers
         /// </summary>
         [HttpGet("plc/connections/{id}/test")]
         public async Task<ActionResult<object>> TestPlcConnection(
-            int id,
+            string id,
             [FromServices] IPlcConnectionService plcService)
         {
             try
             {
-                var connection = await plcService.GetConnectionByIdAsync(id.ToString());
+                var connection = await plcService.GetConnectionByIdAsync(id);
                 if (connection == null)
                 {
                     return NotFound(new { error = "Connexion PLC non trouvée" });
                 }
 
-                var isOnline = await plcService.TestConnectionAsync(id.ToString());
-                var responseTime = await plcService.GetConnectionResponseTimeAsync(id.ToString());
+                var isOnline = await plcService.TestConnectionAsync(id);
+                var responseTime = await plcService.GetConnectionResponseTimeAsync(id);
 
                 return Ok(new
                 {

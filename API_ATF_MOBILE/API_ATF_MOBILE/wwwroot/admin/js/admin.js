@@ -239,8 +239,8 @@ async function loadDashboard() {
         // Mettre à jour l'état des services avec les vraies données PLC
         updateServicesStatus(data, plcConnections);
         
-        // Mettre à jour le statut global
-        updateGlobalStatus(data);
+        // Mettre à jour le statut global avec les vraies données PLC
+        updateGlobalStatus(data, plcConnections);
         
     } catch (error) {
         console.error('Erreur lors du chargement du dashboard:', error);
@@ -435,10 +435,12 @@ function updateServicesStatus(data, plcConnections = []) {
     `).join('');
 }
 
-function updateGlobalStatus(data) {
-    const allOk = data.serverStatus.isRunning &&
-                  data.databaseHealth.every(db => db.isConnected) &&
-                  data.s7Status.isConnected;
+function updateGlobalStatus(data, plcConnections = []) {
+    const serverOk = data.serverStatus.isRunning;
+    const databasesOk = data.databaseHealth.every(db => db.isConnected);
+    const plcOk = plcConnections.length === 0 || plcConnections.every(plc => plc.status === 'Connecté');
+    
+    const allOk = serverOk && databasesOk && plcOk;
     
     const statusDot = document.getElementById('globalStatusDot');
     const statusText = document.getElementById('globalStatus');
@@ -450,6 +452,8 @@ function updateGlobalStatus(data) {
         statusDot.className = 'status-dot warning';
         statusText.textContent = 'Dégradé';
     }
+    
+    console.log('🔍 [Global Status] Serveur:', serverOk, 'BDD:', databasesOk, 'PLC:', plcOk, 'Résultat:', allOk ? 'En ligne' : 'Dégradé');
 }
 
 // =========== POLLING ===========
