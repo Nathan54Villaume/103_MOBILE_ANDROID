@@ -6,7 +6,9 @@ const API_BASE_URL = window.location.origin;
 
 class ApiClient {
     constructor() {
-        this.token = localStorage.getItem('admin_token');
+        // SÉCURITÉ : Ne jamais récupérer le token du localStorage
+        // Forcer la reconnexion à chaque visite
+        this.token = null;
         this.user = null;
         this.requestLog = [];
         this.maxLogSize = 100; // Garder les 100 dernières requêtes
@@ -131,8 +133,8 @@ class ApiClient {
         if (data.success && data.token) {
             this.token = data.token;
             this.user = data.user;
-            localStorage.setItem('admin_token', data.token);
-            localStorage.setItem('admin_user', JSON.stringify(data.user));
+            // SÉCURITÉ : Ne PAS stocker le token dans localStorage
+            // La session expire dès que la page est fermée/rechargée
             return data;
         } else {
             throw new Error(data.message || 'Échec de connexion');
@@ -145,6 +147,7 @@ class ApiClient {
     logout() {
         this.token = null;
         this.user = null;
+        // Nettoyer le localStorage (au cas où d'anciennes données existeraient)
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
         window.location.reload();
@@ -161,12 +164,7 @@ class ApiClient {
      * Obtenir l'utilisateur courant
      */
     getCurrentUser() {
-        if (!this.user) {
-            const stored = localStorage.getItem('admin_user');
-            if (stored) {
-                this.user = JSON.parse(stored);
-            }
-        }
+        // Ne jamais récupérer depuis localStorage pour forcer la reconnexion
         return this.user;
     }
 

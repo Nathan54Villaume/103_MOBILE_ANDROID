@@ -25,7 +25,12 @@ const state = {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Démarrage de l\'interface d\'administration');
     
-    // Vérifier si l'utilisateur est déjà authentifié
+    // SÉCURITÉ : Nettoyer toute ancienne session au chargement
+    // Forcer la reconnexion à chaque visite
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    
+    // Vérifier si l'utilisateur est déjà authentifié (toujours false après le nettoyage)
     if (apiClient.isAuthenticated()) {
         await showApp();
     } else {
