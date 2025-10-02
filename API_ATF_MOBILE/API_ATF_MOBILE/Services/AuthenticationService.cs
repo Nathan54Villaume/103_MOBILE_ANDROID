@@ -33,17 +33,9 @@ namespace API_ATF_MOBILE.Services
                 new AdminUser
                 {
                     Username = "admin",
-                    // Mot de passe: "admin123" - Hashé avec SHA256 (à remplacer par bcrypt en production)
-                    PasswordHash = HashPassword("admin123"),
+                    // Mot de passe: "aiadmin" - Hashé avec SHA256 (à remplacer par bcrypt en production)
+                    PasswordHash = HashPassword("aiadmin"),
                     Role = "Admin",
-                    CreatedAt = DateTime.Now
-                },
-                new AdminUser
-                {
-                    Username = "operateur",
-                    // Mot de passe: "oper123"
-                    PasswordHash = HashPassword("oper123"),
-                    Role = "Operator",
                     CreatedAt = DateTime.Now
                 }
             };

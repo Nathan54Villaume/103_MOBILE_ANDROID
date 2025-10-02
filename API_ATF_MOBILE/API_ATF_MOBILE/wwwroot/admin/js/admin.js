@@ -55,6 +55,13 @@ async function handleLogin(e) {
     const password = document.getElementById('password').value;
     const errorDiv = document.getElementById('loginError');
     
+    // Vérification des identifiants en dur
+    if (username !== 'admin' || password !== 'aiadmin') {
+        errorDiv.textContent = 'Identifiants incorrects';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+    
     try {
         errorDiv.classList.add('hidden');
         await apiClient.login(username, password);
