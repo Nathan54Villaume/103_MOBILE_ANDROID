@@ -253,19 +253,30 @@ async function loadDashboard() {
 function updateKPIs(data, plcConnections = []) {
     const metrics = data.serverMetrics;
     
-    // CPU
-    document.getElementById('kpiCpu').textContent = `${metrics.cpuUsagePercent.toFixed(1)}%`;
+    // CPU avec couleur dynamique
+    const cpuPercent = metrics.cpuUsagePercent.toFixed(1);
+    const cpuElement = document.getElementById('kpiCpu');
+    cpuElement.textContent = `${cpuPercent}%`;
+    cpuElement.className = `text-2xl font-bold ${getValueColorClass(parseFloat(cpuPercent), 'cpu')}`;
     
-    // Mémoire
-    document.getElementById('kpiMemory').textContent = `${metrics.memoryUsageMB.toFixed(0)} MB`;
+    // Mémoire avec couleur dynamique
+    const memoryMB = metrics.memoryUsageMB.toFixed(0);
     const memPercent = (metrics.memoryUsageMB / metrics.totalMemoryMB * 100).toFixed(1);
-    document.getElementById('kpiMemoryPercent').textContent = memPercent;
+    const memoryElement = document.getElementById('kpiMemory');
+    const memoryPercentElement = document.getElementById('kpiMemoryPercent');
     
-    // Uptime
+    memoryElement.textContent = `${memoryMB} MB`;
+    memoryElement.className = `text-2xl font-bold ${getValueColorClass(parseFloat(memPercent), 'memory')}`;
+    memoryPercentElement.textContent = memPercent;
+    memoryPercentElement.className = getValueColorClass(parseFloat(memPercent), 'memory');
+    
+    // Uptime avec couleur dynamique
     const uptime = formatUptime(metrics.uptime);
-    document.getElementById('kpiUptime').textContent = uptime;
+    const uptimeElement = document.getElementById('kpiUptime');
+    uptimeElement.textContent = uptime;
+    uptimeElement.className = `text-2xl font-bold ${getValueColorClass(uptime, 'uptime')}`;
     
-    // Connexions - utiliser les vraies données PLC
+    // Connexions avec couleur dynamique - utiliser les vraies données PLC
     const dbConnected = data.databaseHealth.filter(db => db.isConnected).length;
     const dbTotal = data.databaseHealth.length;
     const plcConnected = plcConnections.filter(plc => plc.status === 'Connecté').length;
@@ -273,79 +284,96 @@ function updateKPIs(data, plcConnections = []) {
     
     const totalConnected = dbConnected + plcConnected;
     const totalConnections = dbTotal + plcTotal;
+    const connectionsText = `${totalConnected}/${totalConnections}`;
     
-    document.getElementById('kpiConnections').textContent = `${totalConnected}/${totalConnections}`;
+    const connectionsElement = document.getElementById('kpiConnections');
+    connectionsElement.textContent = connectionsText;
+    connectionsElement.className = `text-2xl font-bold ${getValueColorClass(connectionsText, 'connections')}`;
     
     console.log('🔍 [KPI Connexions] BDD:', `${dbConnected}/${dbTotal}`, 'PLC:', `${plcConnected}/${plcTotal}`, 'Total:', `${totalConnected}/${totalConnections}`);
 }
 
 function updateCharts(data) {
-    // Chart CPU & Mémoire
-    updateCpuMemoryChart(data.serverMetrics);
+    // Chart Mémoire Système vs Processus
+    updateMemoryUsageChart(data.serverMetrics);
     
     // Chart Logs
     updateLogsChart(data.logStats);
 }
 
-function updateCpuMemoryChart(metrics) {
-    const ctx = document.getElementById('chartCpuMemory');
+function updateMemoryUsageChart(metrics) {
+    const ctx = document.getElementById('chartMemoryUsage');
     if (!ctx) return;
     
+    // Calculer la mémoire processus et système
+    const processMemoryMB = metrics.memoryUsageMB;
+    const totalMemoryMB = metrics.totalMemoryMB;
+    const systemMemoryMB = totalMemoryMB - processMemoryMB;
+    
     // Si le graphique existe déjà, mettre à jour les données
-    if (state.charts.cpuMemory) {
-        state.charts.cpuMemory.data.datasets[0].data = [
-            metrics.cpuUsagePercent,
-            (metrics.memoryUsageMB / metrics.totalMemoryMB * 100)
+    if (state.charts.memoryUsage) {
+        state.charts.memoryUsage.data.labels = [
+            `Processus (${processMemoryMB.toFixed(0)} MB)`,
+            `Système disponible (${systemMemoryMB.toFixed(0)} MB)`
         ];
-        state.charts.cpuMemory.update('none'); // 'none' = pas d'animation pour meilleures performances
+        state.charts.memoryUsage.data.datasets[0].data = [
+            processMemoryMB,
+            systemMemoryMB
+        ];
+        state.charts.memoryUsage.update('none'); // 'none' = pas d'animation pour meilleures performances
         return;
     }
     
     // Créer le graphique la première fois seulement
-    state.charts.cpuMemory = new Chart(ctx, {
-        type: 'bar',
+    state.charts.memoryUsage = new Chart(ctx, {
+        type: 'doughnut',
         data: {
-            labels: ['CPU', 'Mémoire'],
+            labels: [
+                `Processus (${processMemoryMB.toFixed(0)} MB)`,
+                `Système disponible (${systemMemoryMB.toFixed(0)} MB)`
+            ],
             datasets: [{
-                label: 'Utilisation (%)',
                 data: [
-                    metrics.cpuUsagePercent,
-                    (metrics.memoryUsageMB / metrics.totalMemoryMB * 100)
+                    processMemoryMB,
+                    systemMemoryMB
                 ],
                 backgroundColor: [
-                    'rgba(16, 185, 129, 0.6)',
-                    'rgba(59, 130, 246, 0.6)'
+                    'rgba(239, 68, 68, 0.6)', // Rouge pour processus utilisé
+                    'rgba(16, 185, 129, 0.6)' // Vert pour mémoire disponible
                 ],
                 borderColor: [
-                    'rgba(16, 185, 129, 1)',
-                    'rgba(59, 130, 246, 1)'
+                    'rgba(239, 68, 68, 1)',
+                    'rgba(16, 185, 129, 1)'
                 ],
-                borderWidth: 1
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             animation: false, // Désactiver les animations pour de meilleures performances
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    min: 0, // Forcer le minimum aussi
-                    ticks: { 
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { 
                         color: '#94a3b8',
-                        stepSize: 20 // Fixer les paliers
-                    },
-                    grid: { color: 'rgba(255,255,255,0.1)' }
+                        padding: 15,
+                        usePointStyle: true
+                    }
                 },
-                x: {
-                    ticks: { color: '#94a3b8' },
-                    grid: { display: false }
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${percentage}%`;
+                        }
+                    }
                 }
             },
-            plugins: {
-                legend: { labels: { color: '#94a3b8' } }
-            }
+            cutout: '60%' // Créer un effet de donut
         }
     });
 }
@@ -524,6 +552,47 @@ function stopPolling() {
 }
 
 // =========== UTILITAIRES ===========
+
+function getValueColorClass(value, type) {
+    switch (type) {
+        case 'cpu':
+            if (value < 30) return 'value-excellent';
+            if (value < 50) return 'value-good';
+            if (value < 70) return 'value-warning';
+            if (value < 90) return 'value-danger';
+            return 'value-critical';
+            
+        case 'memory':
+            if (value < 40) return 'value-excellent';
+            if (value < 60) return 'value-good';
+            if (value < 80) return 'value-warning';
+            if (value < 95) return 'value-danger';
+            return 'value-critical';
+            
+        case 'uptime':
+            // Pour l'uptime, plus c'est long, mieux c'est
+            return 'value-good';
+            
+        case 'connections':
+            // Analyse du ratio connexions réussies/totales
+            const parts = value.split('/');
+            if (parts.length === 2) {
+                const connected = parseInt(parts[0]);
+                const total = parseInt(parts[1]);
+                const ratio = total > 0 ? (connected / total) * 100 : 0;
+                
+                if (ratio === 100) return 'value-excellent';
+                if (ratio >= 80) return 'value-good';
+                if (ratio >= 60) return 'value-warning';
+                if (ratio >= 30) return 'value-danger';
+                return 'value-critical';
+            }
+            return 'value-good';
+            
+        default:
+            return 'value-good';
+    }
+}
 
 function formatUptime(uptimeData) {
     let totalSeconds = 0;
