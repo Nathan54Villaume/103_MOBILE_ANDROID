@@ -533,6 +533,14 @@ canvas {
   margin-bottom: var(--tesla-space-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: var(--tesla-space-sm);
+}
+
+.kpi .kpi-title .icon {
+  width: 2em;
+  height: 2em;
 }
 
 .kpi .kpi-value {
