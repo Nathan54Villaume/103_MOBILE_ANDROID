@@ -66,6 +66,12 @@
             <span class="flag flag-it" aria-hidden="true"></span><span>IT</span>
           </button>
         </div>
+        <button id="btnAddProject" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 flex items-center gap-2" data-i18n-attr="title" title="Ajouter un projet">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          <span data-i18n="btn.addProject">Ajouter un projet</span>
+        </button>
         <button id="btnShare" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 flex items-center gap-2" data-i18n-attr="title" title="Partager le dashboard">
           <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
@@ -183,6 +189,7 @@
           "status.all": "Tous",
           "status.inProgress": "🟡 En cours",
           "status.completed": "🟢 Terminé",
+          "btn.addProject": "Ajouter un projet",
           "btn.share": "Partager",
           "btn.close": "Fermer",
           "btn.view": "Voir",
@@ -226,6 +233,13 @@
           "share.teams": "Ouvrir Teams + Copier message",
           "share.outlook": "Ouvrir Outlook (application)",
           "share.copy": "Copier le lien",
+          // Authentification
+          "auth.title": "Authentification requise",
+          "auth.message": "Veuillez entrer le mot de passe administrateur pour ajouter un projet.",
+          "auth.password": "Mot de passe",
+          "auth.login": "Se connecter",
+          "auth.cancel": "Annuler",
+          "auth.error": "Mot de passe incorrect",
           // Traductions des projets
           "project.suivi-produit-ats.title": "Suivi Produit – ATS",
           "project.suivi-produit-ats.objective": "Mettre en place une traçabilité complète des couronnes utilisées pour le treillis soudé, du scan en entrée machine jusqu'au produit fini.",
@@ -304,6 +318,7 @@
           "status.all": "Tutti",
           "status.inProgress": "🟡 In corso",
           "status.completed": "🟢 Completato",
+          "btn.addProject": "Aggiungi progetto",
           "btn.share": "Condividi",
           "btn.close": "Chiudi",
           "btn.view": "Visualizza",
@@ -347,6 +362,13 @@
           "share.teams": "Apri Teams + Copia messaggio",
           "share.outlook": "Apri Outlook (applicazione)",
           "share.copy": "Copia il link",
+          // Authentification
+          "auth.title": "Autenticazione richiesta",
+          "auth.message": "Inserisci la password amministratore per aggiungere un progetto.",
+          "auth.password": "Password",
+          "auth.login": "Accedi",
+          "auth.cancel": "Annulla",
+          "auth.error": "Password errata",
           // Traductions des projets en italien
           "project.suivi-produit-ats.title": "Tracciamento Prodotto – ATS",
           "project.suivi-produit-ats.objective": "Implementare una tracciabilità completa delle corone utilizzate per il traliccio saldato, dalla scansione in entrata macchina fino al prodotto finito.",
@@ -1207,7 +1229,103 @@
       // Event listener pour le KPI compétences
       document.getElementById('kpiSkillsCard').addEventListener('click', showAllSkills);
 
+      // Fonction d'authentification (définie avant les event listeners)
+      window.showAuthModal = () => {
+        const currentLang = window.i18n.getLang();
+        
+        const authModal = document.createElement('div');
+        authModal.id = 'authModal';
+        authModal.className = 'fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80';
+        authModal.innerHTML = `
+          <div class="bg-slate-800 rounded-xl p-6 w-full max-w-md border border-white/10">
+            <div class="flex items-center gap-3 mb-4">
+              <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+              <h3 class="text-xl font-semibold text-white">${window.i18n.t('auth.title')}</h3>
+            </div>
+            <p class="text-slate-300 mb-6">${window.i18n.t('auth.message')}</p>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">${window.i18n.t('auth.password')}</label>
+                <input type="password" id="adminPassword" class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="${window.i18n.t('auth.password')}">
+              </div>
+              <div class="flex gap-3">
+                <button id="btnAuthLogin" class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                  ${window.i18n.t('auth.login')}
+                </button>
+                <button id="btnAuthCancel" class="px-4 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors">
+                  ${window.i18n.t('auth.cancel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(authModal);
+        
+        // Event listeners
+        const passwordInput = authModal.querySelector('#adminPassword');
+        const loginBtn = authModal.querySelector('#btnAuthLogin');
+        const cancelBtn = authModal.querySelector('#btnAuthCancel');
+        
+        const closeAuthModal = () => {
+          if (document.body.contains(authModal)) {
+            document.body.removeChild(authModal);
+          }
+        };
+        
+        const handleLogin = () => {
+          const password = passwordInput.value;
+          if (password === 'admin') {
+            closeAuthModal();
+            showProjectForm();
+          } else {
+            // Afficher erreur
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'text-red-400 text-sm mt-2';
+            errorMsg.textContent = window.i18n.t('auth.error');
+            
+            // Supprimer ancienne erreur si elle existe
+            const existingError = authModal.querySelector('.text-red-400');
+            if (existingError) existingError.remove();
+            
+            passwordInput.parentNode.appendChild(errorMsg);
+            passwordInput.focus();
+            passwordInput.select();
+          }
+        };
+        
+        loginBtn.addEventListener('click', handleLogin);
+        cancelBtn.addEventListener('click', closeAuthModal);
+        
+        // Entrée pour valider
+        passwordInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') handleLogin();
+        });
+        
+        // Fermer avec Escape
+        authModal.addEventListener('click', (e) => {
+          if (e.target === authModal) closeAuthModal();
+        });
+        
+        // Focus sur le champ password
+        setTimeout(() => passwordInput.focus(), 100);
+      };
+      
+      // Fonction placeholder pour le formulaire de projet (à implémenter)
+      window.showProjectForm = () => {
+        alert('Formulaire de création de projet - À implémenter dans la phase suivante !');
+      };
+
       // Event listeners pour les boutons
+      const btnAddProject = document.getElementById('btnAddProject');
+      
+      // Authentification pour ajouter un projet
+      btnAddProject.addEventListener('click', () => {
+        showAuthModal();
+      });
+      
       btnShare.addEventListener('click', () => {
         const currentUrl = window.location.href;
         const shareText = window.i18n.t('app.title') + ' - ' + window.i18n.t('app.subtitle');
@@ -1252,6 +1370,7 @@
         shareMenu.addEventListener('click', (e) => {
           if (e.target === shareMenu) closeShareMenu();
         });
+        
         
         // Fonction pour générer un message dynamique basé sur les projets
         const generateDynamicMessage = (currentLang) => {
