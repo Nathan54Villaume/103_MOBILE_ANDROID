@@ -80,16 +80,16 @@ function appendUnique(buf, x, y) {
 }
 
 function applySnapshotToBuffers(tr, d, tms) {
-  console.log('[applySnapshotToBuffers] Applying snapshot for', tr, ':', d);
+  // Applying snapshot
   
   const t = tms ?? (d.ts ? new Date(d.ts).getTime() : Date.now());
-  console.log('[applySnapshotToBuffers] Timestamp:', t, 'from', d.ts);
+  // Timestamp processed
   
   const target = tr === 'tr1'
     ? { p: 'p1', q: 'q1', pf: 'pf1', u12: 'u1_12', u23: 'u1_23', u31: 'u1_31', i1: 'i1_1', i2: 'i1_2', i3: 'i1_3' }
     : { p: 'p2', q: 'q2', pf: 'pf2', u12: 'u2_12', u23: 'u2_23', u31: 'u2_31', i1: 'i2_1', i2: 'i2_2', i3: 'i2_3' };
 
-  console.log('[applySnapshotToBuffers] Target buffers:', target);
+  // Target buffers identified
 
   const values = {
     p_kw: d.p_kw ?? null,
@@ -103,7 +103,7 @@ function applySnapshotToBuffers(tr, d, tms) {
     i3_a: d.i3_a ?? null
   };
   
-  console.log('[applySnapshotToBuffers] Values to append:', values);
+  // Values to append
 
   appendUnique(bufs[target.p], t, values.p_kw);
   appendUnique(bufs[target.q], t, values.q_kvar);
@@ -115,17 +115,7 @@ function applySnapshotToBuffers(tr, d, tms) {
   appendUnique(bufs[target.i2], t, values.i2_a);
   appendUnique(bufs[target.i3], t, values.i3_a);
   
-  console.log('[applySnapshotToBuffers] Buffer sizes after append:', {
-    p: bufs[target.p]?.length || 0,
-    q: bufs[target.q]?.length || 0,
-    pf: bufs[target.pf]?.length || 0,
-    u12: bufs[target.u12]?.length || 0,
-    u23: bufs[target.u23]?.length || 0,
-    u31: bufs[target.u31]?.length || 0,
-    i1: bufs[target.i1]?.length || 0,
-    i2: bufs[target.i2]?.length || 0,
-    i3: bufs[target.i3]?.length || 0
-  });
+  // Buffer sizes updated
 
   const ns = tr === 'tr1' ? 'tr1' : 'tr2';
   Kpi.update(`${ns}.p_kw`, { value: d.p_kw, avg: d.p_kw_avg, max: d.p_kw_max, ts: t, unit: 'kW' });
@@ -182,7 +172,7 @@ export async function pollOnce() {
   if (!state.apiBase) { setConn(false, 'API non configurée'); scheduleNextPoll(); return; }
 
   try {
-    console.log('[polling] Fetching snapshots from:', state.apiBase);
+    // Fetching snapshots
     const [raw1, raw2] = await Promise.all([
       fetchJSON(`${state.apiBase}/tr1/snapshot`).catch(e => { 
         console.log('[polling] TR1 API error:', e.message);
@@ -196,35 +186,35 @@ export async function pollOnce() {
       })
     ]);
 
-    console.log('[polling] Raw snapshots received:', { tr1: !!raw1, tr2: !!raw2 });
+    // Raw snapshots received
 
     const s1 = raw1 ? normalizeSnapshot(raw1) : null;
     const s2 = raw2 ? normalizeSnapshot(raw2) : null;
 
-    console.log('[polling] Normalized snapshots:', { tr1: s1, tr2: s2 });
+    // Normalized snapshots
 
     if (s1) {
-      console.log('[polling] Applying TR1 snapshot to buffers');
+      // Applying TR1 snapshot to buffers
       applySnapshotToBuffers('tr1', s1);
     }
     if (s2) {
-      console.log('[polling] Applying TR2 snapshot to buffers');
+      // Applying TR2 snapshot to buffers
       applySnapshotToBuffers('tr2', s2);
     }
 
     if (s1 || s2) setConn(true);
 
-    console.log('[polling] Pruning buffers...');
+    // Pruning buffers
     prune();
     
-    console.log('[polling] Refreshing charts...');
+    // Refreshing charts
     // debouncedRefreshCharts(); // Ancien système
     refreshNewChartSystem(); // NOUVEAU système
     
     $('#last-update').textContent = new Date().toLocaleString('fr-FR');
     finishInitialLoad();
     
-    console.log('[polling] Poll cycle completed successfully');
+    // Poll cycle completed successfully
     
     // Programmer le prochain polling
     scheduleNextPoll();

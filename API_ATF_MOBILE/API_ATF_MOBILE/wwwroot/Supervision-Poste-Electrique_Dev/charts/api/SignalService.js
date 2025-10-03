@@ -26,13 +26,13 @@ export class SignalService {
     // Vérifier le cache
     if (this.signalsCache && this.cacheTimestamp && 
         (Date.now() - this.cacheTimestamp) < this.cacheTimeout) {
-      console.log('[SignalService] Signaux depuis le cache');
+      // Signaux depuis le cache
       return this.signalsCache;
     }
 
     try {
-      console.log('[SignalService] Récupération signaux depuis API...');
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/energy/signals`, {
+      // Récupération signaux depuis API
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/signals`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -64,7 +64,7 @@ export class SignalService {
       this.signalsCache = normalizedSignals;
       this.cacheTimestamp = Date.now();
 
-      console.log(`[SignalService] ${normalizedSignals.length} signaux récupérés`);
+      // Signaux récupérés
       return normalizedSignals;
 
     } catch (error) {
@@ -72,7 +72,7 @@ export class SignalService {
       
       // Si on a un cache, le retourner en cas d'erreur
       if (this.signalsCache) {
-        console.warn('[SignalService] Utilisation du cache en cas d\'erreur');
+        // Utilisation du cache en cas d'erreur
         return this.signalsCache;
       }
 
@@ -98,9 +98,9 @@ export class SignalService {
       const toISO = to.toISOString();
       const signalsParam = signalIds.join(',');
       
-      console.log(`[SignalService] Récupération séries: ${signalsParam} (${fromISO} → ${toISO})`);
+      // Récupération séries
 
-      const url = `${this.baseUrl}/api/series?signals=${encodeURIComponent(signalsParam)}&from=${encodeURIComponent(fromISO)}&to=${encodeURIComponent(toISO)}`;
+      const url = `${this.baseUrl}/series?signals=${encodeURIComponent(signalsParam)}&from=${encodeURIComponent(fromISO)}&to=${encodeURIComponent(toISO)}`;
       
       const response = await this.fetchWithTimeout(url, {
         method: 'GET',
@@ -139,7 +139,7 @@ export class SignalService {
       const signalData = rawData[signalId] || rawData.series?.find(s => s.id === signalId);
       
       if (!signalData || !signalData.data) {
-        console.warn(`[SignalService] Pas de données pour ${signalId}`);
+        // Pas de données pour ce signal
         return;
       }
 
@@ -150,7 +150,7 @@ export class SignalService {
       })).filter(point => !isNaN(point.y));
 
       if (chartData.length === 0) {
-        console.warn(`[SignalService] Aucune donnée valide pour ${signalId}`);
+        // Aucune donnée valide pour ce signal
         return;
       }
 
@@ -343,6 +343,6 @@ export class SignalService {
   clearCache() {
     this.signalsCache = null;
     this.cacheTimestamp = null;
-    console.log('[SignalService] Cache invalidé');
+    // Cache invalidé
   }
 }

@@ -9,7 +9,7 @@ import { bufs } from './state.js';
 import { Kpi, initKpiCollapsibles } from './kpi.js';
 import { initCollapsibles } from './ui-collapsibles.js';
 import { initSettingsDialog } from './settings.js';
-import { initContextMenus } from './contextmenu.js';
+// Ancien système de menu contextuel supprimé - on utilise le nouveau système dans ChartHost.js
 import { initChartSettings } from './chart-settings.js';
 import { showToast } from './ui.js';
 
@@ -154,7 +154,7 @@ function initKPIs() {
   try {
     Kpi.create('tr1-kpis', tr1KpiDefs);
     Kpi.create('tr2-kpis', tr2KpiDefs);
-    console.log('✅ KPI créés avec succès');
+    // KPI créés avec succès
   } catch (err) {
     console.error('❌ Erreur lors de la création des KPI:', err);
   }
@@ -213,13 +213,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Initialiser l'API base directement
   setApiBase('http://10.250.13.4:8088/api/energy');
-  console.log('🌐 API configurée:', state.apiBase);
+  // API configurée
 
   syncWelcome();
   initModeBanner();
   initClock();
   initSettingsDialog();
-  initContextMenus();
+  // initContextMenus(); // Ancien système supprimé - menu contextuel géré par ChartHost.js
   initChartSettings();
   initCollapsibles(document);
   initKPIs(); // Créer les KPI
@@ -230,12 +230,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   watchSettingsChanges();
 
   // Initialisation du NOUVEAU système de charts
-  console.log('🚀 [main] Initializing NEW chart system...');
   showLoader('Initialisation des graphiques...');
   initializeNewChartSystem();
-  
-  // Système de charts unifié
-  console.log('🔄 [main] Initializing unified chart system...');
   
   // Restaurer les bases de temps depuis localStorage après initialisation
   setTimeout(async () => {
@@ -278,33 +274,59 @@ function initializeNewChartSystem() {
   
   chartDefinitions.forEach(({ cardId, canvasId, config }) => {
     try {
-      console.log(`[main] Initializing new chart system: ${cardId} -> ${canvasId}`);
       const chartInstance = initChart(cardId, canvasId, config);
-      if (chartInstance) {
-        console.log(`✅ [main] Chart ${cardId} initialized successfully`);
-      } else {
-        console.warn(`⚠️ [main] Chart ${cardId} initialization failed`);
+      if (!chartInstance) {
+        console.warn(`[main] Chart ${cardId} initialization failed`);
       }
     } catch (error) {
-      console.error(`❌ [main] Error initializing chart ${cardId}:`, error);
+      console.error(`[main] Error initializing chart ${cardId}:`, error);
     }
   });
 }
 
 // Fonction pour alimenter les nouveaux charts avec les données existantes
 function refreshNewChartSystem() {
-  console.log('🔄 [main] Refreshing new chart system with data...');
   
   const chartDataMap = {
-    'tr1-power': { bufferKeys: ['p1', 'q1'], labels: ['Puissance active', 'Puissance réactive'], colors: ['#3b82f6', '#f59e0b'] },
-    'tr1-tension': { bufferKeys: ['u1_12', 'u1_23', 'u1_31'], labels: ['U12', 'U23', 'U31'], colors: ['#ef4444', '#10b981', '#8b5cf6'] },
-    'tr1-pf': { bufferKeys: ['pf1'], labels: ['Facteur de puissance'], colors: ['#06b6d4'] },
-    'tr2-power': { bufferKeys: ['p2', 'q2'], labels: ['Puissance active', 'Puissance réactive'], colors: ['#3b82f6', '#f59e0b'] },
-    'tr2-tension': { bufferKeys: ['u2_12', 'u2_23', 'u2_31'], labels: ['U12', 'U23', 'U31'], colors: ['#ef4444', '#10b981', '#8b5cf6'] },
-    'tr2-pf': { bufferKeys: ['pf2'], labels: ['Facteur de puissance'], colors: ['#06b6d4'] }
+    'tr1-power': { 
+      bufferKeys: ['p1', 'q1'], 
+      signalIds: ['P_TR1', 'Q_TR1'], 
+      labels: ['Puissance active — TR1', 'Puissance réactive — TR1'], 
+      colors: ['#3b82f6', '#f59e0b'] 
+    },
+    'tr1-tension': { 
+      bufferKeys: ['u1_12', 'u1_23', 'u1_31'], 
+      signalIds: ['U12_TR1', 'U23_TR1', 'U31_TR1'], 
+      labels: ['U12 — TR1', 'U23 — TR1', 'U31 — TR1'], 
+      colors: ['#ef4444', '#10b981', '#8b5cf6'] 
+    },
+    'tr1-pf': { 
+      bufferKeys: ['pf1'], 
+      signalIds: ['PF_TR1'], 
+      labels: ['Facteur de puissance — TR1'], 
+      colors: ['#06b6d4'] 
+    },
+    'tr2-power': { 
+      bufferKeys: ['p2', 'q2'], 
+      signalIds: ['P_TR2', 'Q_TR2'], 
+      labels: ['Puissance active — TR2', 'Puissance réactive — TR2'], 
+      colors: ['#3b82f6', '#f59e0b'] 
+    },
+    'tr2-tension': { 
+      bufferKeys: ['u2_12', 'u2_23', 'u2_31'], 
+      signalIds: ['U12_TR2', 'U23_TR2', 'U31_TR2'], 
+      labels: ['U12 — TR2', 'U23 — TR2', 'U31 — TR2'], 
+      colors: ['#ef4444', '#10b981', '#8b5cf6'] 
+    },
+    'tr2-pf': { 
+      bufferKeys: ['pf2'], 
+      signalIds: ['PF_TR2'], 
+      labels: ['Facteur de puissance — TR2'], 
+      colors: ['#06b6d4'] 
+    }
   };
   
-  Object.entries(chartDataMap).forEach(([cardId, { bufferKeys, labels, colors }]) => {
+  Object.entries(chartDataMap).forEach(([cardId, { bufferKeys, signalIds, labels, colors }]) => {
     try {
       const chartInstance = getChart(cardId);
       if (!chartInstance) {
@@ -316,7 +338,6 @@ function refreshNewChartSystem() {
       bufferKeys.forEach((bufferKey, index) => {
         const buffer = bufs[bufferKey];
         if (!buffer || !buffer.length) {
-          console.log(`[main] No data in buffer ${bufferKey}`);
           return;
         }
         
@@ -338,6 +359,7 @@ function refreshNewChartSystem() {
         
         datasets.push({
           label: labels[index] || bufferKey,
+          signalId: signalIds[index], // Ajouter l'ID du signal pour le menu contextuel
           data: data,
           borderColor: baseColor,
           backgroundColor: backgroundColor,
@@ -350,12 +372,12 @@ function refreshNewChartSystem() {
           pointBackgroundColor: 'transparent'  // Points transparents
         });
         
-        console.log(`[main] Dataset ${bufferKey} created with ${data.length} points`);
+        // Dataset créé
       });
       
       if (datasets.length > 0) {
         updateChart(cardId, datasets);
-        console.log(`✅ [main] Chart ${cardId} updated with ${datasets.length} dataset(s)`);
+        // Chart mis à jour
       }
       
     } catch (error) {

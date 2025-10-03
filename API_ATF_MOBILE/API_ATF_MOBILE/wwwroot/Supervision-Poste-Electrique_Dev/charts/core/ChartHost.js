@@ -165,20 +165,30 @@ export class ChartHost {
     });
     
     // Initialiser le service de signaux et le menu contextuel
-    this.signalService = new SignalService();
+    // Utiliser directement l'URL de l'API sans proxy local
+    const baseUrl = 'http://10.250.13.4:8088/api/energy';
+    this.signalService = new SignalService(baseUrl);
     this.contextMenu = new ContextMenu(this.signalService);
     
     // Event listener pour clic droit
     this.canvas.addEventListener('contextmenu', (event) => {
+      console.log('[ChartHost] Clic droit détecté sur canvas:', this.canvas.id);
+      console.log('[ChartHost] Event details:', { 
+        clientX: event.clientX, 
+        clientY: event.clientY, 
+        target: event.target,
+        canvas: this.canvas 
+      });
       this.handleContextMenu(event);
     });
+    
     
     // Appliquer les paramètres sauvegardés après initialisation
     setTimeout(() => {
       this.applySavedSettings();
     }, 100);
     
-    console.log(`[ChartHost] Initialisé pour canvas #${this.canvasId}`);
+    // ChartHost initialisé
   }
   
   /**
@@ -213,7 +223,7 @@ export class ChartHost {
       }
     }, 50);
     
-    console.log(`[ChartHost] Données mises à jour: ${datasets.length} dataset(s), total points: ${datasets.reduce((sum, ds) => sum + (ds.data?.length || 0), 0)}`);
+    // Données mises à jour
   }
   
   /**
@@ -260,7 +270,7 @@ export class ChartHost {
       this.zoomPanController.setBounds(this.originalBounds);
     }
     
-    console.log('[ChartHost] Bornes calculées:', this.originalBounds);
+    // Bornes calculées
   }
   
   /**
@@ -280,7 +290,7 @@ export class ChartHost {
       this.chart.update('none');
     }
     
-    console.log('[ChartHost] Vue réinitialisée');
+    // Vue réinitialisée
   }
   
   /**
@@ -320,25 +330,35 @@ export class ChartHost {
     
     this.chart.update('none');
     
-    console.log('[ChartHost] Vue appliquée:', range);
+    // Vue appliquée
   }
   
   /**
    * Gère le clic droit sur le canvas
    * @param {MouseEvent} event - Événement de clic droit
    */
-  handleContextMenu(event) {
-    if (!this.contextMenu) return;
+  async handleContextMenu(event) {
+    console.log('[ChartHost] handleContextMenu appelé');
+    if (!this.contextMenu) {
+      console.warn('[ChartHost] Pas de contextMenu disponible');
+      return;
+    }
     
     // Extraire les IDs des signaux actuels
     const currentSignalIds = this.datasets.map(dataset => dataset.signalId || dataset.label).filter(Boolean);
     
-    this.contextMenu.show(
-      event, 
-      this.chart, 
-      currentSignalIds, 
-      (selectedSignalIds) => this.onSignalSelectionChange(selectedSignalIds)
-    );
+    try {
+      console.log('[ChartHost] Ouverture du menu contextuel...');
+      await this.contextMenu.show(
+        event, 
+        this.chart, 
+        currentSignalIds, 
+        (selectedSignalIds) => this.onSignalSelectionChange(selectedSignalIds)
+      );
+      console.log('[ChartHost] Menu contextuel ouvert avec succès');
+    } catch (error) {
+      console.error('[ChartHost] Erreur ouverture menu contextuel:', error);
+    }
   }
   
   /**
@@ -353,7 +373,7 @@ export class ChartHost {
     }
     
     try {
-      console.log(`[ChartHost] Chargement de ${selectedSignalIds.length} signaux...`);
+      // Chargement des signaux
       
       // Calculer la plage de temps (dernières 24h par défaut)
       const to = new Date();
@@ -423,7 +443,7 @@ export class ChartHost {
       }
       
       this.currentSignals = signalIds;
-      console.log(`[ChartHost] ${signalIds.length} signaux mis à jour`);
+      // Signaux mis à jour
       
     } catch (error) {
       console.error('[ChartHost] Erreur mise à jour signaux:', error);
@@ -461,7 +481,7 @@ export class ChartHost {
     // Adapter l'affichage de l'axe X selon la base de temps
     this.updateTimeAxis(minutes);
     
-    console.log(`[ChartHost] Base de temps changée: ${minutes} minutes`);
+    // Base de temps changée
   }
   
   /**
@@ -496,7 +516,7 @@ export class ChartHost {
     // Forcer la mise à jour
     this.chart.update('active');
     
-    console.log(`[ChartHost] Axe X mis à jour: ${new Date(now - timeSpan).toLocaleTimeString()} → ${new Date(now).toLocaleTimeString()}`);
+    // Axe X mis à jour
   }
   
   /**
@@ -517,7 +537,7 @@ export class ChartHost {
         const minutes = parseInt(saved, 10);
         if ([15, 60, 240, 1440].includes(minutes)) {
           this.currentTimeRange = minutes;
-          console.log(`[ChartHost] Base de temps restaurée: ${minutes} min`);
+          // Base de temps restaurée
         }
       }
     } catch (error) {
@@ -533,7 +553,7 @@ export class ChartHost {
     try {
       localStorage.setItem(`${this.persistenceKey}-settings`, JSON.stringify(settings));
       this.currentSettings = settings;
-      console.log(`[ChartHost] Paramètres sauvegardés:`, settings);
+      // Paramètres sauvegardés
     } catch (error) {
       console.warn('[ChartHost] Erreur sauvegarde localStorage:', error);
     }
@@ -547,7 +567,7 @@ export class ChartHost {
       const saved = localStorage.getItem(`${this.persistenceKey}-settings`);
       if (saved) {
         this.currentSettings = JSON.parse(saved);
-        console.log(`[ChartHost] Paramètres restaurés:`, this.currentSettings);
+        // Paramètres restaurés
       }
     } catch (error) {
       console.warn('[ChartHost] Erreur chargement paramètres localStorage:', error);
@@ -564,7 +584,7 @@ export class ChartHost {
     const chart = this.chart;
     const options = chart.options;
     
-    console.log(`[ChartHost] Application des paramètres sauvegardés:`, settings);
+    // Application des paramètres sauvegardés
     
     // Appliquer les paramètres de base
     if (options.scales?.x?.grid) {
@@ -623,7 +643,7 @@ export class ChartHost {
     this.chart.options.scales.y.min = this.originalBounds.y.min;
     this.chart.options.scales.y.max = this.originalBounds.y.max;
     
-    console.log(`[ChartHost] Axe Y mis à jour: ${this.originalBounds.y.min.toFixed(2)} → ${this.originalBounds.y.max.toFixed(2)}`);
+    // Axe Y mis à jour
   }
   
   /**
@@ -651,7 +671,7 @@ export class ChartHost {
       this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
     }
     
-    console.log(`[ChartHost] Instance détruite pour #${this.canvasId}`);
+    // Instance détruite
   }
   
   /**

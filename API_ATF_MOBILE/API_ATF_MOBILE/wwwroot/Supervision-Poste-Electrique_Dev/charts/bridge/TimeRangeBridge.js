@@ -19,7 +19,7 @@ const chartSettingsInstances = new Map();
 export function registerChartHost(chartKey, chartHost) {
   chartHostInstances.set(chartKey, chartHost);
   chartSettingsInstances.set(chartKey, chartHost); // Aussi pour les paramètres
-  console.log(`[TimeRangeBridge] ChartHost enregistré: ${chartKey}`);
+  // ChartHost enregistré
 }
 
 /**
@@ -40,7 +40,7 @@ export function setChartTimeRange(chartKey, minutes) {
   const chartHost = chartHostInstances.get(chartKey);
   if (chartHost && typeof chartHost.setTimeRange === 'function') {
     chartHost.setTimeRange(minutes);
-    console.log(`[TimeRangeBridge] Base de temps changée: ${chartKey} → ${minutes} min`);
+    // Base de temps changée
   } else {
     console.warn(`[TimeRangeBridge] ChartHost non trouvé: ${chartKey}`);
   }
@@ -89,7 +89,7 @@ export function restoreAllTimeRanges() {
     }
   });
   
-  console.log(`[TimeRangeBridge] Bases de temps restaurées pour ${chartHostInstances.size} charts`);
+  // Bases de temps restaurées
 }
 
 /**
@@ -105,5 +105,5 @@ export function getRegisteredCharts() {
  */
 export function cleanup() {
   chartHostInstances.clear();
-  console.log('[TimeRangeBridge] Cleanup effectué');
+  // Cleanup effectué
 }

@@ -24,6 +24,13 @@ export function initChart(cardId, canvasId, config = {}) {
       return chartInstances.get(cardId);
     }
     
+    // Vérifier que le canvas existe
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+      console.error(`[Charts] Canvas ${canvasId} non trouvé pour ${cardId}`);
+      return null;
+    }
+    
     // Créer l'instance ChartHost
     const chartHost = new ChartHost(canvasId, config.options);
     
@@ -38,7 +45,6 @@ export function initChart(cardId, canvasId, config = {}) {
       canvasId: canvasId
     });
     
-    console.log(`[Charts] Carte ${cardId} initialisée et enregistrée dans le pont`);
     return chartInstances.get(cardId);
     
   } catch (error) {
@@ -98,7 +104,7 @@ export function destroyChart(cardId) {
   instance.host.destroy();
   chartInstances.delete(cardId);
   
-  console.log(`[Charts] Carte ${cardId} supprimée`);
+  // Carte supprimée
   return true;
 }
 
@@ -110,7 +116,7 @@ export function destroyAllCharts() {
     instance.host.destroy();
   });
   chartInstances.clear();
-  console.log('[Charts] Toutes les cartes supprimées');
+  // Toutes les cartes supprimées
 }
 
 /**

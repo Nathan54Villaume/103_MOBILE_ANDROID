@@ -308,11 +308,12 @@ class CommentsComponent {
                 <!-- En-tête -->
                 <div class="flex items-center justify-between mb-4">
                     <h4 class="text-sm uppercase tracking-wide text-slate-400 flex items-center gap-2">
-                        💬 Commentaires
+                        💬 <span data-i18n="comments.title">Commentaires</span>
                         <span id="commentsCount" class="text-xs px-2 py-0.5 rounded-full bg-white/10">0</span>
                     </h4>
                     <button id="btnAddComment" 
-                            class="px-3 py-1.5 text-xs rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors">
+                            class="px-3 py-1.5 text-xs rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors"
+                            data-i18n="comments.add">
                         ➕ Ajouter
                     </button>
                 </div>
@@ -324,33 +325,39 @@ class CommentsComponent {
                     <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-600/30">
                         <div class="space-y-3">
                             <div>
-                                <label class="text-xs text-slate-300 mb-1 block">Nom</label>
+                                <label class="text-xs text-slate-300 mb-1 block" data-i18n="comments.nameLabel">Nom</label>
                                 <input type="text" 
                                        id="commentAuthorName" 
                                        class="w-full px-3 py-2 rounded-lg bg-ink-700 border border-white/10 text-slate-200 text-sm focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/30"
+                                       data-i18n="comments.namePlaceholder"
+                                       data-i18n-attr="placeholder"
                                        placeholder="Votre nom"
                                        maxlength="80" />
                             </div>
                             <div>
-                                <label class="text-xs text-slate-300 mb-1 block">Message</label>
+                                <label class="text-xs text-slate-300 mb-1 block" data-i18n="comments.messageLabel">Message</label>
                                 <textarea id="commentMessage" 
                                           class="w-full min-h-[80px] p-3 rounded-lg bg-ink-700 border border-white/10 text-slate-200 text-sm resize-y focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/30" 
+                                          data-i18n="comments.messagePlaceholder"
+                                          data-i18n-attr="placeholder"
                                           placeholder="Votre commentaire..."
                                           maxlength="2000"></textarea>
                                 <div class="flex items-center justify-between mt-1">
                                     <span class="text-xs text-slate-400">
-                                        <span id="charCount">0</span> / 2000 caractères
+                                        <span id="charCount">0</span> <span data-i18n="comments.charCount">/ 2000 caractères</span>
                                     </span>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button id="btnSubmitComment" 
                                         disabled
-                                        class="px-4 py-2 text-sm rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                        class="px-4 py-2 text-sm rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        data-i18n="comments.send">
                                     💾 Envoyer
                                 </button>
                                 <button id="btnCancelComment" 
-                                        class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors">
+                                        class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors"
+                                        data-i18n="comments.cancel">
                                     Annuler
                                 </button>
                             </div>
@@ -371,7 +378,8 @@ class CommentsComponent {
                 <!-- Bouton "Voir plus" -->
                 <div id="loadMoreContainer" class="hidden mt-4 text-center">
                     <button id="btnLoadMore" 
-                            class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors">
+                            class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors"
+                            data-i18n="comments.loadMore">
                         📄 Voir plus
                     </button>
                 </div>
@@ -379,6 +387,31 @@ class CommentsComponent {
         `;
         
         this.attachEventListeners();
+        this.applyTranslations();
+    }
+    
+    /**
+     * Appliquer les traductions i18n
+     */
+    applyTranslations() {
+        if (!window.i18n) return;
+        
+        const container = this.container;
+        const dict = window.i18n.messages[window.i18n.getLang()] || window.i18n.messages.fr;
+        
+        // Text nodes
+        container.querySelectorAll("[data-i18n]").forEach(el => {
+            const key = el.getAttribute("data-i18n");
+            if (dict[key] != null) el.textContent = String(dict[key]);
+        });
+
+        // Attribute bindings (comma-separated)
+        container.querySelectorAll("[data-i18n-attr]").forEach(el => {
+            const key = el.getAttribute("data-i18n");
+            const attrs = el.getAttribute("data-i18n-attr").split(",").map(s => s.trim());
+            const val = dict[key];
+            if (val != null) attrs.forEach(a => el.setAttribute(a, String(val)));
+        });
     }
     
     /**
@@ -404,10 +437,11 @@ class CommentsComponent {
         // Rendu des commentaires
         if (this.comments.length === 0) {
             list.innerHTML = `
-                <p class="text-sm text-slate-400 italic text-center py-6">
+                <p class="text-sm text-slate-400 italic text-center py-6" data-i18n="comments.noComments">
                     Aucun commentaire pour le moment. Soyez le premier à commenter !
                 </p>
             `;
+            this.applyTranslations();
             return;
         }
         

@@ -808,5 +808,5 @@ document.addEventListener('chart:reset-view', async (evt) => {
 });
 
 export function initChartSettings() {
-  console.log('[chart-settings] Module initialisé - nouveau système uniquement');
+    // Module initialisé - nouveau système uniquement
 }

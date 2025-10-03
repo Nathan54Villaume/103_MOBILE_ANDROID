@@ -1370,3 +1370,131 @@ footer .author:hover {
 .ctx-cancel:hover {
   background: var(--tesla-glass-hover);
 }
+
+/* Nouveau système de menu contextuel Tesla */
+.tesla-context-menu {
+  position: fixed;
+  z-index: 10000;
+  background: var(--tesla-glass);
+  border: 1px solid var(--tesla-border);
+  border-radius: var(--tesla-radius-lg);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--tesla-shadow-hover);
+  min-width: 300px;
+  max-width: 400px;
+  max-height: 500px;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.9) translateY(-10px);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  color: var(--tesla-white);
+  pointer-events: none;
+}
+
+.tesla-context-menu--open {
+  opacity: 1 !important;
+  transform: scale(1) translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+.tesla-context-menu--closing {
+  opacity: 0 !important;
+  transform: scale(0.9) translateY(-10px) !important;
+}
+
+.tesla-context-menu-header {
+  padding: var(--tesla-space-md);
+  border-bottom: 1px solid var(--tesla-border);
+  font-weight: 600;
+  color: var(--tesla-white);
+  background: var(--tesla-glass);
+}
+
+.tesla-context-menu-body {
+  max-height: 350px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tesla-context-menu-loading {
+  padding: var(--tesla-space-lg);
+  text-align: center;
+  color: var(--tesla-gray-400);
+  font-style: italic;
+}
+
+.tesla-context-menu-separator {
+  border-top: 1px solid var(--tesla-border);
+  margin: var(--tesla-space-xs) 0;
+}
+
+.tesla-context-menu-group-header {
+  padding: var(--tesla-space-sm) var(--tesla-space-md);
+  font-size: 12px;
+  color: var(--tesla-gray-400);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--tesla-gray-900);
+}
+
+.tesla-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tesla-space-sm);
+  padding: var(--tesla-space-sm) var(--tesla-space-md);
+  cursor: pointer;
+  transition: var(--tesla-transition);
+  color: var(--tesla-white);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.tesla-context-menu-item:hover {
+  background: var(--tesla-glass-hover);
+}
+
+.tesla-context-menu-item input[type="checkbox"] {
+  accent-color: var(--tesla-blue);
+  margin: 0;
+}
+
+.tesla-context-menu-footer {
+  padding: var(--tesla-space-md);
+  border-top: 1px solid var(--tesla-border);
+  display: flex;
+  gap: var(--tesla-space-sm);
+  justify-content: space-between;
+  background: var(--tesla-glass);
+}
+
+.tesla-context-menu-button {
+  padding: var(--tesla-space-sm) var(--tesla-space-md);
+  border: 1px solid var(--tesla-border);
+  border-radius: var(--tesla-radius-sm);
+  background: var(--tesla-glass);
+  color: var(--tesla-white);
+  cursor: pointer;
+  transition: var(--tesla-transition);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tesla-context-menu-button:hover {
+  background: var(--tesla-glass-hover);
+  border-color: var(--tesla-border-hover);
+  transform: translateY(-1px);
+}
+
+.tesla-context-menu-button.primary {
+  background: var(--tesla-blue);
+  border-color: var(--tesla-blue);
+}
+
+.tesla-context-menu-button.primary:hover {
+  background: #0077dd;
+  border-color: #0077dd;
+}

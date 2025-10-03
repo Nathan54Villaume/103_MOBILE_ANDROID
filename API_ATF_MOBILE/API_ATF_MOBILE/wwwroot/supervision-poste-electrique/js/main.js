@@ -9,7 +9,7 @@ import { bufs } from './state.js';
 import { Kpi, initKpiCollapsibles } from './kpi.js';
 import { initCollapsibles } from './ui-collapsibles.js';
 import { initSettingsDialog } from './settings.js';
-import { initContextMenus } from './contextmenu.js';
+// Ancien système de menu contextuel supprimé - on utilise le nouveau système dans ChartHost.js
 import { initChartSettings } from './chart-settings.js';
 import { showToast } from './ui.js';
 
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initModeBanner();
   initClock();
   initSettingsDialog();
-  initContextMenus();
+  // initContextMenus(); // Ancien système supprimé - menu contextuel géré par ChartHost.js
   initChartSettings();
   initCollapsibles(document);
   initKPIs(); // Créer les KPI

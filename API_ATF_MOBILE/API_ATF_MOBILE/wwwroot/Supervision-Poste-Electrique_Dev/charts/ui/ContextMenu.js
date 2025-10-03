@@ -31,6 +31,7 @@ export class ContextMenu {
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleSignalToggle = this.handleSignalToggle.bind(this);
+    this.handleWheel = this.handleWheel.bind(this);
     
     this.init();
   }
@@ -39,14 +40,15 @@ export class ContextMenu {
    * Initialise le gestionnaire de menu contextuel
    */
   init() {
-    // Charger les signaux disponibles
-    this.loadAvailableSignals();
+    // Ne pas charger les signaux immédiatement - on le fera à la demande
+    // this.loadAvailableSignals(); // Chargé seulement quand le menu s'ouvre
     
     // Event listeners globaux
     document.addEventListener('click', this.handleDocumentClick);
     document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('wheel', this.handleWheel, { passive: false });
     
-    console.log('[ContextMenu] Initialisé');
+    // ContextMenu initialisé
   }
 
   /**
@@ -55,10 +57,11 @@ export class ContextMenu {
   async loadAvailableSignals() {
     try {
       this.availableSignals = await this.signalService.getAvailableSignals();
-      console.log(`[ContextMenu] ${this.availableSignals.length} signaux disponibles`);
+      // Signaux disponibles
     } catch (error) {
-      console.error('[ContextMenu] Erreur chargement signaux:', error);
-      this.availableSignals = [];
+      // En cas d'erreur, utiliser les signaux de fallback
+      console.warn('[ContextMenu] API non disponible, utilisation des signaux de démonstration');
+      this.availableSignals = this.signalService.getFallbackSignals();
     }
   }
 
@@ -69,34 +72,67 @@ export class ContextMenu {
    * @param {Array<string>} currentSignals - Signaux actuellement sélectionnés
    * @param {Function} onSelectionChange - Callback changement sélection
    */
-  show(event, chartInstance, currentSignals = [], onSelectionChange = null) {
+  async show(event, chartInstance, currentSignals = [], onSelectionChange = null) {
+    console.log('[ContextMenu] show() appelé');
     event.preventDefault();
-    
+
     // Fermer le menu existant
     this.hide();
-    
+
     this.currentChart = chartInstance;
     this.onSelectionChange = onSelectionChange;
+    this.currentSignals = [...currentSignals]; // Copie des signaux actuels
+    
+    // Charger les signaux seulement maintenant (à la demande)
+    if (this.availableSignals.length === 0) {
+      console.log('[ContextMenu] Chargement des signaux...');
+      await this.loadAvailableSignals();
+    }
     
     // Créer le menu
     this.currentMenu = this.createMenuElement(currentSignals);
+    console.log('[ContextMenu] Menu créé:', this.currentMenu);
     
-    // Positionner le menu
+    // Positionner le menu (l'ajoute aussi au DOM)
     this.positionMenu(this.currentMenu, event.clientX, event.clientY);
-    
-    // Ajouter au DOM avec animation
-    document.body.appendChild(this.currentMenu);
+    console.log('[ContextMenu] Menu positionné à:', event.clientX, event.clientY);
     
     // Animation d'ouverture
     requestAnimationFrame(() => {
-      this.currentMenu.classList.add('context-menu--open');
+      this.currentMenu.classList.add('tesla-context-menu--open');
+      console.log('[ContextMenu] Classe tesla-context-menu--open ajoutée');
+      console.log('[ContextMenu] Styles du menu:', {
+        position: this.currentMenu.style.position,
+        left: this.currentMenu.style.left,
+        top: this.currentMenu.style.top,
+        opacity: this.currentMenu.style.opacity,
+        visibility: this.currentMenu.style.visibility,
+        zIndex: this.currentMenu.style.zIndex,
+        classes: this.currentMenu.className
+      });
     });
     
     // Focus sur le premier élément
     this.focusFirstItem();
     
     this.isOpen = true;
-    console.log('[ContextMenu] Menu ouvert');
+    console.log('[ContextMenu] Menu ouvert avec succès');
+    
+    // Vérification finale
+    setTimeout(() => {
+      const menuInDOM = document.querySelector(`#${this.currentMenu.id}`);
+      console.log('[ContextMenu] Menu dans le DOM:', !!menuInDOM);
+      if (menuInDOM) {
+        const computedStyle = window.getComputedStyle(menuInDOM);
+        console.log('[ContextMenu] Styles calculés:', {
+          display: computedStyle.display,
+          visibility: computedStyle.visibility,
+          opacity: computedStyle.opacity,
+          position: computedStyle.position,
+          zIndex: computedStyle.zIndex
+        });
+      }
+    }, 100);
   }
 
   /**
@@ -106,7 +142,8 @@ export class ContextMenu {
     if (!this.currentMenu || !this.isOpen) return;
     
     // Animation de fermeture
-    this.currentMenu.classList.add('context-menu--closing');
+    this.currentMenu.classList.remove('tesla-context-menu--open');
+    this.currentMenu.classList.add('tesla-context-menu--closing');
     
     setTimeout(() => {
       if (this.currentMenu && this.currentMenu.parentNode) {
@@ -114,9 +151,9 @@ export class ContextMenu {
       }
       this.currentMenu = null;
       this.isOpen = false;
+      this.currentChart = null;
+      this.onSelectionChange = null;
     }, this.options.animationDuration);
-    
-    console.log('[ContextMenu] Menu fermé');
   }
 
   /**
@@ -126,54 +163,28 @@ export class ContextMenu {
    */
   createMenuElement(currentSignals) {
     const menu = document.createElement('div');
-    menu.className = this.options.className;
+    menu.className = 'tesla-context-menu';
     menu.setAttribute('role', 'menu');
     menu.setAttribute('aria-label', 'Sélection des signaux');
     menu.id = 'context-menu-' + Date.now();
     
-    // Style de base
-    Object.assign(menu.style, {
-      position: 'fixed',
-      zIndex: '10000',
-      background: '#1e293b',
-      border: '1px solid #334155',
-      borderRadius: '8px',
-      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-      minWidth: '280px',
-      maxWidth: '400px',
-      maxHeight: `${this.options.maxHeight}px`,
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      opacity: '0',
-      transform: 'scale(0.9) translateY(-10px)',
-      transition: `all ${this.options.animationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-      fontSize: '14px',
-      color: '#e2e8f0'
-    });
-    
-    // En-tête
+    // En-tête Tesla
     const header = document.createElement('div');
-    header.style.cssText = `
-      padding: 12px 16px;
-      border-bottom: 1px solid #334155;
-      font-weight: 600;
-      font-size: 13px;
-      color: #f1f5f9;
-      background: #0f172a;
-      border-radius: 8px 8px 0 0;
+    header.className = 'tesla-context-menu-header';
+    header.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg class="icon stroke" style="width: 16px; height: 16px; color: var(--tesla-blue);" aria-hidden="true">
+          <use href="#i-sliders" />
+        </svg>
+        <span>Sélection des signaux</span>
+      </div>
     `;
-    header.textContent = 'Signaux disponibles';
     menu.appendChild(header);
     
     // Message de chargement si pas de signaux
     if (this.availableSignals.length === 0) {
       const loading = document.createElement('div');
-      loading.style.cssText = `
-        padding: 16px;
-        text-align: center;
-        color: #94a3b8;
-        font-style: italic;
-      `;
+      loading.className = 'tesla-context-menu-loading';
       loading.textContent = 'Chargement des signaux...';
       menu.appendChild(loading);
       
@@ -194,36 +205,21 @@ export class ContextMenu {
     
     // Container scrollable
     const scrollContainer = document.createElement('div');
-    scrollContainer.style.cssText = `
-      max-height: ${this.options.maxHeight - 60}px;
-      overflow-y: auto;
-      overflow-x: hidden;
-    `;
+    scrollContainer.className = 'tesla-context-menu-body';
     
     // Créer les groupes
     Object.entries(groups).forEach(([groupName, signals], groupIndex) => {
       if (groupIndex > 0) {
         // Séparateur entre groupes
         const separator = document.createElement('div');
-        separator.style.cssText = `
-          border-top: 1px solid #334155;
-          margin: 4px 0;
-        `;
+        separator.className = 'tesla-context-menu-separator';
         scrollContainer.appendChild(separator);
       }
       
       // Titre du groupe
       if (Object.keys(groups).length > 1) {
         const groupHeader = document.createElement('div');
-        groupHeader.style.cssText = `
-          padding: 8px 16px;
-          font-size: 12px;
-          color: #94a3b8;
-          font-weight: 500;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          background: #0f172a;
-        `;
+        groupHeader.className = 'tesla-context-menu-group-header';
         groupHeader.textContent = groupName;
         scrollContainer.appendChild(groupHeader);
       }
@@ -239,51 +235,29 @@ export class ContextMenu {
     
     // Pied de page avec actions
     const footer = document.createElement('div');
-    footer.style.cssText = `
-      padding: 8px 12px;
-      border-top: 1px solid #334155;
-      background: #0f172a;
-      border-radius: 0 0 8px 8px;
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-    `;
+    footer.className = 'tesla-context-menu-footer';
     
     // Bouton "Tout sélectionner"
     const selectAllBtn = document.createElement('button');
+    selectAllBtn.className = 'tesla-context-menu-button';
     selectAllBtn.textContent = 'Tout sélectionner';
-    selectAllBtn.style.cssText = `
-      background: #374151;
-      color: #d1d5db;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: background 0.2s;
-    `;
     selectAllBtn.addEventListener('click', () => this.selectAllSignals(true));
-    selectAllBtn.addEventListener('mouseover', () => {
-      selectAllBtn.style.background = '#4b5563';
-    });
-    selectAllBtn.addEventListener('mouseout', () => {
-      selectAllBtn.style.background = '#374151';
-    });
     
     // Bouton "Désélectionner tout"
     const deselectAllBtn = document.createElement('button');
+    deselectAllBtn.className = 'tesla-context-menu-button';
     deselectAllBtn.textContent = 'Désélectionner';
-    deselectAllBtn.style.cssText = selectAllBtn.style.cssText;
     deselectAllBtn.addEventListener('click', () => this.selectAllSignals(false));
-    deselectAllBtn.addEventListener('mouseover', () => {
-      deselectAllBtn.style.background = '#4b5563';
-    });
-    deselectAllBtn.addEventListener('mouseout', () => {
-      deselectAllBtn.style.background = '#374151';
-    });
+    
+    // Bouton "Valider"
+    const validateBtn = document.createElement('button');
+    validateBtn.className = 'tesla-context-menu-button primary';
+    validateBtn.textContent = 'Valider';
+    validateBtn.addEventListener('click', () => this.validateSelection());
     
     footer.appendChild(selectAllBtn);
     footer.appendChild(deselectAllBtn);
+    footer.appendChild(validateBtn);
     menu.appendChild(footer);
     
     return menu;
@@ -296,32 +270,17 @@ export class ContextMenu {
    * @returns {HTMLElement} Élément item
    */
   createSignalItem(signal, checked) {
-    const item = document.createElement('div');
-    item.className = 'context-menu__item';
+    const item = document.createElement('button');
+    item.className = 'tesla-context-menu-item';
     item.setAttribute('role', 'menuitemcheckbox');
     item.setAttribute('aria-checked', checked);
     item.setAttribute('tabindex', '0');
     item.dataset.signalId = signal.id;
     
-    item.style.cssText = `
-      padding: 8px 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: background 0.2s;
-      user-select: none;
-    `;
-    
     // Checkbox
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = checked;
-    checkbox.style.cssText = `
-      margin: 0;
-      accent-color: #6366f1;
-      cursor: pointer;
-    `;
     
     // Label et unité
     const labelContainer = document.createElement('div');
@@ -330,6 +289,7 @@ export class ContextMenu {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      text-align: left;
     `;
     
     const labelText = document.createElement('div');
@@ -344,7 +304,7 @@ export class ContextMenu {
     unitText.textContent = signal.unit ? `Unité: ${signal.unit}` : 'Sans unité';
     unitText.style.cssText = `
       font-size: 12px;
-      color: #94a3b8;
+      color: var(--tesla-gray-400);
       font-style: italic;
     `;
     
@@ -365,25 +325,6 @@ export class ContextMenu {
         e.preventDefault();
         this.handleSignalToggle(signal.id);
       }
-    });
-    
-    // Hover effects
-    item.addEventListener('mouseover', () => {
-      item.style.background = '#334155';
-    });
-    
-    item.addEventListener('mouseout', () => {
-      item.style.background = 'transparent';
-    });
-    
-    item.addEventListener('focus', () => {
-      item.style.background = '#334155';
-      item.style.outline = '2px solid #6366f1';
-    });
-    
-    item.addEventListener('blur', () => {
-      item.style.background = 'transparent';
-      item.style.outline = 'none';
     });
     
     return item;
@@ -421,16 +362,25 @@ export class ContextMenu {
    */
   positionMenu(menu, x, y) {
     // Mesurer le menu (temporairement ajouté hors écran)
+    const originalPosition = menu.style.position;
+    const originalLeft = menu.style.left;
+    const originalTop = menu.style.top;
+    const originalOpacity = menu.style.opacity;
+    
+    menu.style.position = 'fixed';
     menu.style.left = '-9999px';
     menu.style.top = '-9999px';
     menu.style.opacity = '0';
-    document.body.appendChild(menu);
+    menu.style.visibility = 'hidden';
+    
+    // Ajouter temporairement pour mesurer
+    if (!menu.parentNode) {
+      document.body.appendChild(menu);
+    }
     
     const rect = menu.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
-    document.body.removeChild(menu);
     
     // Calculer la position optimale
     let finalX = x;
@@ -456,8 +406,14 @@ export class ContextMenu {
       finalY = 20;
     }
     
+    // Appliquer la position finale
+    menu.style.position = 'fixed';
     menu.style.left = `${finalX}px`;
     menu.style.top = `${finalY}px`;
+    menu.style.opacity = '0'; // Sera animé par CSS
+    menu.style.visibility = 'visible';
+    
+    console.log('[ContextMenu] Position finale:', finalX, finalY, 'Taille:', rect.width, rect.height);
   }
 
   /**
@@ -551,17 +507,30 @@ export class ContextMenu {
     labelText.style.color = checked ? '#f1f5f9' : '#e2e8f0';
     labelText.style.fontWeight = checked ? '500' : '400';
     
+    // Mettre à jour la liste des signaux actuels
+    this.currentSignals = Array.from(
+      this.currentMenu.querySelectorAll('.tesla-context-menu-item input[type="checkbox"]:checked')
+    ).map(cb => cb.closest('.tesla-context-menu-item').dataset.signalId);
+  }
+
+  /**
+   * Valide la sélection et ferme le menu
+   */
+  validateSelection() {
+    if (!this.currentMenu) return;
+    
     // Récupérer tous les signaux sélectionnés
     const selectedSignals = Array.from(
-      this.currentMenu.querySelectorAll('.context-menu__item input[type="checkbox"]:checked')
-    ).map(cb => cb.closest('.context-menu__item').dataset.signalId);
+      this.currentMenu.querySelectorAll('.tesla-context-menu-item input[type="checkbox"]:checked')
+    ).map(cb => cb.closest('.tesla-context-menu-item').dataset.signalId);
     
     // Notifier le changement
     if (this.onSelectionChange) {
       this.onSelectionChange(selectedSignals);
     }
     
-    console.log(`[ContextMenu] Signal ${signalId} ${checked ? 'sélectionné' : 'désélectionné'}`);
+    // Fermer le menu
+    this.hide();
   }
 
   /**
@@ -570,7 +539,20 @@ export class ContextMenu {
    */
   handleDocumentClick(event) {
     if (this.isOpen && this.currentMenu && !this.currentMenu.contains(event.target)) {
+      // Empêcher le scroll pendant que le menu est ouvert
+      event.preventDefault();
       this.hide();
+    }
+  }
+
+  /**
+   * Gère le scroll de la molette
+   * @param {WheelEvent} event - Événement de molette
+   */
+  handleWheel(event) {
+    if (this.isOpen && this.currentMenu) {
+      // Empêcher le scroll de la page quand le menu est ouvert
+      event.preventDefault();
     }
   }
 
@@ -634,6 +616,7 @@ export class ContextMenu {
     this.hide();
     document.removeEventListener('click', this.handleDocumentClick);
     document.removeEventListener('keydown', this.handleKeyDown);
-    console.log('[ContextMenu] Détruit');
+    document.removeEventListener('wheel', this.handleWheel);
+    // ContextMenu détruit
   }
 }

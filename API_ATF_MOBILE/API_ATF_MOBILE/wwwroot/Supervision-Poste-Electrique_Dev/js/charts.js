@@ -16,20 +16,20 @@ function initZoomPlugin() {
                  window.ChartZoomPlugin ||
                  window.chartjsPluginZoom;
                  
-    console.log('[charts] Found zoom plugin:', !!zoomPlugin);
-    console.log('[charts] Available window objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
+    // Zoom plugin check
+    // Available window objects
     
     if (!zoomPlugin && window.Chart && window.Chart.registry && window.Chart.registry.plugins) {
       // Chercher dans les plugins déjà enregistrés
       const registeredPlugins = window.Chart.registry.plugins.items;
       zoomPlugin = registeredPlugins.zoom || registeredPlugins['chartjs-plugin-zoom'];
-      console.log('[charts] Found in registry:', !!zoomPlugin);
+      // Found in registry
     }
     
     if (Chart && zoomPlugin) {
       Chart.register(zoomPlugin);
-      console.log('[charts] zoom plugin registered successfully');
-      console.log('[charts] zoom plugin version:', zoomPlugin.version || 'unknown');
+      // Zoom plugin registered successfully
+      // Zoom plugin version
     } else {
       console.warn('[charts] zoom plugin not found');
       // Essayer de l'enregistrer quand même s'il existe dans window
@@ -111,13 +111,7 @@ function markChartAsZoomed(chart) {
   console.log('[markChartAsZoomed] Chart marked as zoomed with limits:', { xmin: state.xmin, xmax: state.xmax });
 }
 
-// Ancien système de menu contextuel supprimé - on utilise le nouveau système dans contextmenu.js
-
-// Ancien système supprimé
-
-// Ancien système supprimé
-
-// Ancien système de menu contextuel supprimé - on utilise le nouveau système dans contextmenu.js
+// Ancien système de menu contextuel supprimé - on utilise le nouveau système dans ChartHost.js
 
 const BUFFER_MAP = {
   tr1: {
@@ -627,56 +621,13 @@ function registerChart(def) {
     markChartAsZoomed(chart);
   });
 
-  // Ajouter des événements de debug pour voir si les listeners sont attachés
-  console.log('[charts] Attaching events to canvas:', def.canvasId);
-  
-  canvas.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('[charts] Context menu triggered for chart:', def.key);
-    console.log('[charts] Mouse position:', { x: e.clientX, y: e.clientY });
-    const chartEntry = registry.get(def.key);
-    console.log('[charts] Chart entry found:', !!chartEntry);
-    console.log('[charts] Available signals:', chartEntry ? chartEntry.state.signals : 'no entry');
-    
-    const event = new CustomEvent('chart:contextmenu', {
-      detail: {
-        chartKey: def.key,
-        canvas,
-        clientX: e.clientX,
-        clientY: e.clientY,
-        signals: chartEntry ? chartEntry.state.signals : []
-      }
-    });
-    
-    console.log('[charts] Dispatching context menu event:', event.detail);
-    document.dispatchEvent(event);
-  });
-  
-  // Test pour voir si les événements de souris sont captés
-  canvas.addEventListener('mousedown', (e) => {
-    console.log('[charts] Mouse down on canvas:', def.canvasId, 'button:', e.button);
-  });
-  
-  canvas.addEventListener('mousemove', (e) => {
-    if (e.buttons > 0) {
-      console.log('[charts] Mouse drag detected on canvas:', def.canvasId);
-    }
-  });
+  // Le menu contextuel est maintenant géré par le nouveau système dans ChartHost.js
+  // Plus besoin d'événements contextmenu ici
 
 }
 
 export function initializeCharts() {
-  // Debug du plugin zoom
-  console.log('[charts] Available zoom plugin:', !!zoomPlugin);
-  console.log('[charts] Chart.js registered plugins:', Object.keys(Chart.registry.plugins.items || {}));
-  console.log('[charts] Window zoom objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
-  console.log('[charts] Chart.js version:', Chart.version);
-  
-  // Vérifier si le plugin zoom est disponible dans Chart.js
-  if (Chart.registry && Chart.registry.plugins) {
-    console.log('[charts] Registered plugin IDs:', Object.keys(Chart.registry.plugins.items));
-  }
+  // Initialisation des charts
   
   CHART_DEFS.forEach(def => registerChart(def));
 }

@@ -348,23 +348,29 @@
   
   <!-- Tailwind CSS local -->
   <script>
-    tailwind = {
+    // Suppression de l'avertissement Tailwind en développement
+    window.tailwind = {
       config: {
         content: ['./*.html', './js/*.js'],
         theme: { extend: {} },
         plugins: []
       }
     }
+    // Supprimer l'avertissement de production
+    const originalWarn = console.warn;
+    console.warn = function(...args) {
+      if (args[0] && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+        return; // Ignorer cet avertissement spécifique
+      }
+      originalWarn.apply(console, args);
+    };
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
   <script>
-    // Debug immédiat après le chargement
-    console.log('Chart.js loaded:', !!window.Chart);
-    console.log('Zoom plugin loaded:', !!window['chartjs-plugin-zoom']);
-    console.log('Available window objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
+    // Chart.js et plugins chargés
   </script>
   <link rel="stylesheet" href="../Supervision-Poste-Electrique_Dev/style.css" />
 </head>
@@ -405,6 +411,8 @@
     <symbol id="i-battery" viewBox="0 0 26 14" stroke="currentColor" fill="none" stroke-width="1.5">
       <rect x="1" y="2" width="20" height="10" rx="2" ry="2" />
       <rect x="22" y="5" width="3" height="4" rx="1" />
+      <!-- Barre verte pour le niveau d'énergie -->
+      <rect x="3" y="4" width="16" height="6" rx="1" fill="#00aa44" opacity="0.8" />
     </symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
       <path d="M20 11a8 8 0 1 0-3 5.9L20 18" />
@@ -447,8 +455,7 @@
   <!-- Tesla Toast Layer -->
   <div id="toast-layer" class="toast-layer" aria-live="polite" aria-atomic="false"></div>
   
-  <!-- Tesla Context Menu -->
-  <div id="contextmenu-root" class="contextmenu hidden" role="menu" aria-hidden="true"></div>
+  <!-- Tesla Context Menu - Ancien système supprimé, nouveau système géré par ChartHost.js -->
 
   <!-- Tesla Main Container -->
   <div class="tesla-container" style="min-height: 100vh; padding: var(--tesla-space-lg); background: linear-gradient(135deg, var(--tesla-black) 0%, var(--tesla-gray-900) 100%);">
@@ -802,23 +809,7 @@
     </form>
   </dialog>
 
-  <!-- Tesla Context Menu Template -->
-  <template id="contextmenu-template">
-    <div class="contextmenu-panel" role="menu" style="background: var(--tesla-glass); border: 1px solid var(--tesla-border); border-radius: var(--tesla-radius-lg); backdrop-filter: blur(20px); box-shadow: var(--tesla-shadow-hover);">
-      <header class="contextmenu-head" style="padding: var(--tesla-space-md); border-bottom: 1px solid var(--tesla-border); display: flex; justify-content: space-between; align-items: center;">
-        <strong class="tesla-section-title" style="font-size: 14px;">Signaux disponibles</strong>
-        <button type="button" class="tesla-btn" style="padding: 4px 8px; font-size: 18px; line-height: 1;" aria-label="Fermer">×</button>
-      </header>
-      <div class="contextmenu-body" data-role="list" tabindex="-1" style="padding: var(--tesla-space-sm); max-height: 300px; overflow-y: auto;"></div>
-      <footer class="contextmenu-footer" style="padding: var(--tesla-space-md); border-top: 1px solid var(--tesla-border);">
-        <span class="contextmenu-error hidden" style="color: var(--tesla-red); font-size: 12px;">Impossible de charger les signaux - Réessayer</span>
-        <div class="contextmenu-actions" style="display: flex; gap: var(--tesla-space-sm); justify-content: flex-end;">
-          <button type="button" data-role="retry" class="tesla-btn hidden">Réessayer</button>
-          <button type="button" data-role="apply" class="tesla-btn tesla-btn-primary">Appliquer</button>
-        </div>
-      </footer>
-    </div>
-  </template>
+  <!-- Tesla Context Menu Template - Ancien système supprimé, nouveau système géré par ChartHost.js -->
 
   <!-- Tesla Toast Template -->
   <template id="toast-template">

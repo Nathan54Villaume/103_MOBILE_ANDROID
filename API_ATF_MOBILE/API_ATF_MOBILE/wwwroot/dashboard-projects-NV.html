@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Projets 2025 — Nathan</title>
+  <title data-i18n="app.title">Dashboard Projets 2025 — Nathan</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -36,6 +36,16 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
+    /* Langue switcher */
+    .lang-switch { display: flex; gap: 2px; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 2px; border: 1px solid rgba(255,255,255,0.1); }
+    .lang-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; background: transparent; border: none; color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .lang-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.9); }
+    .lang-btn[aria-pressed="true"] { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+    .lang-btn:focus { outline: 2px solid #10b981; outline-offset: 2px; }
+    .flag { width: 18px; height: 12px; border-radius: 2px; display: inline-block; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); overflow: hidden; flex-shrink: 0; }
+    .flag-fr { background: linear-gradient(90deg, #0055A4 33.33%, #FFF 33.33% 66.66%, #EF4135 66.66%); }
+    .flag-it { background: linear-gradient(90deg, #009246 33.33%, #FFF 33.33% 66.66%, #CE2B37 66.66%); }
+    
     @media print { .no-print { display:none !important; } .print-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } body { background: #fff; } }
   </style>
 </head>
@@ -44,11 +54,24 @@
     <div class="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
       <div class="h-8 w-8 rounded-xl bg-brand-500/20 grid place-items-center text-brand-400">⚙️</div>
       <div class="flex-1">
-        <h1 class="text-lg sm:text-xl font-semibold tracking-tight">Dashboard Projets 2025 - VILLAUME Nathan</h1>
-        <p class="text-xs text-slate-400">Synthèse interactive — ATS / ATR </p>
+        <h1 class="text-lg sm:text-xl font-semibold tracking-tight" data-i18n="app.title">Dashboard Projets 2025 - VILLAUME Nathan</h1>
+        <p class="text-xs text-slate-400" data-i18n="app.subtitle">Synthèse interactive — ATS / ATR</p>
       </div>
       <div class="flex items-center gap-2">
-        <button id="btnPrint" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10">Imprimer</button>
+        <div class="lang-switch" role="group" aria-label="Sélecteur de langue">
+          <button class="lang-btn" data-lang="fr" aria-pressed="true" aria-label="Passer en Français">
+            <span class="flag flag-fr" aria-hidden="true"></span><span>FR</span>
+          </button>
+          <button class="lang-btn" data-lang="it" aria-pressed="false" aria-label="Passare all'Italiano">
+            <span class="flag flag-it" aria-hidden="true"></span><span>IT</span>
+          </button>
+        </div>
+        <button id="btnShare" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 flex items-center gap-2" data-i18n-attr="title" title="Partager le dashboard">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+          </svg>
+          <span data-i18n="btn.share">Partager</span>
+        </button>
       </div>
     </div>
   </header>
@@ -56,15 +79,15 @@
   <section class="mx-auto max-w-7xl px-4 pt-6">
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
       <div class="card rounded-2xl p-4 shadow-glass">
-        <p class="text-slate-400 text-xs">Projets actifs</p>
+        <p class="text-slate-400 text-xs" data-i18n="kpi.activeProjects">Projets actifs</p>
         <p id="kpiProjects" class="text-2xl font-semibold">—</p>
       </div>
       <div class="card rounded-2xl p-4 shadow-glass">
-        <p class="text-slate-400 text-xs">Résultats livrés</p>
+        <p class="text-slate-400 text-xs" data-i18n="kpi.deliveredResults">Résultats livrés</p>
         <p id="kpiResults" class="text-2xl font-semibold">—</p>
       </div>
       <div class="card rounded-2xl p-4 shadow-glass cursor-pointer hover:bg-white/5 transition-colors" id="kpiSkillsCard">
-        <p class="text-slate-400 text-xs">Compétences mises en jeu 🔍</p>
+        <p class="text-slate-400 text-xs" data-i18n="kpi.skillsUsed">Compétences mises en jeu 🔍</p>
         <p id="kpiSkills" class="text-2xl font-semibold">—</p>
       </div>
     </div>
@@ -72,15 +95,15 @@
 
   <section class="no-print mx-auto max-w-7xl px-4 py-4">
     <div class="flex flex-wrap items-center gap-2">
-      <span class="text-xs text-slate-400">Filtres :</span>
-      <button data-filter="all" class="chip rounded-full px-3 py-1 text-xs bg-white/10 hover:bg-white/20">Tout</button>
+      <span class="text-xs text-slate-400" data-i18n="filters.label">Filtres :</span>
+      <button data-filter="all" class="chip rounded-full px-3 py-1 text-xs bg-white/10 hover:bg-white/20" data-i18n="filters.all">Tout</button>
       <button data-filter="ATS" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">ATS</button>
       <button data-filter="ATR" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">ATR</button>
       <span class="mx-2 h-5 w-px bg-white/10"></span>
-      <span class="text-xs text-slate-400">Statut :</span>
-      <button data-status="all" class="chip rounded-full px-3 py-1 text-xs bg-white/10 hover:bg-white/20">Tous</button>
-      <button data-status="en_cours" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">🟡 En cours</button>
-      <button data-status="livre" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10">🟢 Terminé</button>
+      <span class="text-xs text-slate-400" data-i18n="status.label">Statut :</span>
+      <button data-status="all" class="chip rounded-full px-3 py-1 text-xs bg-white/10 hover:bg-white/20" data-i18n="status.all">Tous</button>
+      <button data-status="en_cours" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10" data-i18n="status.inProgress">🟡 En cours</button>
+      <button data-status="livre" class="chip rounded-full px-3 py-1 text-xs bg-white/5 hover:bg-white/10" data-i18n="status.completed">🟢 Terminé</button>
     </div>
   </section>
 
@@ -96,34 +119,35 @@
           <h3 id="drawerTitle" class="text-lg font-semibold"></h3>
           <p id="drawerArea" class="text-xs text-slate-400"></p>
         </div>
-        <button class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20" data-close>Fermer</button>
+        <button class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20" data-close data-i18n="btn.close">Fermer</button>
       </div>
       <div class="p-5 space-y-6">
         <section>
-          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Objectif</h4>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2" data-i18n="drawer.objective">Objectif</h4>
           <p id="drawerObjective" class="text-slate-200"></p>
         </section>
         <section>
-          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Réalisation</h4>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2" data-i18n="drawer.realization">Réalisation</h4>
           <ul id="drawerReal" class="list-disc list-inside marker:text-brand-500 space-y-1"></ul>
         </section>
         <section>
-          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Résultats</h4>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2" data-i18n="drawer.results">Résultats</h4>
           <ul id="drawerResults" class="list-disc list-inside marker:text-emerald-400 space-y-1"></ul>
         </section>
         <section id="drawerSkillsSection">
-          <h4 id="drawerSkillsTitle" class="text-sm uppercase tracking-wide text-slate-400 mb-2">Compétences</h4>
+          <h4 id="drawerSkillsTitle" class="text-sm uppercase tracking-wide text-slate-400 mb-2" data-i18n="drawer.skills">Compétences</h4>
           <div id="drawerSkills" class="flex flex-wrap gap-2"></div>
         </section>
         <section id="drawerImagesSection">
-          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">📸 Captures d'écran</h4>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2" data-i18n="drawer.screenshots">📸 Captures d'écran</h4>
           <div id="drawerImages" class="grid grid-cols-2 gap-3"></div>
         </section>
         <section id="drawerMediaSection">
-          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2">Démos & médias</h4>
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-2" data-i18n="drawer.media">Démos & médias</h4>
           <div id="drawerMedia" class="grid grid-cols-2 gap-3"></div>
         </section>
         <section class="mt-6 p-4 rounded-xl bg-slate-800/60 border border-slate-600/30">
+          <h4 class="text-sm uppercase tracking-wide text-slate-400 mb-3" data-i18n="comments.title">Commentaires</h4>
           <div id="commentsContainer"></div>
         </section>
       </div>
@@ -140,10 +164,363 @@
   </div>
 
   <footer class="fixed bottom-3 right-3 text-[11px] text-slate-400/80 no-print">
-    Dernière mise à jour : <span id="lastUpdate"></span> · Auteur : <span class="font-medium">N.Villaume</span>
+    <span data-i18n="footer.lastUpdate">Dernière mise à jour</span> : <span id="lastUpdate"></span> · <span data-i18n="footer.author">Auteur</span> : <span class="font-medium">N.Villaume</span>
   </footer>
 
   <script>
+    // --- Système i18n ---
+    (() => {
+      const messages = {
+        fr: {
+          "app.title": "Dashboard Projets 2025 — Nathan Villaume",
+          "app.subtitle": "Synthèse interactive — ATS / ATR",
+          "kpi.activeProjects": "Projets actifs",
+          "kpi.deliveredResults": "Résultats livrés", 
+          "kpi.skillsUsed": "Compétences mises en jeu 🔍",
+          "filters.label": "Filtres :",
+          "filters.all": "Tout",
+          "status.label": "Statut :",
+          "status.all": "Tous",
+          "status.inProgress": "🟡 En cours",
+          "status.completed": "🟢 Terminé",
+          "btn.share": "Partager",
+          "btn.close": "Fermer",
+          "btn.view": "Voir",
+          "btn.details": "Détails",
+          "drawer.objective": "Objectif",
+          "drawer.realization": "Réalisation",
+          "drawer.results": "Résultats",
+          "drawer.skills": "Compétences",
+          "drawer.screenshots": "📸 Captures d'écran",
+          "drawer.media": "Démos & médias",
+          "card.objective": "🎯 Objectif",
+          "card.realization": "Réalisation",
+          "card.results": "Résultats",
+          "footer.lastUpdate": "Dernière mise à jour",
+          "footer.author": "Auteur",
+          "skills.lexicon.title": "📚 Lexique des Compétences",
+          "skills.lexicon.subtitle": "compétences techniques mobilisées",
+          "skills.lexicon.description": "Ensemble des savoir-faire techniques mis en œuvre dans les projets 2025.",
+          "skills.lexicon.clickHint": "🔍 Cliquez sur une compétence pour voir sa définition",
+          "skills.lexicon.defaultDesc": "Compétence technique spécialisée.",
+          // Système de commentaires
+          "comments.title": "Commentaires",
+          "comments.add": "Ajouter un commentaire",
+          "comments.placeholder": "Écrivez votre commentaire...",
+          "comments.send": "Envoyer",
+          "comments.cancel": "Annuler",
+          "comments.edit": "Modifier",
+          "comments.delete": "Supprimer",
+          "comments.reply": "Répondre",
+          "comments.loading": "Chargement...",
+          "comments.error": "Erreur lors du chargement",
+          "comments.noComments": "Aucun commentaire pour le moment. Soyez le premier à commenter !",
+          "comments.nameLabel": "Nom",
+          "comments.messageLabel": "Message",
+          "comments.charCount": "/ 2000 caractères",
+          "comments.loadMore": "Voir plus",
+          "comments.namePlaceholder": "Votre nom",
+          "comments.messagePlaceholder": "Votre commentaire...",
+          // Menu de partage
+          "share.title": "Partager le dashboard",
+          "share.teams": "Ouvrir Teams + Copier message",
+          "share.outlook": "Ouvrir Outlook (application)",
+          "share.copy": "Copier le lien",
+          // Traductions des projets
+          "project.suivi-produit-ats.title": "Suivi Produit – ATS",
+          "project.suivi-produit-ats.objective": "Mettre en place une traçabilité complète des couronnes utilisées pour le treillis soudé, du scan en entrée machine jusqu'au produit fini.",
+          "project.suivi-produit-ats.real_short": ["Scan étiquettes des couronnes d'ébauche", "Impression étiquettes roquette", "Base SQL stock roquette"],
+          "project.suivi-produit-ats.real": ["Scan des étiquettes des couronne d'ébauche", "Impression d'étiquettes roquette (poids réel/théorique, lot, coulée…)", "Base SQL pour gestion de stock", "Intégration supervision/production"],
+          "project.suivi-produit-ats.results_short": ["Traçabilité complète", "Réduction erreurs", "Conformité renforcée"],
+          "project.suivi-produit-ats.results": ["Traçabilité complète bout-en-bout du scan d'entrée au produit fini", "Réduction significative des erreurs humaines de saisie", "Optimisation logistique et conformité aux exigences qualité"],
+          "project.gestion-rfid-ats.title": "Gestion RFID – ATS",
+          "project.gestion-rfid-ats.objective": "Chaque démarrage de machine est conditionné par la lecture du badge de pointage SAM, renforçant ainsi la sécurité et assurant une meilleure traçabilité.",
+          "project.gestion-rfid-ats.real_short": ["Badge obligatoire", "Base SQL équipes", "Stats opérateurs"],
+          "project.gestion-rfid-ats.real": ["RFID obligatoire au démarrage de chaque machine", "Badge chef requis en cas de casse-fil pour validation", "Base SQL de gestion d'équipes et personnels", "Statistiques complètes par opérateur et machine"],
+          "project.gestion-rfid-ats.results_short": ["Sécurité renforcée", "Discipline accrue", "Traçabilité opérateurs"],
+          "project.gestion-rfid-ats.results": ["Sécurité renforcée avec contrôle d'accès systématique", "Discipline accrue et responsabilisation des équipes", "Suivi précis de la productivité par opérateur et par poste"],
+          "project.gestion-rfid-atr.title": "Gestion RFID – ATR",
+          "project.gestion-rfid-atr.objective": "Déployer le même dispositif RFID sur l'unité ATR (projet en cours).",
+          "project.gestion-rfid-atr.real_short": ["Contrôle démarrage machines", "Adaptation base SQL existante", "Traçabilité accrue"],
+          "project.gestion-rfid-atr.real": ["Analyse des points de badgeage sur l'unité ATR", "Intégration avec base SQL existante", "Adaptation vues supervision et droits d'accès", "Traçabilité accrue"],
+          "project.gestion-rfid-atr.results_short": ["POC en cours", "Sécurité cross-site", "Traçabilité étendue"],
+          "project.gestion-rfid-atr.results": ["Projet en cours (POC + phase de cadrage)", "Sécurité renforcée sur les deux sites (ATS/ATR)", "Traçabilité cross-site unifiée", "Harmonisation des processus entre ATS et ATR"],
+          "project.suivis-energies.title": "Suivis des Energies – ATS / ATR",
+          "project.suivis-energies.objective": "Donner une vision temps réel des mesure énergétiques pour optimiser les coûts et détecter les anomalies facilement.",
+          "project.suivis-energies.real_short": ["Pose compteurs énergie", "Collecte OPC → SQL", "Supervision web"],
+          "project.suivis-energies.real": ["Pose de multiples compteurs d'énergie sur transformateurs et lignes", "Collecte automatique des données via OPC/IGS vers SQL Server", "Supervision ultra détaillée accessible depuis n'importe quel PC connecté au réseau Sam/Riva, simplement via une URL", "Tableaux de bord interactifs avec graphiques temps réel"],
+          "project.suivis-energies.results_short": ["Vision temps réel", "Détection anomalies", "Optimisation coûts"],
+          "project.suivis-energies.results": ["Pilotage précis de l'énergie avec historiques détaillés", "Détection précoce des dérives et anomalies de consommation", "Optimisation significative des coûts énergétiques", "Support décisionnel pour la direction avec KPIs énergétiques"],
+          "project.app-changement-gamme.title": "Application « Changement de Gamme »",
+          "project.app-changement-gamme.objective": "Concevoir une application mobile destinée à accompagner les équipes de production et de maintenance, afin d'optimiser leur efficacité et d'améliorer la coordination des changements de gammes.",
+          "project.app-changement-gamme.real_short": ["Application Android", "API (Communication)", "Interface multi-devices"],
+          "project.app-changement-gamme.real": ["Programmation native ANDROID en langage Kotlin", "API pour communication entre l'application et la base de données", "Navigation multi-écrans adaptée (téléphone / tablette / PC)", "Interface Web d'administration pour gestion de l'utilisation de la tablette", "Système de notifications et guidage étape par étape"],
+          "project.app-changement-gamme.results_short": ["Gain de temps", "Organisation améliorée", "Traçabilité accrue"],
+          "project.app-changement-gamme.results": ["Gain de temps significatif pour les équipes, avec une baisse des erreurs de saisie", "Organisation et structure des étapes de changement de gamme simplifiée", "Accès direct aux résultats et rapports de suivi en temps réel"],
+          "project.suivis-soudures-atr.title": "Suivis des Soudures - ATR",
+          "project.suivis-soudures-atr.objective": "Mettre en place un suivi et une traçabilité complète des soudures.",
+          "project.suivis-soudures-atr.real_short": ["Table échange SAM/PLC", "Base SQL historique", "Affichage dynamique"],
+          "project.suivis-soudures-atr.real": ["Mise en place d'une table d'échange standard entre le réseau SAM et les PLC des soudeuses", "Base SQL dédiée pour historiser toutes les infos de soudure (date, ligne, lot, coulée, soudeur, paramètres de soudage...)", "Affichage dynamique temps réel : liste des soudures + état des soudeuses", "Saisie de commentaires en direct pour l'équipe de maintenance", "Export des données pour analyses qualité"],
+          "project.suivis-soudures-atr.results_short": ["Traçabilité soudures", "Visibilité État soudeuses", "Analyses qualité"],
+          "project.suivis-soudures-atr.results": ["Traçabilité complète des soudures et recuits avec historique détaillé", "Visibilité accrue sur l'état des machines en temps réel", "Communication facilitée entre production et maintenance", "Exploitation des données pour analyses qualité et maintenance prédictive", "Conformité aux exigences de traçabilité industrielle"],
+          "project.camera-etiquette-atr.title": "Détection d'étiquette par Caméra – ATR",
+          "project.camera-etiquette-atr.objective": "Empêcher qu'une bobine soit stockée sans étiquette.",
+          "project.camera-etiquette-atr.real_short": ["Caméra IFM LIGNE 7", "Détection étiquette", "Intégration Profinet"],
+          "project.camera-etiquette-atr.real": ["Installation d'une caméra IFM Vision Assistant sur le bobinoir de la ligne 7", "Paramétrage précis de l'algorithme de détection d'étiquette (ROI, seuils, validation)", "Intégration complète de la caméra à l'automate Siemens en Profinet", "Programmation du trigger pour piloter la caméra au moment exact où l'étiquette est posée", "Suivi statistique détaillé des contrôles: nombre de détections, taux de réussite/échec, temps de cycle", "Interface opérateur pour visualisation en direct"],
+          "project.camera-etiquette-atr.results_short": ["Zéro défaut étiquette", "Contrôle automatique", "Fiabilité 100%"],
+          "project.camera-etiquette-atr.results": ["Suppression totale des risques d'expédition de bobines sans étiquette", "Contrôle automatisé ultra-rapide sans aucune surcharge pour l'opérateur", "Fiabilité renforcée du processus de production", "Réduction drastique des non-conformités client", "ROI rapide par élimination des reprises et retours"],
+          // Légendes d'images
+          "image.etiquette-roquette": "Étiquette roquette",
+          "image.interface-supervision": "Interface supervision",
+          "image.interface-rfid": "Interface RFID",
+          "image.badge-operateur": "Badge opérateur",
+          "image.interface-rfid-atr": "Interface RFID ATR",
+          "image.tableau-bord-energetique": "Tableau de bord énergétique",
+          "image.ecran-accueil": "Écran d'accueil",
+          "image.liste-gammes": "Liste des Gammes",
+          "image.validation-etapes": "Validation étapes",
+          "image.interface-parametres": "Interface Paramètres",
+          "image.supervision-soudures": "Supervision soudures",
+          "image.historique-parametres": "Historique paramètres",
+          "image.camera-detection": "Caméra de détection",
+          // Zones des projets
+          "area.ats-supervision-sql": "ATS · Supervision · SQL",
+          "area.ats-rfid-securite": "ATS · RFID · Sécurité",
+          "area.atr-rfid-securite": "ATR · RFID · Sécurité",
+          "area.ats-atr-web-dataviz": "ATS · ATR · Web · DataViz",
+          "area.android-api-ux": "Android · API · UX",
+          "area.atr-supervision-qualite": "ATR · Supervision · Qualité",
+          "area.atr-vision-automatisme": "ATR · Vision · Automatisme"
+        },
+        it: {
+          "app.title": "Dashboard Progetti 2025 — Nathan Villaume",
+          "app.subtitle": "Sintesi interattiva — ATS / ATR",
+          "kpi.activeProjects": "Progetti attivi",
+          "kpi.deliveredResults": "Risultati consegnati",
+          "kpi.skillsUsed": "Competenze utilizzate 🔍",
+          "filters.label": "Filtri :",
+          "filters.all": "Tutto",
+          "status.label": "Stato :",
+          "status.all": "Tutti",
+          "status.inProgress": "🟡 In corso",
+          "status.completed": "🟢 Completato",
+          "btn.share": "Condividi",
+          "btn.close": "Chiudi",
+          "btn.view": "Visualizza",
+          "btn.details": "Dettagli",
+          "drawer.objective": "Obiettivo",
+          "drawer.realization": "Realizzazione",
+          "drawer.results": "Risultati",
+          "drawer.skills": "Competenze",
+          "drawer.screenshots": "📸 Screenshot",
+          "drawer.media": "Demo & media",
+          "card.objective": "🎯 Obiettivo",
+          "card.realization": "Realizzazione",
+          "card.results": "Risultati",
+          "footer.lastUpdate": "Ultimo aggiornamento",
+          "footer.author": "Autore",
+          "skills.lexicon.title": "📚 Lessico delle Competenze",
+          "skills.lexicon.subtitle": "competenze tecniche utilizzate",
+          "skills.lexicon.description": "Insieme delle competenze tecniche utilizzate nei progetti 2025.",
+          "skills.lexicon.clickHint": "🔍 Clicca su una competenza per vedere la sua definizione",
+          "skills.lexicon.defaultDesc": "Competenza tecnica specializzata.",
+          // Système de commentaires
+          "comments.title": "Commenti",
+          "comments.add": "Aggiungi un commento",
+          "comments.placeholder": "Scrivi il tuo commento...",
+          "comments.send": "Invia",
+          "comments.cancel": "Annulla",
+          "comments.edit": "Modifica",
+          "comments.delete": "Elimina",
+          "comments.reply": "Rispondi",
+          "comments.loading": "Caricamento...",
+          "comments.error": "Errore durante il caricamento",
+          "comments.noComments": "Nessun commento al momento. Sii il primo a commentare !",
+          "comments.nameLabel": "Nome",
+          "comments.messageLabel": "Messaggio",
+          "comments.charCount": "/ 2000 caratteri",
+          "comments.loadMore": "Vedi di più",
+          "comments.namePlaceholder": "Il tuo nome",
+          "comments.messagePlaceholder": "Il tuo commento...",
+          // Menu de partage
+          "share.title": "Condividi la dashboard",
+          "share.teams": "Apri Teams + Copia messaggio",
+          "share.outlook": "Apri Outlook (applicazione)",
+          "share.copy": "Copia il link",
+          // Traductions des projets en italien
+          "project.suivi-produit-ats.title": "Tracciamento Prodotto – ATS",
+          "project.suivi-produit-ats.objective": "Implementare una tracciabilità completa delle corone utilizzate per il traliccio saldato, dalla scansione in entrata macchina fino al prodotto finito.",
+          "project.suivi-produit-ats.real_short": ["Scansione etichette corone grezze", "Stampa etichette rocchetta", "Base SQL stock rocchetta"],
+          "project.suivi-produit-ats.real": ["Scansione delle etichette delle corone grezze", "Stampa di etichette rocchetta (peso reale/teorico, lotto, colata...)", "Base SQL per gestione stock", "Integrazione supervisione/produzione"],
+          "project.suivi-produit-ats.results_short": ["Tracciabilità completa", "Riduzione errori", "Conformità rafforzata"],
+          "project.suivi-produit-ats.results": ["Tracciabilità completa end-to-end dalla scansione di entrata al prodotto finito", "Riduzione significativa degli errori umani di inserimento", "Ottimizzazione logistica e conformità ai requisiti qualità"],
+          "project.gestion-rfid-ats.title": "Gestione RFID – ATS",
+          "project.gestion-rfid-ats.objective": "Ogni avvio di macchina è condizionato dalla lettura del badge di timbratura SAM, rafforzando così la sicurezza e garantendo una migliore tracciabilità.",
+          "project.gestion-rfid-ats.real_short": ["Badge obbligatorio", "Base SQL squadre", "Statistiche operatori"],
+          "project.gestion-rfid-ats.real": ["RFID obbligatorio all'avvio di ogni macchina", "Badge capo richiesto in caso di rottura filo per validazione", "Base SQL di gestione squadre e personale", "Statistiche complete per operatore e macchina"],
+          "project.gestion-rfid-ats.results_short": ["Sicurezza rafforzata", "Disciplina maggiore", "Tracciabilità operatori"],
+          "project.gestion-rfid-ats.results": ["Sicurezza rafforzata con controllo accessi sistematico", "Disciplina maggiore e responsabilizzazione delle squadre", "Monitoraggio preciso della produttività per operatore e per postazione"],
+          "project.gestion-rfid-atr.title": "Gestione RFID – ATR",
+          "project.gestion-rfid-atr.objective": "Implementare lo stesso dispositivo RFID sull'unità ATR (progetto in corso).",
+          "project.gestion-rfid-atr.real_short": ["Controllo avvio macchine", "Adattamento base SQL esistente", "Tracciabilità aumentata"],
+          "project.gestion-rfid-atr.real": ["Analisi dei punti di timbratura sull'unità ATR", "Integrazione con base SQL esistente", "Adattamento viste supervisione e diritti di accesso", "Tracciabilità aumentata"],
+          "project.gestion-rfid-atr.results_short": ["POC in corso", "Sicurezza cross-site", "Tracciabilità estesa"],
+          "project.gestion-rfid-atr.results": ["Progetto in corso (POC + fase di definizione)", "Sicurezza rafforzata sui due siti (ATS/ATR)", "Tracciabilità cross-site unificata", "Armonizzazione dei processi tra ATS e ATR"],
+          "project.suivis-energies.title": "Monitoraggio Energie – ATS / ATR",
+          "project.suivis-energies.objective": "Fornire una visione in tempo reale delle misurazioni energetiche per ottimizzare i costi e rilevare facilmente le anomalie.",
+          "project.suivis-energies.real_short": ["Installazione contatori energia", "Raccolta OPC → SQL", "Supervisione web"],
+          "project.suivis-energies.real": ["Installazione di multipli contatori di energia su trasformatori e linee", "Raccolta automatica dei dati via OPC/IGS verso SQL Server", "Supervisione ultra dettagliata accessibile da qualsiasi PC connesso alla rete Sam/Riva, semplicemente tramite un URL", "Dashboard interattivi con grafici tempo reale"],
+          "project.suivis-energies.results_short": ["Visione tempo reale", "Rilevamento anomalie", "Ottimizzazione costi"],
+          "project.suivis-energies.results": ["Pilotaggio preciso dell'energia con storici dettagliati", "Rilevamento precoce delle derive e anomalie di consumo", "Ottimizzazione significativa dei costi energetici", "Supporto decisionale per la direzione con KPI energetici"],
+          "project.app-changement-gamme.title": "Applicazione « Cambio Gammes »",
+          "project.app-changement-gamme.objective": "Progettare un'applicazione mobile destinata ad accompagnare i team di produzione e manutenzione, al fine di ottimizzare la loro efficienza e migliorare il coordinamento dei cambi gammes.",
+          "project.app-changement-gamme.real_short": ["Applicazione Android", "API (Comunicazione)", "Interfaccia multi-dispositivi"],
+          "project.app-changement-gamme.real": ["Programmazione nativa ANDROID in linguaggio Kotlin", "API per comunicazione tra l'applicazione e il database", "Navigazione multi-schermo adattata (telefono / tablet / PC)", "Interfaccia Web di amministrazione per gestione dell'utilizzo del tablet", "Sistema di notifiche e guida passo dopo passo"],
+          "project.app-changement-gamme.results_short": ["Risparmio tempo", "Organizzazione migliorata", "Tracciabilità aumentata"],
+          "project.app-changement-gamme.results": ["Risparmio di tempo significativo per i team, con una diminuzione degli errori di inserimento", "Organizzazione e struttura delle fasi di cambio gamme semplificata", "Accesso diretto ai risultati e rapporti di monitoraggio in tempo reale"],
+          "project.suivis-soudures-atr.title": "Monitoraggio Saldature - ATR",
+          "project.suivis-soudures-atr.objective": "Implementare un monitoraggio e una tracciabilità completa delle saldature.",
+          "project.suivis-soudures-atr.real_short": ["Tabella scambio SAM/PLC", "Base SQL storico", "Visualizzazione dinamica"],
+          "project.suivis-soudures-atr.real": ["Implementazione di una tabella di scambio standard tra la rete SAM e i PLC delle saldatrici", "Base SQL dedicata per storificare tutte le informazioni di saldatura (data, linea, lotto, colata, saldatore, parametri di saldatura...)", "Visualizzazione dinamica tempo reale: lista delle saldature + stato delle saldatrici", "Inserimento commenti in diretta per il team di manutenzione", "Export dei dati per analisi qualità"],
+          "project.suivis-soudures-atr.results_short": ["Tracciabilità saldature", "Visibilità stato saldatrici", "Analisi qualità"],
+          "project.suivis-soudures-atr.results": ["Tracciabilità completa delle saldature e ricotture con storico dettagliato", "Visibilità aumentata sullo stato delle macchine in tempo reale", "Comunicazione facilitata tra produzione e manutenzione", "Sfruttamento dei dati per analisi qualità e manutenzione predittiva", "Conformità ai requisiti di tracciabilità industriale"],
+          "project.camera-etiquette-atr.title": "Rilevamento etichetta tramite Camera – ATR",
+          "project.camera-etiquette-atr.objective": "Impedire che una bobina venga stoccata senza etichetta.",
+          "project.camera-etiquette-atr.real_short": ["Camera IFM LINEA 7", "Rilevamento etichetta", "Integrazione Profinet"],
+          "project.camera-etiquette-atr.real": ["Installazione di una camera IFM Vision Assistant sul bobinoio della linea 7", "Configurazione precisa dell'algoritmo di rilevamento etichetta (ROI, soglie, validazione)", "Integrazione completa della camera all'automata Siemens in Profinet", "Programmazione del trigger per pilotare la camera nel momento esatto in cui l'etichetta viene posizionata", "Monitoraggio statistico dettagliato dei controlli: numero di rilevamenti, tasso di successo/fallimento, tempo di ciclo", "Interfaccia operatore per visualizzazione in diretta"],
+          "project.camera-etiquette-atr.results_short": ["Zero difetti etichetta", "Controllo automatico", "Affidabilità 100%"],
+          "project.camera-etiquette-atr.results": ["Eliminazione totale dei rischi di spedizione bobine senza etichetta", "Controllo automatizzato ultra-rapido senza alcun sovraccarico per l'operatore", "Affidabilità rafforzata del processo di produzione", "Riduzione drastica delle non conformità cliente", "ROI rapido per eliminazione delle riprese e ritorni"],
+          // Légendes d'images en italien
+          "image.etiquette-roquette": "Etichetta rocchetta",
+          "image.interface-supervision": "Interfaccia supervisione",
+          "image.interface-rfid": "Interfaccia RFID",
+          "image.badge-operateur": "Badge operatore",
+          "image.interface-rfid-atr": "Interfaccia RFID ATR",
+          "image.tableau-bord-energetique": "Dashboard energetico",
+          "image.ecran-accueil": "Schermata di benvenuto",
+          "image.liste-gammes": "Lista Gammes",
+          "image.validation-etapes": "Validazione fasi",
+          "image.interface-parametres": "Interfaccia Parametri",
+          "image.supervision-soudures": "Supervisione saldature",
+          "image.historique-parametres": "Storico parametri",
+          "image.camera-detection": "Camera di rilevamento",
+          // Zones des projets en italien
+          "area.ats-supervision-sql": "ATS · Supervisione · SQL",
+          "area.ats-rfid-securite": "ATS · RFID · Sicurezza",
+          "area.atr-rfid-securite": "ATR · RFID · Sicurezza",
+          "area.ats-atr-web-dataviz": "ATS · ATR · Web · DataViz",
+          "area.android-api-ux": "Android · API · UX",
+          "area.atr-supervision-qualite": "ATR · Supervisione · Qualità",
+          "area.atr-vision-automatisme": "ATR · Visione · Automazione"
+        }
+      };
+
+      const state = { lang: "fr" };
+
+      const applyI18n = () => {
+        const root = document;
+        const dict = messages[state.lang] || messages.fr;
+
+        // Text nodes
+        root.querySelectorAll("[data-i18n]").forEach(el => {
+          const key = el.getAttribute("data-i18n");
+          if (dict[key] != null) el.textContent = String(dict[key]);
+        });
+
+        // Attribute bindings (comma-separated)
+        root.querySelectorAll("[data-i18n-attr]").forEach(el => {
+          const key = el.getAttribute("data-i18n");
+          const attrs = el.getAttribute("data-i18n-attr").split(",").map(s => s.trim());
+          const val = dict[key];
+          if (val != null) attrs.forEach(a => el.setAttribute(a, String(val)));
+        });
+
+        // Title tag if marked
+        const titleEl = document.querySelector("title[data-i18n]");
+        if (titleEl) {
+          const key = titleEl.getAttribute("data-i18n");
+          if (dict[key] != null) titleEl.textContent = String(dict[key]);
+        }
+
+        // Toggle pressed state on language buttons
+        document.querySelectorAll(".lang-btn").forEach(btn => {
+          btn.setAttribute("aria-pressed", btn.dataset.lang === state.lang ? "true" : "false");
+        });
+
+        // Update language switcher aria-labels
+        const frBtn = document.querySelector('.lang-btn[data-lang="fr"]');
+        const itBtn = document.querySelector('.lang-btn[data-lang="it"]');
+        if (frBtn) frBtn.setAttribute('aria-label', state.lang === 'fr' ? 'Passer en Français (actuel)' : 'Passer en Français');
+        if (itBtn) itBtn.setAttribute('aria-label', state.lang === 'it' ? 'Passare all\'Italiano (attuale)' : 'Passare all\'Italiano');
+      };
+
+      const setLang = (lang) => {
+        state.lang = (lang === "it") ? "it" : "fr";
+        localStorage.setItem("lang", state.lang);
+        window.requestAnimationFrame(applyI18n);
+        
+        // Update dynamic content
+        if (window.updateDynamicContent) {
+          window.updateDynamicContent();
+        }
+      };
+
+      const getLang = () => state.lang;
+      const t = (key, params) => {
+        const dict = messages[state.lang] || messages.fr;
+        let text = dict[key] || key;
+        if (params) {
+          Object.keys(params).forEach(k => {
+            text = text.replace(new RegExp(`{${k}}`, 'g'), params[k]);
+          });
+        }
+        return text;
+      };
+
+      // Init
+      document.addEventListener("DOMContentLoaded", () => {
+        const saved = localStorage.getItem("lang");
+        const guessed = navigator.language?.toLowerCase().startsWith("it") ? "it" : "fr";
+        state.lang = saved || guessed || "fr";
+
+        document.body.addEventListener("click", (e) => {
+          const btn = e.target.closest(".lang-btn");
+          if (btn?.dataset?.lang) {
+            setLang(btn.dataset.lang);
+          }
+        });
+
+        applyI18n();
+      });
+
+      // Expose globally
+      window.i18n = { setLang, getLang, t, messages };
+      window.updateDynamicContent = () => {
+        // This will be called when language changes to update dynamic content
+        if (window.renderCards && window.DATA) {
+          window.renderCards(window.DATA);
+        }
+        if (window.showAllSkills) {
+          // Update skills lexicon if it's currently displayed
+          const drawer = document.getElementById('drawer');
+          if (!drawer.classList.contains('hidden') && document.getElementById('drawerTitle')?.textContent.includes('Lexique')) {
+            window.showAllSkills();
+          }
+        }
+        
+        // Update comments system if it exists
+        if (window.commentsComponent && window.currentProjectId) {
+          // Reinitialize comments with new language
+          window.commentsComponent.setEntity(window.currentProjectId);
+        }
+        
+        // Apply translations to comments component if it exists
+        if (window.commentsComponent) {
+          window.commentsComponent.applyTranslations();
+        }
+      };
+    })();
+
     // --- Données projets ---
     const DATA = [
       {
@@ -409,7 +786,7 @@
 
     // --- Variables globales ---
     const grid = document.getElementById('grid');
-    const btnPrint = document.getElementById('btnPrint');
+    const btnShare = document.getElementById('btnShare');
     const drawer = document.getElementById('drawer');
     const drawerTitle = document.getElementById('drawerTitle');
     const drawerArea = document.getElementById('drawerArea');
@@ -443,16 +820,36 @@
     // --- Gestion du drawer ---
     function openDrawer(p) {
       currentProjectId = p.id;
+      window.currentProjectId = currentProjectId;
       
-      drawerTitle.textContent = p.title;
-      drawerArea.textContent = p.area;
-      drawerObjective.textContent = p.objective;
-      drawerReal.innerHTML = p.real.map(x=>`<li>${x}</li>`).join('');
-      drawerResults.innerHTML = p.results.map(x=>`<li>${x}</li>`).join('');
+      // Utiliser les traductions si disponibles, sinon fallback sur les données originales
+      const projectTitle = window.i18n.t(`project.${p.id}.title`) || p.title;
+      const projectObjective = window.i18n.t(`project.${p.id}.objective`) || p.objective;
+      const projectReal = window.i18n.t(`project.${p.id}.real`) || p.real;
+      const projectResults = window.i18n.t(`project.${p.id}.results`) || p.results;
+      
+      // Mapping des zones des projets
+      const areaMapping = {
+        'ATS · Supervision · SQL': window.i18n.t('area.ats-supervision-sql'),
+        'ATS · RFID · Sécurité': window.i18n.t('area.ats-rfid-securite'),
+        'ATR · RFID · Sécurité': window.i18n.t('area.atr-rfid-securite'),
+        'ATS · ATR · Web · DataViz': window.i18n.t('area.ats-atr-web-dataviz'),
+        'Android · API · UX': window.i18n.t('area.android-api-ux'),
+        'ATR · Supervision · Qualité': window.i18n.t('area.atr-supervision-qualite'),
+        'ATR · Vision · Automatisme': window.i18n.t('area.atr-vision-automatisme')
+      };
+      
+      const translatedArea = areaMapping[p.area] || p.area;
+      
+      drawerTitle.textContent = projectTitle;
+      drawerArea.textContent = translatedArea;
+      drawerObjective.textContent = projectObjective;
+      drawerReal.innerHTML = projectReal.map(x=>`<li>${x}</li>`).join('');
+      drawerResults.innerHTML = projectResults.map(x=>`<li>${x}</li>`).join('');
       
       // Réinitialiser la section des compétences pour un projet normal
       drawerSkillsSection.classList.remove('hidden');
-      drawerSkillsTitle.textContent = 'Compétences';
+      drawerSkillsTitle.textContent = window.i18n.t('drawer.skills');
       drawerSkills.innerHTML = p.skills.map(chip).join('');
 
       // Charger les commentaires avec le nouveau composant V2
@@ -466,12 +863,30 @@
       } else {
         drawerImagesSection.classList.remove('hidden');
         drawerImages.innerHTML = p.images.map((img, i) => {
-          const safeTitle = (img.title || '').replace(/'/g, "\\'");
+          // Mapping des légendes d'images
+          const titleMapping = {
+            'Étiquette roquette': window.i18n.t('image.etiquette-roquette'),
+            'Interface supervision': window.i18n.t('image.interface-supervision'),
+            'Interface RFID': window.i18n.t('image.interface-rfid'),
+            'Badge opérateur': window.i18n.t('image.badge-operateur'),
+            'Interface RFID ATR': window.i18n.t('image.interface-rfid-atr'),
+            'Tableau de bord énergétique': window.i18n.t('image.tableau-bord-energetique'),
+            'Écran d\'accueil': window.i18n.t('image.ecran-accueil'),
+            'Liste des Gammes': window.i18n.t('image.liste-gammes'),
+            'Validation étapes': window.i18n.t('image.validation-etapes'),
+            'Interface Parametres': window.i18n.t('image.interface-parametres'),
+            'Supervision soudures': window.i18n.t('image.supervision-soudures'),
+            'Historique paramètres': window.i18n.t('image.historique-parametres'),
+            'Caméra de détection': window.i18n.t('image.camera-detection')
+          };
+          
+          const translatedTitle = titleMapping[img.title] || img.title;
+          const safeTitle = (translatedTitle || '').replace(/'/g, "\\'");
           return `
           <div class="relative group cursor-pointer" onclick="openImageModal('${img.src}', '${safeTitle}')">
-            <img src="${img.src}" alt="${img.title || 'Capture ' + (i+1)}" 
+            <img src="${img.src}" alt="${translatedTitle || 'Capture ' + (i+1)}" 
                  class="w-full h-48 object-cover rounded-xl border border-white/10 transition-transform hover:scale-105" />
-            ${img.title ? `<p class="text-xs text-slate-400 mt-1">${img.title}</p>` : ''}
+            ${translatedTitle ? `<p class="text-xs text-slate-400 mt-1">${translatedTitle}</p>` : ''}
           </div>
         `}).join('');
       }
@@ -535,13 +950,33 @@
     // --- Rendu des cartes ---
     function renderCards(list) {
       grid.innerHTML = '';
+      const currentLang = window.i18n.getLang();
+      
       list.forEach(p => {
         const el = document.createElement('article');
         el.className = 'card relative rounded-2xl p-4 shadow-glass hover:shadow-2xl hover:shadow-black/30 transition-shadow duration-300';
 
         const isEnCours = (p.status||'livre') === 'en_cours';
         const statusEmoji = isEnCours ? '🟡' : '🟢';
-        const statusLabel = isEnCours ? 'En cours' : 'Terminé';
+        const statusLabel = isEnCours ? window.i18n.t('status.inProgress') : window.i18n.t('status.completed');
+
+        // Utiliser les traductions si disponibles, sinon fallback sur les données originales
+        const projectTitle = window.i18n.t(`project.${p.id}.title`) || p.title;
+        const projectObjective = window.i18n.t(`project.${p.id}.objective`) || p.objective;
+        const projectRealShort = window.i18n.t(`project.${p.id}.real_short`) || p.real_short || p.real.slice(0,3);
+        const projectResultsShort = window.i18n.t(`project.${p.id}.results_short`) || p.results_short || p.results.slice(0,3);
+        
+        // Mapping des zones pour les cartes
+        const areaMapping = {
+          'ATS · Supervision · SQL': window.i18n.t('area.ats-supervision-sql'),
+          'ATS · RFID · Sécurité': window.i18n.t('area.ats-rfid-securite'),
+          'ATR · RFID · Sécurité': window.i18n.t('area.atr-rfid-securite'),
+          'ATS · ATR · Web · DataViz': window.i18n.t('area.ats-atr-web-dataviz'),
+          'Android · API · UX': window.i18n.t('area.android-api-ux'),
+          'ATR · Supervision · Qualité': window.i18n.t('area.atr-supervision-qualite'),
+          'ATR · Vision · Automatisme': window.i18n.t('area.atr-vision-automatisme')
+        };
+        const translatedArea = areaMapping[p.area] || p.area;
 
         el.innerHTML = `
           <div class="flex items-start gap-3">
@@ -549,28 +984,28 @@
             <div class="flex-1">
               <div class="flex items-center justify-between gap-3">
                 <h3 class="text-base font-semibold leading-tight flex items-center gap-2">
-                  ${p.title}
+                  ${projectTitle}
                   <span class="chip text-[10px] px-2 py-0.5 rounded-full bg-white/5">${statusEmoji} ${statusLabel}</span>
                 </h3>
-                <button class="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20" data-open>Voir</button>
+                <button class="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20" data-open>${window.i18n.t('btn.view')}</button>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">${p.area}</p>
+              <p class="text-xs text-slate-400 mt-0.5">${translatedArea}</p>
               <div class="mt-4 mb-3 p-3 rounded-lg bg-gradient-to-r from-brand-500/10 to-brand-600/5 border-l-2 border-brand-500">
-                <p class="text-xs uppercase tracking-wide text-brand-400 font-semibold mb-1">🎯 Objectif</p>
-                <p class="text-sm text-slate-100 leading-relaxed">${p.objective}</p>
+                <p class="text-xs uppercase tracking-wide text-brand-400 font-semibold mb-1">${window.i18n.t('card.objective')}</p>
+                <p class="text-sm text-slate-100 leading-relaxed">${projectObjective}</p>
               </div>
               <div class="flex flex-wrap gap-1 mt-3">${p.skills.slice(0,5).map(chip).join('')}</div>
               <div class="mt-4 grid grid-cols-2 gap-2">
                 <div class="rounded-xl bg-ink-700/60 border border-white/10 p-3">
-                  <p class="text-[10px] text-slate-400">Réalisation</p>
+                  <p class="text-[10px] text-slate-400">${window.i18n.t('card.realization')}</p>
                   <ul class="mt-1 text-sm list-disc list-inside marker:text-brand-500 space-y-1">
-                    ${(p.real_short || p.real.slice(0,3)).map(x=>`<li>${x}</li>`).join('')}
+                    ${projectRealShort.map(x=>`<li>${x}</li>`).join('')}
                   </ul>
                 </div>
                 <div class="rounded-xl bg-ink-700/60 border border-white/10 p-3">
-                  <p class="text-[10px] text-slate-400">Résultats</p>
+                  <p class="text-[10px] text-slate-400">${window.i18n.t('card.results')}</p>
                   <ul class="mt-1 text-sm list-disc list-inside marker:text-emerald-400 space-y-1">
-                    ${(p.results_short || p.results.slice(0,3)).map(x=>`<li>${x}</li>`).join('')}
+                    ${projectResultsShort.map(x=>`<li>${x}</li>`).join('')}
                   </ul>
                 </div>
               </div>
@@ -604,6 +1039,7 @@
 
     // --- Lexique des compétences ---
     const skillsLexicon = {
+      fr: {
       "SQL Server": "Système de gestion de base de données relationnelle Microsoft pour stocker, gérer et exploiter les données de production.",
       "Automatisme": "Programmation et configuration d'automates industriels (PLC) pour piloter les machines et processus de production.",
       "RFID": "Technologie de Radio-Identification pour l'identification automatique et la traçabilité par badges sans contact.",
@@ -632,14 +1068,45 @@
       "Déploiement multi-site": "Déploiement et harmonisation de solutions techniques sur plusieurs sites de production.",
       "Impression étiquettes": "Gestion et automatisation de l'impression d'étiquettes de traçabilité.",
       "C# Desktop": "Développement d'applications Windows desktop avec l'environnement .NET et C#."
+      },
+      it: {
+        "SQL Server": "Sistema di gestione di database relazionali Microsoft per memorizzare, gestire e sfruttare i dati di produzione.",
+        "Automatisme": "Programmazione e configurazione di automi industriali (PLC) per pilotare macchine e processi di produzione.",
+        "RFID": "Tecnologia di Radio-Identificazione per l'identificazione automatica e la tracciabilità tramite badge senza contatto.",
+        "Cimplicity": "Software di supervisione industriale GE Digital per la visualizzazione e il controllo dei processi in tempo reale.",
+        "Basic Script": "Linguaggio di script integrato in Cimplicity per automatizzare le attività e creare logiche personalizzate.",
+        "Gestion projet": "Coordinamento, pianificazione e monitoraggio di progetti industriali dalla definizione alla consegna.",
+        "C#": "Linguaggio di programmazione orientato agli oggetti Microsoft per sviluppare applicazioni desktop Windows.",
+        "OPC": "Standard di comunicazione industriale (OPC DA/UA) per scambiare dati tra automi e software.",
+        "S7": "Gamma di automi programmabili Siemens (S7-300, S7-1200, S7-1500) e linguaggio di programmazione associato.",
+        "HTML5": "Linguaggio di markup web moderno per creare interfacce utente interattive e responsive.",
+        "Tailwind CSS": "Framework CSS utility per progettare rapidamente interfacce web moderne ed eleganti.",
+        "Chart.js": "Libreria JavaScript open-source per creare grafici e visualizzazioni di dati interattivi.",
+        "Communication industrielle": "Implementazione e sfruttamento di reti industriali (Profinet, Ethernet/IP, Modbus...).",
+        "Android": "Sviluppo di applicazioni mobili native per la piattaforma Android.",
+        "Kotlin": "Linguaggio di programmazione moderno e ufficiale per lo sviluppo di applicazioni Android.",
+        "Retrofit": "Libreria Android per gestire le comunicazioni HTTP con API REST in modo semplificato.",
+        "API REST": "Progettazione e utilizzo di interfacce di programmazione web per lo scambio di dati tra sistemi.",
+        "Architecture client/serveur": "Progettazione di applicazioni distribuite con separazione delle responsabilità tra client e server.",
+        "UI/UX": "Design di interfacce utente intuitive e progettazione di esperienze utente ottimali.",
+        "Réseau industriel": "Configurazione e sfruttamento di reti dedicate all'automazione (Profinet, Ethernet industriale).",
+        "Analyse de données": "Sfruttamento e interpretazione di dati industriali per ottimizzare i processi.",
+        "Vision industrielle": "Sistemi di controllo qualità tramite camera per il rilevamento e l'ispezione automatizzata.",
+        "IFM Vision Assistant": "Software e sistema di visione industriale IFM per la configurazione di camere intelligenti.",
+        "Profinet": "Protocollo di comunicazione industriale Siemens basato su Ethernet per l'automazione in tempo reale.",
+        "Statistiques": "Raccolta, analisi e sfruttamento di dati numerici per il pilotaggio e il miglioramento continuo.",
+        "Déploiement multi-site": "Implementazione e armonizzazione di soluzioni tecniche su più siti di produzione.",
+        "Impression étiquettes": "Gestione e automazione della stampa di etichette di tracciabilità.",
+        "C# Desktop": "Sviluppo di applicazioni Windows desktop con l'ambiente .NET e C#."
+      }
     };
 
     // --- Affichage de toutes les compétences ---
     function showAllSkills() {
       const allSkills = uniq(DATA.flatMap(p=>p.skills)).sort();
       
-      drawerTitle.textContent = '📚 Lexique des Compétences';
-      drawerArea.textContent = `${allSkills.length} compétences techniques mobilisées`;
+      drawerTitle.textContent = window.i18n.t('skills.lexicon.title');
+      drawerArea.textContent = `${allSkills.length} ${window.i18n.t('skills.lexicon.subtitle')}`;
       
       // Créer les bulles cliquables DANS l'objectif (en haut)
       const chipsHTML = allSkills.map(skill => {
@@ -648,16 +1115,17 @@
       }).join('');
       
       drawerObjective.innerHTML = `
-        <p class="text-slate-200 mb-4">Ensemble des savoir-faire techniques mis en œuvre dans les projets 2025.</p>
+        <p class="text-slate-200 mb-4">${window.i18n.t('skills.lexicon.description')}</p>
         <div class="mt-4 p-3 rounded-lg bg-slate-800/60 border border-slate-600/30">
-          <p class="text-xs uppercase tracking-wide text-slate-400 mb-3">🔍 Cliquez sur une compétence pour voir sa définition</p>
+          <p class="text-xs uppercase tracking-wide text-slate-400 mb-3">${window.i18n.t('skills.lexicon.clickHint')}</p>
           <div class="flex flex-wrap gap-2">${chipsHTML}</div>
         </div>
       `;
       
       // Créer le lexique avec IDs dans REALISATION
+      const currentLang = window.i18n.getLang();
       const lexiqueHTML = allSkills.map(skill => {
-        const description = skillsLexicon[skill] || 'Compétence technique spécialisée.';
+        const description = skillsLexicon[currentLang]?.[skill] || window.i18n.t('skills.lexicon.defaultDesc');
         const safeId = skill.replace(/[^a-zA-Z0-9]/g, '_');
         return `
           <div id="skill-${safeId}" class="skill-card mb-4 p-4 rounded-xl bg-ink-700/60 border border-white/10 hover:border-brand-500/30 transition-all">
@@ -740,11 +1208,326 @@
       document.getElementById('kpiSkillsCard').addEventListener('click', showAllSkills);
 
       // Event listeners pour les boutons
-      btnPrint.addEventListener('click', () => window.print());
+      btnShare.addEventListener('click', () => {
+        const currentUrl = window.location.href;
+        const shareText = window.i18n.t('app.title') + ' - ' + window.i18n.t('app.subtitle');
+        
+        // Créer un menu de partage
+        const shareMenu = document.createElement('div');
+        shareMenu.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm';
+        shareMenu.innerHTML = `
+          <div class="bg-ink-800 border border-white/10 rounded-2xl p-6 max-w-md w-full">
+            <h3 class="text-lg font-semibold mb-4" data-i18n="share.title">Partager le dashboard</h3>
+            <div class="space-y-3">
+              <button class="w-full p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-3" onclick="shareViaTeams()">
+                <span class="text-xl">💼</span>
+                <span data-i18n="share.teams">Partager via Microsoft Teams</span>
+              </button>
+              <button class="w-full p-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-3" onclick="shareViaOutlook()">
+                <span class="text-xl">📧</span>
+                <span data-i18n="share.outlook">Partager via Outlook</span>
+              </button>
+              <button class="w-full p-3 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center gap-3" onclick="copyToClipboard()">
+                <span class="text-xl">📋</span>
+                <span data-i18n="share.copy">Copier le lien</span>
+              </button>
+            </div>
+            <button class="mt-4 w-full p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400" onclick="closeShareMenu()" data-i18n="btn.close">Fermer</button>
+          </div>
+        `;
+        
+        document.body.appendChild(shareMenu);
+        
+        // Appliquer les traductions au menu
+        window.requestAnimationFrame(() => {
+          const currentLang = window.i18n.getLang();
+          shareMenu.querySelectorAll("[data-i18n]").forEach(el => {
+            const key = el.getAttribute("data-i18n");
+            const translation = window.i18n.t(key);
+            if (translation !== key) el.textContent = translation;
+          });
+        });
+        
+        // Fermer en cliquant à l'extérieur
+        shareMenu.addEventListener('click', (e) => {
+          if (e.target === shareMenu) closeShareMenu();
+        });
+        
+        // Fonction pour générer un message dynamique basé sur les projets
+        const generateDynamicMessage = (currentLang) => {
+          const currentUrl = window.location.href;
+          const projects = window.DATA || [];
+          
+          // Corriger les filtres selon les vraies valeurs des projets
+          const activeProjects = projects.filter(p => p.status === 'en_cours').length;
+          const completedProjects = projects.filter(p => p.status === 'livre').length;
+          
+          // Compter les projets par zone (selon les filtres)
+          const atsProjects = projects.filter(p => p.filters && p.filters.includes('ATS')).length;
+          const atrProjects = projects.filter(p => p.filters && p.filters.includes('ATR')).length;
+          const bothProjects = projects.filter(p => p.filters && p.filters.includes('ATS') && p.filters.includes('ATR')).length;
+          
+          const messages = {
+            fr: `Bonjour,
+
+Je souhaitais partager avec vous ma synthèse interactive des projets 2025.
+
+📊 Dashboard Projets 2025 - Synthèse ATS/ATR
+${currentUrl}
+
+Cette synthèse présente l'ensemble des projets techniques réalisés cette année, avec :
+• ${projects.length} projets au total (${activeProjects} en cours, ${completedProjects} terminés)
+• ${atsProjects} projets ATS, ${atrProjects} projets ATR, ${bothProjects} projets mixtes
+• Détails techniques et résultats obtenus
+• Compétences mobilisées et technologies utilisées
+• Captures d'écran et démonstrations
+
+Le dashboard est interactif et permet de naviguer dans chaque projet pour découvrir les réalisations, objectifs et impacts business.
+
+N'hésitez pas à me faire vos retours si vous souhaitez plus de détails sur un projet spécifique.
+
+Cordialement,
+Nathan Villaume`,
+            it: `Buongiorno,
+
+Desideravo condividere con voi la mia sintesi interattiva dei progetti 2025.
+
+📊 Dashboard Progetti 2025 - Sintesi ATS/ATR
+${currentUrl}
+
+Questa sintesi presenta l'insieme dei progetti tecnici realizzati quest'anno, con :
+• ${projects.length} progetti totali (${activeProjects} in corso, ${completedProjects} completati)
+• ${atsProjects} progetti ATS, ${atrProjects} progetti ATR, ${bothProjects} progetti misti
+• Dettagli tecnici e risultati ottenuti
+• Competenze mobilitate e tecnologie utilizzate
+• Screenshot e dimostrazioni
+
+La dashboard è interattiva e permette di navigare in ogni progetto per scoprire le realizzazioni, obiettivi e impatti business.
+
+Non esitate a farmi i vostri feedback se desiderate maggiori dettagli su un progetto specifico.
+
+Cordiali saluti,
+Nathan Villaume`
+          };
+          
+          return messages[currentLang] || messages.fr;
+        };
+
+        // Fonctions de partage
+        window.shareViaTeams = () => {
+          console.log('shareViaTeams appelé');
+          
+          const currentLang = window.i18n.getLang();
+          const professionalMessage = generateDynamicMessage(currentLang);
+
+          // Fonction de copie avec fallback
+          const copyToClipboard = (text) => {
+            // Méthode moderne (nécessite HTTPS)
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              return navigator.clipboard.writeText(text);
+            }
+            
+            // Méthode de fallback (fonctionne en HTTP)
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+              const successful = document.execCommand('copy');
+              document.body.removeChild(textArea);
+              return successful ? Promise.resolve() : Promise.reject(new Error('execCommand failed'));
+            } catch (err) {
+              document.body.removeChild(textArea);
+              return Promise.reject(err);
+            }
+          };
+
+          // Copier le message dans le presse-papiers
+          copyToClipboard(professionalMessage).then(() => {
+            console.log('Message copié avec succès');
+            
+            // Messages de notification selon la langue
+            const notificationMessages = {
+              fr: {
+                title: 'Message copié !',
+                subtitle: 'Collez (Ctrl+V) dans Teams'
+              },
+              it: {
+                title: 'Messaggio copiato!',
+                subtitle: 'Incolla (Ctrl+V) in Teams'
+              }
+            };
+            
+            const notif = notificationMessages[currentLang] || notificationMessages.fr;
+            
+            // Afficher une notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-[100] bg-blue-600 text-white p-4 rounded-lg shadow-lg max-w-sm';
+            notification.innerHTML = `
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">✅</span>
+                <div>
+                  <p class="font-semibold">${notif.title}</p>
+                  <p class="text-sm opacity-90">${notif.subtitle}</p>
+                </div>
+              </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+              if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+              }
+            }, 4000);
+            
+            // Essayer d'ouvrir Teams (avec confirmation si nécessaire)
+            try {
+              window.location.href = 'msteams:';
+              console.log('Tentative d\'ouverture Teams');
+            } catch (e) {
+              console.log('Erreur ouverture Teams:', e);
+            }
+            
+          }).catch(err => {
+            console.error('Erreur copie presse-papiers:', err);
+            
+            // Messages d'erreur selon la langue
+            const errorMessages = {
+              fr: {
+                title: 'Erreur',
+                subtitle: 'Impossible de copier le message'
+              },
+              it: {
+                title: 'Errore',
+                subtitle: 'Impossibile copiare il messaggio'
+              }
+            };
+            
+            const errorNotif = errorMessages[currentLang] || errorMessages.fr;
+            
+            // Fallback: notification d'erreur
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-[100] bg-red-600 text-white p-4 rounded-lg shadow-lg max-w-sm';
+            notification.innerHTML = `
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">❌</span>
+                <div>
+                  <p class="font-semibold">${errorNotif.title}</p>
+                  <p class="text-sm opacity-90">${errorNotif.subtitle}</p>
+                </div>
+              </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+              if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+              }
+            }, 3000);
+          });
+          
+          window.closeShareMenu();
+        };
+        
+        window.shareViaOutlook = () => {
+          const currentLang = window.i18n.getLang();
+          const professionalMessage = generateDynamicMessage(currentLang);
+          
+          // Sujets selon la langue
+          const subjects = {
+            fr: 'Dashboard Projets 2025 - Synthèse ATS/ATR',
+            it: 'Dashboard Progetti 2025 - Sintesi ATS/ATR'
+          };
+          
+          const subject = subjects[currentLang] || subjects.fr;
+          const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(professionalMessage)}`;
+          
+          // Créer un lien invisible pour déclencher l'ouverture
+          const link = document.createElement('a');
+          link.href = mailtoUrl;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          window.closeShareMenu();
+        };
+        
+        window.copyToClipboard = async () => {
+          const currentUrl = window.location.href;
+          
+          // Fonction de copie avec fallback
+          const copyText = (text) => {
+            // Méthode moderne (nécessite HTTPS)
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              return navigator.clipboard.writeText(text);
+            }
+            
+            // Méthode de fallback (fonctionne en HTTP)
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+              const successful = document.execCommand('copy');
+              document.body.removeChild(textArea);
+              return successful ? Promise.resolve() : Promise.reject(new Error('execCommand failed'));
+            } catch (err) {
+              document.body.removeChild(textArea);
+              return Promise.reject(err);
+            }
+          };
+          
+          try {
+            await copyText(currentUrl);
+            // Afficher une notification de succès
+            const btn = shareMenu.querySelector('[onclick="copyToClipboard()"]');
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Copié !';
+            btn.classList.add('bg-green-500/20', 'text-green-400');
+            setTimeout(() => {
+              btn.textContent = originalText;
+              btn.classList.remove('bg-green-500/20', 'text-green-400');
+            }, 2000);
+          } catch (err) {
+            console.error('Erreur lors de la copie:', err);
+            // Afficher une notification d'erreur
+            const btn = shareMenu.querySelector('[onclick="copyToClipboard()"]');
+            const originalText = btn.textContent;
+            btn.textContent = '❌ Erreur';
+            btn.classList.add('bg-red-500/20', 'text-red-400');
+            setTimeout(() => {
+              btn.textContent = originalText;
+              btn.classList.remove('bg-red-500/20', 'text-red-400');
+            }, 2000);
+          }
+        };
+        
+        window.closeShareMenu = () => {
+          document.body.removeChild(shareMenu);
+        };
+      });
 
       console.info('✅ Dashboard initialisé avec', DATA.length, 'projets');
       console.info('✅ Système de commentaires V2 initialisé (JSONL multi-utilisateurs)');
+      console.info('✅ Système i18n initialisé avec langue:', window.i18n.getLang());
     });
+
+    // Exposer les fonctions globalement pour l'i18n
+    window.renderCards = renderCards;
+    window.showAllSkills = showAllSkills;
+    window.DATA = DATA;
+    window.currentProjectId = currentProjectId;
     </script>
 </body>
 </html>

@@ -71,7 +71,7 @@ export class ZoomPanController {
     this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
     this.canvas.addEventListener('touchend', this.handleTouchEnd);
     
-    console.log('[ZoomPanController] Initialisé');
+    // ZoomPanController initialisé
   }
   
   /**
@@ -79,7 +79,7 @@ export class ZoomPanController {
    */
   setBounds(bounds) {
     this.originalBounds = bounds;
-    console.log('[ZoomPanController] Bornes définies:', bounds);
+    // Bornes définies
   }
   
   /**
@@ -128,7 +128,7 @@ export class ZoomPanController {
     // Changement du curseur
     this.canvas.style.cursor = 'grabbing';
     
-    console.log('[ZoomPanController] Pan started');
+    // Pan started
   }
   
   /**
@@ -172,7 +172,7 @@ export class ZoomPanController {
       this.isPanning = false;
       this.panStart = null;
       this.canvas.style.cursor = 'default';
-      console.log('[ZoomPanController] Pan ended');
+      // Pan ended
     }
   }
   
@@ -226,7 +226,7 @@ export class ZoomPanController {
     
     this.chart.update('none');
     
-    console.log(`[ZoomPanController] Zoom ${zoomAxis}: ${direction > 0 ? 'out' : 'in'}`);
+    // Zoom applied
   }
   
   /**
@@ -250,7 +250,7 @@ export class ZoomPanController {
         }
       };
       
-      console.log('[ZoomPanController] Pinch started');
+      // Pinch started
     }
   }
   
@@ -299,7 +299,7 @@ export class ZoomPanController {
   handleTouchEnd(event) {
     if (event.touches.length < 2) {
       this.touchState = null;
-      console.log('[ZoomPanController] Pinch ended');
+      // Pinch ended
     }
   }
   
@@ -380,7 +380,7 @@ export class ZoomPanController {
     });
     
     this.chart.update('none');
-    console.log('[ZoomPanController] Zoom reset');
+    // Zoom reset
   }
   
   /**
@@ -413,6 +413,6 @@ export class ZoomPanController {
     this.canvas.removeEventListener('touchmove', this.handleTouchMove);
     this.canvas.removeEventListener('touchend', this.handleTouchEnd);
     
-    console.log('[ZoomPanController] Détruit');
+    // ZoomPanController détruit
   }
 }
