@@ -207,6 +207,10 @@ function watchSettingsChanges() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Afficher le loader immédiatement au chargement
+  const { showLoader } = await import('./ui.js');
+  showLoader('Initialisation de l\'interface...');
+  
   // Initialiser l'API base directement
   setApiBase('http://10.250.13.4:8088/api/energy');
   console.log('🌐 API configurée:', state.apiBase);
@@ -227,6 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialisation du NOUVEAU système de charts
   console.log('🚀 [main] Initializing NEW chart system...');
+  showLoader('Initialisation des graphiques...');
   initializeNewChartSystem();
   
   // Système de charts unifié
@@ -243,8 +248,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }, 1000);
 
   try {
+    showLoader('Chargement des données TR1...');
     await loadSeries(1);
+    showLoader('Chargement des données TR2...');
     await loadSeries(2);
+    showLoader('Mise à jour des graphiques...');
     refreshNewChartSystem(); // NOUVEAU système
   } catch (err) {
     console.error('[main] initial load failed', err);

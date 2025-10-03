@@ -249,20 +249,15 @@ export async function startPolling() {
   recomputeAdaptivePolling();
   stopPolling();
 
-  if (state.initialLoad) {
-    uiShowLoader("Chargement de l'historique...");
-    const loaderText = document.querySelector('#loader-text');
-    if (loaderText) loaderText.textContent = "Chargement de l'historique...";
-  }
+  // Le loader est maintenant géré dans main.js, on ne l'affiche plus ici
+  // pour éviter les doublons et les messages contradictoires
 
   if (state.initialLoad) {
     try {
-      const loaderText = document.querySelector('#loader-text');
-      if (loaderText) loaderText.textContent = 'Chargement données TR1...';
+      // Les messages de chargement sont maintenant gérés dans main.js
+      // On ne fait que le polling initial sans afficher de loader
       await loadSeries(1);
-      if (loaderText) loaderText.textContent = 'Chargement données TR2...';
       await loadSeries(2);
-      if (loaderText) loaderText.textContent = 'Mise à jour des graphiques...';
       // refreshCharts(); // Ancien système
       refreshNewChartSystem(); // NOUVEAU système
     } catch (err) {
