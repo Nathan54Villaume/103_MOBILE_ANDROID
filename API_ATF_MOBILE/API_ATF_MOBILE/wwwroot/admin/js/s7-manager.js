@@ -150,9 +150,23 @@ window.deletePlc = async function(id) {
     }
 };
 
-window.editPlc = function(id) {
-    alert('Fonctionnalité de modification à venir');
-    // TODO: Implémenter la modification
+window.editPlc = async function(id) {
+    try {
+        // Récupérer les données de la connexion
+        const connections = await apiClient.getPlcConnections();
+        const connection = connections.find(c => c.id === id);
+        
+        if (!connection) {
+            alert('❌ Connexion PLC non trouvée');
+            return;
+        }
+        
+        // Afficher la modal de modification
+        showEditPlcModal(connection);
+    } catch (error) {
+        console.error('Erreur lors de la récupération de la connexion PLC:', error);
+        alert(`❌ Erreur: ${error.message}`);
+    }
 };
 
 // Fonction pour tester une connexion PLC individuelle
@@ -196,4 +210,216 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// =========== MODAL DE MODIFICATION ===========
+
+function showEditPlcModal(connection) {
+    // Créer la modal si elle n'existe pas
+    let modal = document.getElementById('editPlcModal');
+    if (!modal) {
+        modal = createEditPlcModal();
+        document.body.appendChild(modal);
+    }
+    
+    // Remplir les champs avec les données actuelles
+    document.getElementById('editPlcId').value = connection.id;
+    document.getElementById('editPlcName').value = connection.name;
+    document.getElementById('editPlcIpAddress').value = connection.ipAddress;
+    document.getElementById('editPlcRack').value = connection.rack;
+    document.getElementById('editPlcSlot').value = connection.slot;
+    document.getElementById('editPlcPort').value = connection.port;
+    document.getElementById('editPlcCpuType').value = connection.cpuType;
+    
+    // Afficher la modal
+    modal.classList.remove('hidden');
+}
+
+function createEditPlcModal() {
+    const modal = document.createElement('div');
+    modal.id = 'editPlcModal';
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden';
+    
+    modal.innerHTML = `
+        <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md mx-4 border border-white/10">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-white">Modifier la connexion PLC</h3>
+                    <button onclick="closeEditPlcModal()" class="text-slate-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="editPlcForm" class="space-y-4">
+                    <input type="hidden" id="editPlcId">
+                    
+                    <div>
+                        <label for="editPlcName" class="block text-sm text-slate-300 mb-2">Nom *</label>
+                        <input 
+                            type="text" 
+                            id="editPlcName" 
+                            name="name"
+                            placeholder="Nom du PLC"
+                            class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            required
+                        />
+                    </div>
+                    
+                    <div>
+                        <label for="editPlcIpAddress" class="block text-sm text-slate-300 mb-2">Adresse IP *</label>
+                        <input 
+                            type="text" 
+                            id="editPlcIpAddress" 
+                            name="ipAddress"
+                            placeholder="192.168.1.100"
+                            class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            required
+                        />
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="editPlcRack" class="block text-sm text-slate-300 mb-2">Rack</label>
+                            <input 
+                                type="number" 
+                                id="editPlcRack" 
+                                name="rack"
+                                min="0"
+                                max="7"
+                                class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            />
+                        </div>
+                        <div>
+                            <label for="editPlcSlot" class="block text-sm text-slate-300 mb-2">Slot</label>
+                            <input 
+                                type="number" 
+                                id="editPlcSlot" 
+                                name="slot"
+                                min="0"
+                                max="31"
+                                class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="editPlcPort" class="block text-sm text-slate-300 mb-2">Port</label>
+                            <input 
+                                type="number" 
+                                id="editPlcPort" 
+                                name="port"
+                                min="1"
+                                max="65535"
+                                class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            />
+                        </div>
+                        <div>
+                            <label for="editPlcCpuType" class="block text-sm text-slate-300 mb-2">Type CPU</label>
+                            <select 
+                                id="editPlcCpuType" 
+                                name="cpuType"
+                                class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            >
+                                <option value="S7-200">S7-200</option>
+                                <option value="S7-300">S7-300</option>
+                                <option value="S7-400">S7-400</option>
+                                <option value="S7-1200">S7-1200</option>
+                                <option value="S7-1500" selected>S7-1500</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button 
+                            type="button" 
+                            onclick="closeEditPlcModal()"
+                            class="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                        >
+                            Annuler
+                        </button>
+                        <button 
+                            type="submit"
+                            class="flex-1 px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white rounded-lg transition-colors"
+                        >
+                            Modifier
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    // Ajouter l'event listener pour le formulaire
+    const form = modal.querySelector('#editPlcForm');
+    form.addEventListener('submit', handleEditPlc);
+    
+    return modal;
+}
+
+async function handleEditPlc(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const id = document.getElementById('editPlcId').value;
+    
+    const data = {
+        name: formData.get('name'),
+        ipAddress: formData.get('ipAddress'),
+        rack: parseInt(formData.get('rack')),
+        slot: parseInt(formData.get('slot')),
+        port: parseInt(formData.get('port')),
+        cpuType: formData.get('cpuType')
+    };
+    
+    try {
+        // Désactiver le bouton pendant la requête
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalText = submitButton.textContent;
+        submitButton.textContent = 'Modification...';
+        submitButton.disabled = true;
+        
+        await apiClient.updatePlcConnection(id, data);
+        
+        // Fermer la modal
+        closeEditPlcModal();
+        
+        // Rafraîchir la liste
+        await updateS7Status();
+        
+        console.log('✅ Connexion PLC modifiée:', data.name);
+    } catch (error) {
+        console.error('Erreur lors de la modification:', error);
+        alert(`❌ Erreur: ${error.message}`);
+        
+        // Réactiver le bouton
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+    }
+}
+
+function closeEditPlcModal() {
+    const modal = document.getElementById('editPlcModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Fermer la modal en cliquant à l'extérieur
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('editPlcModal');
+    if (modal && !modal.classList.contains('hidden') && e.target === modal) {
+        closeEditPlcModal();
+    }
+});
+
+// Fermer la modal avec la touche Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditPlcModal();
+    }
+});
 
