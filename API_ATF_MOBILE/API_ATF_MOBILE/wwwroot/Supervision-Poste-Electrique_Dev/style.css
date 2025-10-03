@@ -543,6 +543,15 @@ canvas {
   height: 2em;
 }
 
+/* Couleurs spécifiques pour les icônes KPI selon le type */
+.kpi[data-kind="p_kw"] .kpi-title .icon {
+  color: var(--tesla-amber);
+}
+
+.kpi[data-kind="q_kvar"] .kpi-title .icon {
+  color: var(--tesla-amber);
+}
+
 .kpi .kpi-value {
   display: flex;
   align-items: baseline;
