@@ -26,6 +26,16 @@ const state = {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Démarrage de l\'interface d\'administration');
     
+    // SÉCURITÉ CRITIQUE : Nettoyer l'URL des paramètres d'authentification
+    // Empêcher l'exposition des identifiants dans l'URL
+    const url = new URL(window.location);
+    if (url.searchParams.has('username') || url.searchParams.has('password')) {
+        console.warn('🚨 SÉCURITÉ: Paramètres d\'authentification détectés dans l\'URL - Nettoyage en cours');
+        url.searchParams.delete('username');
+        url.searchParams.delete('password');
+        window.history.replaceState({}, document.title, url.toString());
+    }
+    
     // SÉCURITÉ : Nettoyer toute ancienne session au chargement
     // Forcer la reconnexion à chaque visite
     localStorage.removeItem('admin_token');
@@ -260,15 +270,17 @@ function updateKPIs(data, plcConnections = []) {
     cpuElement.textContent = `${cpuPercent}%`;
     cpuElement.className = `text-2xl font-bold ${getValueColorClass(parseFloat(cpuPercent), 'cpu')}`;
     
-    // Mémoire avec couleur dynamique
+    // Mémoire avec couleur dynamique seulement sur la valeur utilisée
     const memoryUsedMB = metrics.memoryUsageMB.toFixed(0);
     const memoryTotalMB = metrics.totalMemoryMB.toFixed(0);
     const memPercent = (metrics.memoryUsageMB / metrics.totalMemoryMB * 100).toFixed(1);
     const memoryElement = document.getElementById('kpiMemory');
     const memoryPercentElement = document.getElementById('kpiMemoryPercent');
     
-    memoryElement.textContent = `${memoryUsedMB} / ${memoryTotalMB} MB`;
-    memoryElement.className = `text-2xl font-bold ${getValueColorClass(parseFloat(memPercent), 'memory')}`;
+    // Créer le HTML avec couleur seulement sur la valeur utilisée
+    const colorClass = getValueColorClass(parseFloat(memPercent), 'memory');
+    memoryElement.innerHTML = `<span class="${colorClass}">${memoryUsedMB}</span> / ${memoryTotalMB} MB`;
+    memoryElement.className = 'text-2xl font-bold';
     memoryPercentElement.textContent = memPercent;
     memoryPercentElement.className = getValueColorClass(parseFloat(memPercent), 'memory');
     

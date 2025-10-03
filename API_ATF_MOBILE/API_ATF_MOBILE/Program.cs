@@ -91,7 +91,10 @@ var app = builder.Build();
 // a) CORS (avant le reste)
 app.UseCors("AllowAll");
 
-// a.1) Middleware de logging des requêtes
+// a.1) Middleware de sécurité (avant tout le reste)
+app.UseMiddleware<SecurityMiddleware>();
+
+// a.2) Middleware de logging des requêtes
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 // b) Swagger
