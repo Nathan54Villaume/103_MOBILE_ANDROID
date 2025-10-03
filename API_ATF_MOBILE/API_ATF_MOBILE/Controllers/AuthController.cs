@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using API_ATF_MOBILE.Models;
 using API_ATF_MOBILE.Services;
 
@@ -108,6 +109,54 @@ namespace API_ATF_MOBILE.Controllers
                 Role = role,
                 LastLogin = DateTime.Now
             });
+        }
+
+        /// <summary>
+        /// TEST - Vérifier si l'utilisateur existe dans EQUIPE_RFID
+        /// </summary>
+        [HttpGet("test/check-user/{matricule}")]
+        [AllowAnonymous]
+        public async Task<ActionResult> TestCheckUser(string matricule, [FromServices] Data.ApplicationDbContext dbContext)
+        {
+            try
+            {
+                _logger.LogInformation("TEST: Recherche du matricule {Matricule}", matricule);
+                
+                var user = await dbContext.EquipeRfid
+                    .FirstOrDefaultAsync(u => u.Matricule.Trim().ToLower() == matricule.Trim().ToLower());
+                
+                if (user == null)
+                {
+                    _logger.LogWarning("TEST: Utilisateur {Matricule} NON TROUVÉ", matricule);
+                    return Ok(new
+                    {
+                        found = false,
+                        message = $"Utilisateur {matricule} non trouvé dans EQUIPE_RFID"
+                    });
+                }
+                
+                _logger.LogInformation("TEST: Utilisateur {Matricule} TROUVÉ", matricule);
+                return Ok(new
+                {
+                    found = true,
+                    matricule = user.Matricule,
+                    nom = user.Nom,
+                    role = user.Role,
+                    hasPassword = !string.IsNullOrEmpty(user.MotDePasse),
+                    passwordLength = user.MotDePasse?.Length ?? 0,
+                    affectation = user.Affectation
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "TEST: Erreur lors de la recherche de {Matricule}", matricule);
+                return StatusCode(500, new
+                {
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace
+                });
+            }
         }
     }
 }

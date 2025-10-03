@@ -28,7 +28,7 @@ builder.Services.AddSingleton<IServerMonitorService, ServerMonitorService>();
 builder.Services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
 builder.Services.AddSingleton<IS7MonitorService, S7MonitorService>();
 builder.Services.AddSingleton<ILogReaderService, LogReaderService>();
-builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddSingleton<IPlcConnectionService, PlcConnectionService>();
 builder.Services.AddScoped<ICommentsService, CommentsService>();
 builder.Services.AddScoped<ICommentsServiceV2, CommentsServiceV2>();

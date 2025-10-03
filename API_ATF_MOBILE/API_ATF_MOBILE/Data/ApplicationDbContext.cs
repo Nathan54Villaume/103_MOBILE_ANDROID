@@ -13,6 +13,7 @@ namespace API_ATF_MOBILE.Data
 
         public DbSet<Etape> Etapes { get; set; }
         public DbSet<EtapeRoleState> EtapeRoleStates { get; set; }
+        public DbSet<EquipeRfid> EquipeRfid { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

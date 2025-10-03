@@ -1,11 +1,13 @@
 // file: API_ATF_MOBILE/Models/Etape.cs
 using API_ATF_MOBILE.Models;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace API_ATF_MOBILE.Models
 {
     public class Etape
     {
+        [Key]
         public int Id_Etape { get; set; }
         public string? Libelle_Etape { get; set; }
         public string? Affectation_Etape { get; set; }
@@ -17,7 +19,7 @@ namespace API_ATF_MOBILE.Models
         // On retire l'ancien champ Etat_Etape :
         // public string? Etat_Etape { get; set; }
 
-        // On ajoute à la place la navigation vers les états par rôle
+        // On ajoute ï¿½ la place la navigation vers les ï¿½tats par rï¿½le
         public ICollection<EtapeRoleState> RoleStates { get; set; } = new List<EtapeRoleState>();
 
         public int? Temps_Reel_Etape { get; set; }

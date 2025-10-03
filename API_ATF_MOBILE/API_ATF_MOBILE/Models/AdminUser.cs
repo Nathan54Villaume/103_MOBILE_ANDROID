@@ -1,11 +1,26 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace API_ATF_MOBILE.Models
 {
+    [Table("AdminUsers")]
     public class AdminUser
     {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        [MaxLength(100)]
         public string Username { get; set; } = string.Empty;
+        
+        [Required]
+        [MaxLength(256)]
         public string PasswordHash { get; set; } = string.Empty;
+        
+        [MaxLength(50)]
         public string Role { get; set; } = "Admin";
-        public DateTime CreatedAt { get; set; }
+        
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? LastLogin { get; set; }
     }
 

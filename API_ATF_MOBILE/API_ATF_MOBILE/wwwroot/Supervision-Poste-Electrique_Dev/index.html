@@ -319,22 +319,12 @@
       .chart-wrapper {
         height: 300px !important;
       }
-      
-      /* Largeur complète sur mobile */
-      div[style*="max-width: 70%"] {
-        max-width: 100% !important;
-      }
     }
     
     @media (max-width: 1200px) {
       /* KPIs responsive - 2 lignes de 5 devient 2 lignes de 3 sur tablette */
       .tesla-grid[style*="grid-template-columns: repeat(5, 1fr)"] {
         grid-template-columns: repeat(3, 1fr) !important;
-      }
-      
-      /* Largeur élargie sur tablette */
-      div[style*="max-width: 70%"] {
-        max-width: 90% !important;
       }
     }
     
@@ -366,7 +356,7 @@
     console.log('Zoom plugin loaded:', !!window['chartjs-plugin-zoom']);
     console.log('Available window objects:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
   </script>
-  <link rel="stylesheet" href="../Supervision-Poste-Electrique_Dev/style.css" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body style="background: var(--tesla-black); color: var(--tesla-white); min-height: 100vh; font-family: var(--tesla-font-primary);">
   <script>
@@ -452,9 +442,6 @@
 
   <!-- Tesla Main Container -->
   <div class="tesla-container" style="min-height: 100vh; padding: var(--tesla-space-lg); background: linear-gradient(135deg, var(--tesla-black) 0%, var(--tesla-gray-900) 100%);">
-    
-    <!-- Inner Container avec largeur limitée -->
-    <div style="max-width: 70%; margin: 0 auto;">
     
     <!-- Tesla Header -->
     <header class="tesla-header" style="margin-bottom: var(--tesla-space-2xl);">
@@ -746,8 +733,6 @@
         <span>N.Villaume</span>
       </div>
     </footer>
-    
-    </div><!-- Fin Inner Container 70% -->
   </div>
 
   <!-- Tesla Settings Button -->
@@ -829,6 +814,6 @@
   </template>
 
   <!-- Tesla Scripts -->
-  <script type="module" src="../Supervision-Poste-Electrique_Dev/js/main.js"></script>
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>

@@ -44,22 +44,22 @@ async function login() {
         }
     ];
 
-    // On cherche si les identifiants correspondent à un utilisateur local
+    // On cherche si les identifiants correspondent ï¿½ un utilisateur local
     const foundUser = localUsers.find(user => user.Matricule.toLowerCase() === matricule.toLowerCase() && user.MotDePasse === password);
 
     if (foundUser) {
-        // Si un utilisateur local est trouvé, on le connecte
+        // Si un utilisateur local est trouvï¿½, on le connecte
         localStorage.setItem("user", JSON.stringify(foundUser));
         window.location.href = "supervision-poste-electrique/index.html";
-        return; // On arrête la fonction ici
+        return; // On arrï¿½te la fonction ici
     }
     // --- FIN DE LA GESTION LOCALE ---
 
-    // Si aucun utilisateur local n'a été trouvé, on continue avec l'appel API
+    // Si aucun utilisateur local n'a ï¿½tï¿½ trouvï¿½, on continue avec l'appel API
     try {
         const payload = {
-            Matricule: matricule,
-            MotDePasse: password
+            Username: matricule,
+            Password: password
         };
 
         const response = await fetch('http://10.250.13.4:8088/api/auth/login', {
