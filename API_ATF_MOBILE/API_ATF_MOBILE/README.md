@@ -71,6 +71,20 @@ Scripts\Deployment\deploy-fixed.ps1
 - **Configuration** : Paramètres système
 - **API** : Documentation des endpoints
 
+### 💬 Système de Commentaires V2 (Nouveau - 03/01/2025)
+- **Multi-commentaires** : Plusieurs commentaires par projet
+- **Pagination** : Chargement progressif (50 commentaires/page)
+- **Optimistic UI** : Ajout instantané avec rollback
+- **Rate limiting** : Protection anti-spam (10 req/5min/IP)
+- **Stockage JSONL** : Format robuste avec file locking
+- **Archivage auto** : Rotation des fichiers >5 Mo
+- **Sécurité** : Anti-XSS, validation stricte
+- **Dates** : Affichage Europe/Paris, stockage UTC
+
+📚 **Documentation complète** : `Documentation/COMMENTS_SYSTEM_V2.md`  
+🚀 **Démarrage rapide** : `Documentation/COMMENTS_V2_QUICKSTART.md`  
+🧪 **Tests** : `http://localhost:8088/Tests/test-comments-v2.html`
+
 ### 🔌 Gestion PLC S7
 - ✅ Ajout de connexions PLC
 - ✅ **Modification de connexions** (nouveau)
@@ -87,8 +101,10 @@ Scripts\Deployment\deploy-fixed.ps1
 ## 🌐 Accès
 
 - **Interface Admin** : `http://localhost:8088/admin/`
+- **Dashboard Projets** : `http://localhost:8088/dashboard-projects-NV.html` (avec commentaires V2)
 - **API Health** : `http://localhost:8088/api/admin/health`
 - **Documentation API** : `http://localhost:8088/api/admin/controllers`
+- **Tests Commentaires** : `http://localhost:8088/Tests/test-comments-v2.html`
 
 ## 🔐 Authentification
 
@@ -122,6 +138,6 @@ Pour toute question ou problème :
 
 ---
 
-**Version** : 1.0  
-**Dernière mise à jour** : Octobre 2025  
+**Version** : 1.1 (Commentaires V2)  
+**Dernière mise à jour** : 03/01/2025  
 **Branche** : dev

@@ -24,6 +24,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="proxy-server.js"></script>
+  <script src="assets/js/comments-component.js"></script>
     <style>
     html, body { background: #0b0f14; min-height: 100vh; }
     .card { backdrop-filter: blur(6px); background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.08); }
@@ -123,18 +124,7 @@
           <div id="drawerMedia" class="grid grid-cols-2 gap-3"></div>
         </section>
         <section class="mt-6 p-4 rounded-xl bg-slate-800/60 border border-slate-600/30">
-          <h4 class="text-sm uppercase tracking-wide text-slate-300 mb-2 flex items-center gap-2">
-            💬 Commentaires du responsable
-          </h4>
-          <textarea id="drawerComment" 
-                    class="w-full min-h-[100px] p-3 rounded-lg bg-ink-700 border border-white/10 text-slate-200 text-sm resize-y focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/30" 
-                    placeholder="Ajoutez vos remarques, observations ou suggestions sur ce projet..."></textarea>
-          <div class="mt-3 flex items-center justify-between">
-            <p class="text-xs text-slate-400">📡 Les commentaires sont partagés sur le réseau</p>
-            <button id="btnSaveComment" class="px-4 py-2 text-sm rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium transition-colors">
-              💾 Enregistrer
-            </button>
-          </div>
+          <div id="commentsContainer"></div>
         </section>
       </div>
     </aside>
@@ -433,13 +423,13 @@
     const drawerImagesSection = document.getElementById('drawerImagesSection');
     const drawerSkillsSection = document.getElementById('drawerSkillsSection');
     const drawerSkillsTitle = document.getElementById('drawerSkillsTitle');
-    const drawerComment = document.getElementById('drawerComment');
-    const btnSaveComment = document.getElementById('btnSaveComment');
-    
     let currentProjectId = null;
 
     let activeFilter = 'all';
     let activeStatus = 'all';
+
+    // --- Composant de commentaires V2 ---
+    let commentsComponent = null;
 
     // --- Fonctions utilitaires ---
     function chip(txt) {
@@ -448,109 +438,6 @@
 
     function uniq(arr) { 
       return [...new Set(arr)]; 
-    }
-
-    // --- Gestion des commentaires ---
-    let allComments = {};
-    
-    async function loadAllComments() {
-      try {
-        const response = await fetch('/api/Comments', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          mode: 'cors'
-        });
-        if (response.ok) {
-          const data = await response.text();
-          allComments = JSON.parse(data);
-          console.log('✅ Commentaires chargés:', allComments);
-        } else {
-          console.error('❌ Erreur HTTP:', response.status, response.statusText);
-        }
-      } catch (e) {
-        console.error('❌ Erreur lors du chargement des commentaires:', e);
-        // Fallback : essayer avec un proxy local
-        await loadAllCommentsFallback();
-      }
-    }
-    
-    // Fallback en cas de problème CORS
-    async function loadAllCommentsFallback() {
-      try {
-        // Utiliser un proxy via le serveur actuel
-        const response = await fetch(window.location.origin + '/api/Comments', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        if (response.ok) {
-          const data = await response.text();
-          allComments = JSON.parse(data);
-          console.log('✅ Commentaires chargés via fallback:', allComments);
-        }
-      } catch (e) {
-        console.error('❌ Erreur fallback:', e);
-        allComments = {}; // Initialiser vide
-      }
-    }
-    
-    function loadComment(projectId) {
-      const commentData = allComments[projectId];
-      if (commentData && commentData.Comment) {
-        return commentData.Comment;
-      }
-      return '';
-    }
-    
-    async function saveComment(projectId, comment) {
-      try {
-        const author = prompt('Votre nom (optionnel):') || 'Anonyme';
-        
-        const response = await fetch('/api/Comments', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          mode: 'cors',
-          body: JSON.stringify({
-            projectId: projectId,
-            comment: comment,
-            author: author
-          })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log('✅ Commentaire sauvegardé:', result);
-          await loadAllComments(); // Recharger tous les commentaires
-          showToast('💬 Commentaire enregistré avec succès', 'success');
-        } else {
-          const errorText = await response.text();
-          console.error('❌ Erreur HTTP:', response.status, errorText);
-          showToast(`❌ Erreur ${response.status}: ${errorText}`, 'error');
-        }
-      } catch (e) {
-        console.error('❌ Erreur lors de la sauvegarde:', e);
-        showToast('❌ Erreur de connexion - Vérifiez que le serveur est démarré', 'error');
-      }
-    }
-    
-    function showToast(message, type = 'info') {
-      const toast = document.createElement('div');
-      const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
-      toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
     }
 
     // --- Gestion du drawer ---
@@ -568,8 +455,10 @@
       drawerSkillsTitle.textContent = 'Compétences';
       drawerSkills.innerHTML = p.skills.map(chip).join('');
 
-      // Charger le commentaire sauvegardé
-      drawerComment.value = loadComment(p.id);
+      // Charger les commentaires avec le nouveau composant V2
+      if (commentsComponent) {
+        commentsComponent.setEntity(p.id);
+      }
 
       // Afficher les images
       if (!p.images || p.images.length === 0) {
@@ -813,8 +702,12 @@
 
     // --- Initialisation ---
     document.addEventListener('DOMContentLoaded', async function() {
-      // Charger les commentaires depuis le serveur
-      await loadAllComments();
+      // Initialiser le composant de commentaires V2
+      commentsComponent = new CommentsComponent('commentsContainer', {
+        apiBaseUrl: '/api/commentsv2',
+        currentUser: window.__SESSION_USER || null,
+        limit: 50
+      });
       
       // Rendu initial
       renderCards(DATA);
@@ -845,18 +738,12 @@
 
       // Event listener pour le KPI compétences
       document.getElementById('kpiSkillsCard').addEventListener('click', showAllSkills);
-      
-      // Event listener pour sauvegarder les commentaires
-      btnSaveComment.addEventListener('click', () => {
-        if (currentProjectId) {
-          saveComment(currentProjectId, drawerComment.value);
-        }
-      });
 
       // Event listeners pour les boutons
       btnPrint.addEventListener('click', () => window.print());
 
       console.info('✅ Dashboard initialisé avec', DATA.length, 'projets');
+      console.info('✅ Système de commentaires V2 initialisé (JSONL multi-utilisateurs)');
     });
     </script>
 </body>

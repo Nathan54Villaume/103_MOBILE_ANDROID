@@ -31,6 +31,7 @@ builder.Services.AddSingleton<ILogReaderService, LogReaderService>();
 builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
 builder.Services.AddSingleton<IPlcConnectionService, PlcConnectionService>();
 builder.Services.AddScoped<ICommentsService, CommentsService>();
+builder.Services.AddScoped<ICommentsServiceV2, CommentsServiceV2>();
 
 // 3.2) Configuration JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "VotreCleSecreteTresTresLongueEtComplexePourAPI_ATF_MOBILE_2024!";

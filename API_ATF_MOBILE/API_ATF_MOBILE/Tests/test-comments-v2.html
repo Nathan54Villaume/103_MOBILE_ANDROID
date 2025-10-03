@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Commentaires V2 - API_ATF_MOBILE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; min-height: 100vh; }
+        .test-success { background: #10b981; }
+        .test-error { background: #ef4444; }
+        .test-pending { background: #6b7280; }
+        .test-running { background: #f59e0b; }
+    </style>
+</head>
+<body class="text-slate-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-2">🧪 Test du Système de Commentaires V2</h1>
+        <p class="text-slate-400 mb-8">Validation de l'API REST et des fonctionnalités</p>
+
+        <div class="mb-6 p-4 bg-slate-800 rounded-lg">
+            <h2 class="text-lg font-semibold mb-3">Configuration</h2>
+            <div class="space-y-2">
+                <div>
+                    <label class="text-sm text-slate-400">URL de l'API</label>
+                    <input id="apiUrl" type="text" value="http://localhost:8088/api/comments" 
+                           class="w-full mt-1 px-3 py-2 bg-slate-700 rounded border border-slate-600 text-slate-100">
+                </div>
+                <div>
+                    <label class="text-sm text-slate-400">Entity ID (Test)</label>
+                    <input id="entityId" type="text" value="test-project-001" 
+                           class="w-full mt-1 px-3 py-2 bg-slate-700 rounded border border-slate-600 text-slate-100">
+                </div>
+                <button id="btnRunTests" 
+                        class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded font-medium">
+                    ▶️ Lancer les tests
+                </button>
+            </div>
+        </div>
+
+        <div id="testResults" class="space-y-2">
+            <!-- Les résultats seront insérés ici -->
+        </div>
+
+        <div id="summary" class="mt-8 p-4 bg-slate-800 rounded-lg hidden">
+            <h2 class="text-lg font-semibold mb-3">📊 Résumé</h2>
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <div id="successCount" class="text-3xl font-bold text-green-500">0</div>
+                    <div class="text-sm text-slate-400">Réussis</div>
+                </div>
+                <div>
+                    <div id="errorCount" class="text-3xl font-bold text-red-500">0</div>
+                    <div class="text-sm text-slate-400">Échoués</div>
+                </div>
+                <div>
+                    <div id="totalCount" class="text-3xl font-bold text-slate-300">0</div>
+                    <div class="text-sm text-slate-400">Total</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let successCount = 0;
+        let errorCount = 0;
+        let totalCount = 0;
+
+        const tests = [
+            {
+                name: 'GET /api/comments (sans paramètres)',
+                async run() {
+                    const response = await fetch(apiUrl);
+                    if (response.status === 400) {
+                        return { success: true, message: 'Validation correcte (entityId requis)' };
+                    }
+                    throw new Error(`Attendu: 400, Reçu: ${response.status}`);
+                }
+            },
+            {
+                name: 'POST /api/comments (créer un commentaire)',
+                async run() {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            entityId: entityId,
+                            authorName: 'Test User',
+                            message: 'Ceci est un commentaire de test créé à ' + new Date().toISOString()
+                        })
+                    });
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(`${response.status}: ${error.error || response.statusText}`);
+                    }
+                    const data = await response.json();
+                    if (!data.id || !data.createdAt) {
+                        throw new Error('Réponse invalide (manque id ou createdAt)');
+                    }
+                    return { success: true, message: `Commentaire créé: ${data.id}`, data };
+                }
+            },
+            {
+                name: 'GET /api/comments (récupérer les commentaires)',
+                async run() {
+                    const response = await fetch(`${apiUrl}?entityId=${entityId}&limit=50`);
+                    if (!response.ok) throw new Error(`${response.status}: ${response.statusText}`);
+                    const data = await response.json();
+                    if (!Array.isArray(data.items)) {
+                        throw new Error('Réponse invalide (items doit être un tableau)');
+                    }
+                    return { 
+                        success: true, 
+                        message: `${data.items.length} commentaire(s) trouvé(s), total: ${data.total}`,
+                        data 
+                    };
+                }
+            },
+            {
+                name: 'GET /api/comments/count',
+                async run() {
+                    const response = await fetch(`${apiUrl}/count?entityId=${entityId}`);
+                    if (!response.ok) throw new Error(`${response.status}: ${response.statusText}`);
+                    const data = await response.json();
+                    if (typeof data.count !== 'number') {
+                        throw new Error('Réponse invalide (count doit être un nombre)');
+                    }
+                    return { success: true, message: `Count: ${data.count}`, data };
+                }
+            },
+            {
+                name: 'POST /api/comments (validation - nom trop court)',
+                async run() {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            entityId: entityId,
+                            authorName: 'A',  // Trop court
+                            message: 'Test'
+                        })
+                    });
+                    if (response.status === 400) {
+                        return { success: true, message: 'Validation correcte (nom trop court rejeté)' };
+                    }
+                    throw new Error(`Attendu: 400, Reçu: ${response.status}`);
+                }
+            },
+            {
+                name: 'POST /api/comments (validation - message vide)',
+                async run() {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            entityId: entityId,
+                            authorName: 'Test User',
+                            message: ''  // Vide
+                        })
+                    });
+                    if (response.status === 400) {
+                        return { success: true, message: 'Validation correcte (message vide rejeté)' };
+                    }
+                    throw new Error(`Attendu: 400, Reçu: ${response.status}`);
+                }
+            },
+            {
+                name: 'POST /api/comments (sanitization HTML)',
+                async run() {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            entityId: entityId,
+                            authorName: 'Test XSS',
+                            message: '<script>alert("XSS")</script>Test sécurisé'
+                        })
+                    });
+                    if (!response.ok) throw new Error(`${response.status}: ${response.statusText}`);
+                    const data = await response.json();
+                    if (data.message.includes('<script>')) {
+                        throw new Error('XSS non sanitizé !');
+                    }
+                    return { success: true, message: 'Sanitization OK (script supprimé)', data };
+                }
+            },
+            {
+                name: 'GET /api/comments (pagination avec cursor)',
+                async run() {
+                    // Créer plusieurs commentaires d'abord
+                    for (let i = 0; i < 3; i++) {
+                        await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                entityId: entityId,
+                                authorName: `Test User ${i}`,
+                                message: `Commentaire de pagination ${i}`
+                            })
+                        });
+                        await new Promise(r => setTimeout(r, 100)); // Petit délai
+                    }
+
+                    // Tester la pagination
+                    const response1 = await fetch(`${apiUrl}?entityId=${entityId}&limit=2`);
+                    if (!response1.ok) throw new Error(`${response1.status}: ${response1.statusText}`);
+                    const data1 = await response1.json();
+                    
+                    if (data1.items.length > 2) {
+                        throw new Error(`Limite non respectée: ${data1.items.length} > 2`);
+                    }
+
+                    if (data1.nextCursor && data1.items.length === 2) {
+                        // Charger la page suivante
+                        const response2 = await fetch(`${apiUrl}?entityId=${entityId}&limit=2&cursor=${data1.nextCursor}`);
+                        if (!response2.ok) throw new Error(`${response2.status}: ${response2.statusText}`);
+                        const data2 = await response2.json();
+                        
+                        return { 
+                            success: true, 
+                            message: `Pagination OK (page 1: ${data1.items.length}, page 2: ${data2.items.length})` 
+                        };
+                    }
+
+                    return { success: true, message: 'Pagination OK (pas assez de données pour tester nextCursor)' };
+                }
+            }
+        ];
+
+        let apiUrl = '';
+        let entityId = '';
+
+        document.getElementById('btnRunTests').addEventListener('click', runAllTests);
+
+        async function runAllTests() {
+            apiUrl = document.getElementById('apiUrl').value;
+            entityId = document.getElementById('entityId').value;
+            
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '';
+            successCount = 0;
+            errorCount = 0;
+            totalCount = tests.length;
+
+            document.getElementById('btnRunTests').disabled = true;
+            document.getElementById('summary').classList.add('hidden');
+
+            for (const test of tests) {
+                const testDiv = createTestDiv(test.name);
+                resultsDiv.appendChild(testDiv);
+                
+                try {
+                    updateTestStatus(testDiv, 'running', 'En cours...');
+                    const result = await test.run();
+                    updateTestStatus(testDiv, 'success', result.message);
+                    successCount++;
+                } catch (error) {
+                    updateTestStatus(testDiv, 'error', error.message);
+                    errorCount++;
+                }
+
+                // Petit délai entre les tests
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            document.getElementById('btnRunTests').disabled = false;
+            updateSummary();
+        }
+
+        function createTestDiv(name) {
+            const div = document.createElement('div');
+            div.className = 'p-4 rounded-lg bg-slate-800';
+            div.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="status-indicator w-3 h-3 rounded-full test-pending"></div>
+                    <div class="flex-1">
+                        <div class="font-medium">${name}</div>
+                        <div class="status-message text-sm text-slate-400 mt-1">En attente...</div>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        function updateTestStatus(testDiv, status, message) {
+            const indicator = testDiv.querySelector('.status-indicator');
+            const messageEl = testDiv.querySelector('.status-message');
+            
+            indicator.className = `status-indicator w-3 h-3 rounded-full test-${status}`;
+            messageEl.textContent = message;
+
+            if (status === 'success') {
+                messageEl.className = 'status-message text-sm text-green-400 mt-1';
+            } else if (status === 'error') {
+                messageEl.className = 'status-message text-sm text-red-400 mt-1';
+            } else if (status === 'running') {
+                messageEl.className = 'status-message text-sm text-yellow-400 mt-1';
+            }
+        }
+
+        function updateSummary() {
+            document.getElementById('summary').classList.remove('hidden');
+            document.getElementById('successCount').textContent = successCount;
+            document.getElementById('errorCount').textContent = errorCount;
+            document.getElementById('totalCount').textContent = totalCount;
+        }
+    </script>
+</body>
+</html>
+
