@@ -48,8 +48,8 @@ function displayRequests(requests) {
     
     container.innerHTML = requests.map(req => {
         const statusColors = {
-            success: 'bg-green-500/10 border-green-500/20 text-green-400',
-            error: 'bg-red-500/10 border-red-500/20 text-red-400'
+            success: 'bg-green-500/10 border-green-500/20',
+            error: 'bg-red-500/10 border-red-500/20'
         };
         
         const colorClass = req.success ? statusColors.success : statusColors.error;
@@ -67,7 +67,7 @@ function displayRequests(requests) {
         const date = new Date(req.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
         
         return `
-            <div class="p-3 border ${colorClass.split(' ').slice(1).join(' ')} rounded-lg">
+            <div class="p-3 border ${colorClass} rounded-lg">
                 <div class="flex items-start gap-3">
                     <span class="px-2 py-0.5 rounded text-xs font-mono ${methodColor}">
                         ${req.method}
@@ -84,7 +84,7 @@ function displayRequests(requests) {
                         ` : ''}
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <p class="text-xs font-medium ${req.duration < 100 ? 'text-green-400' : req.duration < 500 ? 'text-yellow-400' : 'text-red-400'}">
+                        <p class="text-xs font-medium ${req.duration < 500 ? 'text-green-400' : req.duration < 2000 ? 'text-yellow-400' : 'text-orange-400'}">
                             ${req.duration}ms
                         </p>
                         <p class="text-xs text-slate-500 whitespace-nowrap">${date} ${time}</p>

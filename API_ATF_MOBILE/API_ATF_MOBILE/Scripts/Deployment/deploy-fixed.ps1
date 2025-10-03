@@ -170,7 +170,7 @@ function Test-ApplicationHealth {
     param([string]$ServerName, [int]$Port = 8088, [int]$TimeoutSeconds = 30)
     Write-Log "INFO: Verification de la sante de l'application..." "INFO"
     
-    $url = "http://$ServerName" + ":$Port/api/admin/health"
+    $url = "http://$ServerName" + ":$Port/api/ping"
     $timeout = (Get-Date).AddSeconds($TimeoutSeconds)
     
     do {
@@ -238,7 +238,7 @@ try {
     Write-Log "SUCCESS: Deploiement termine avec succes. Version = $version" "SUCCESS"
     Write-Host ""
     Write-Host "Interface d'administration: http://${Server}:8088/admin/" -ForegroundColor Green
-    Write-Host "API Health Check: http://${Server}:8088/api/admin/health" -ForegroundColor Green
+    Write-Host "API Health Check: http://${Server}:8088/api/ping" -ForegroundColor Green
     Write-Host "Logs: $logFile" -ForegroundColor Cyan
 }
 catch {

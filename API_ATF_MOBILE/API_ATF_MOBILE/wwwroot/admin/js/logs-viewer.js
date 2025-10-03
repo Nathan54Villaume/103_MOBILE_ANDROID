@@ -266,6 +266,17 @@ function renderLogs() {
 
 // EXTENSION: Rendre une ligne de log (format Event Viewer - COMPACT)
 function renderLogRow(log) {
+    // Icônes basées sur la durée HTTP si disponible, sinon sur la sévérité
+    const getDurationIcon = (durationMs, statusCode) => {
+        // Rouge pour les erreurs HTTP (4xx, 5xx) - conversion explicite en nombre
+        const status = parseInt(statusCode);
+        if (status >= 400) return '🔴';
+        // Couleurs de performance pour les requêtes réussies
+        if (durationMs < 500) return '🟢';
+        if (durationMs < 2000) return '🟡';
+        return '🟠';
+    };
+    
     const severityIcons = {
         'info': '🟢',
         'warn': '🟡',
@@ -278,7 +289,8 @@ function renderLogRow(log) {
         'error': 'text-red-400 bg-red-500/10 border-red-500/20'
     };
     
-    const icon = severityIcons[log.severity] || '⚪';
+    // Utiliser l'icône de durée si c'est une requête HTTP, sinon l'icône de sévérité
+    const icon = log.http?.durationMs ? getDurationIcon(log.http.durationMs, log.http.status) : (severityIcons[log.severity] || '⚪');
     const colorClass = severityColors[log.severity] || 'text-slate-400 bg-white/5 border-white/10';
     
     const timestamp = new Date(log.ts);
@@ -294,7 +306,7 @@ function renderLogRow(log) {
         : '';
     
     const durationInfo = log.http?.durationMs 
-        ? `<span class="text-xs text-slate-500">${log.http.durationMs}ms</span>`
+        ? `<span class="text-xs ${parseInt(log.http.status) >= 400 ? 'text-red-400' : log.http.durationMs < 500 ? 'text-green-400' : log.http.durationMs < 2000 ? 'text-yellow-400' : 'text-orange-400'}">${log.http.durationMs}ms</span>`
         : '';
     
     const isExpanded = expandedLogId === log.id;

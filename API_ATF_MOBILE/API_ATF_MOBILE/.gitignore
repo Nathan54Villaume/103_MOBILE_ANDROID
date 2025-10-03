@@ -1,18 +1,59 @@
-# Ignorer les dossiers système et temporaires
-.vs/
-*.user
-*.suo
-*.log
+# ===========================================
+# .gitignore pour API_ATF_MOBILE
+# ===========================================
+
+# Fichiers de build .NET
 bin/
 obj/
-*.pdb
-
-# Ignorer les fichiers sensibles ou spécifiques à l’environnement
-*.env
-*.db
-*.sqlite
-
-# Ignorer le dossier de build
-*.dll
-*.exe
+*.user
+*.suo
 *.cache
+*.docstates
+
+# Fichiers de déploiement temporaires
+Scripts/Deployment/deploy.log
+Scripts/Deployment/*.tmp
+
+# Fichiers de test temporaires
+Tests/*.tmp
+Tests/*.log
+
+# Fichiers de documentation temporaires
+Documentation/*.tmp
+Documentation/*.log
+
+# Fichiers système
+Thumbs.db
+.DS_Store
+*.swp
+*.swo
+
+# Fichiers de configuration locale
+appsettings.Local.json
+appsettings.Development.json
+
+# Fichiers de logs
+*.log
+logs/
+
+# Fichiers de cache
+.cache/
+*.cache
+
+# Fichiers temporaires
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+*~
+
+# Fichiers de verrouillage
+*.lock
+*.pid
+
+# Fichiers de session
+*.session

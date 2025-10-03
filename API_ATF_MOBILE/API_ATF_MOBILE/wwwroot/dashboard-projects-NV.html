@@ -23,6 +23,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="proxy-server.js"></script>
     <style>
     html, body { background: #0b0f14; min-height: 100vh; }
     .card { backdrop-filter: blur(6px); background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.08); }
@@ -454,13 +455,46 @@
     
     async function loadAllComments() {
       try {
-        const response = await fetch('/api/Comments');
+        const response = await fetch('/api/Comments', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          mode: 'cors'
+        });
         if (response.ok) {
           const data = await response.text();
           allComments = JSON.parse(data);
+          console.log('✅ Commentaires chargés:', allComments);
+        } else {
+          console.error('❌ Erreur HTTP:', response.status, response.statusText);
         }
       } catch (e) {
-        console.error('Error loading comments:', e);
+        console.error('❌ Erreur lors du chargement des commentaires:', e);
+        // Fallback : essayer avec un proxy local
+        await loadAllCommentsFallback();
+      }
+    }
+    
+    // Fallback en cas de problème CORS
+    async function loadAllCommentsFallback() {
+      try {
+        // Utiliser un proxy via le serveur actuel
+        const response = await fetch(window.location.origin + '/api/Comments', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.text();
+          allComments = JSON.parse(data);
+          console.log('✅ Commentaires chargés via fallback:', allComments);
+        }
+      } catch (e) {
+        console.error('❌ Erreur fallback:', e);
+        allComments = {}; // Initialiser vide
       }
     }
     
@@ -480,7 +514,9 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
+          mode: 'cors',
           body: JSON.stringify({
             projectId: projectId,
             comment: comment,
@@ -489,14 +525,18 @@
         });
 
         if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Commentaire sauvegardé:', result);
           await loadAllComments(); // Recharger tous les commentaires
           showToast('💬 Commentaire enregistré avec succès', 'success');
         } else {
-          showToast('❌ Erreur lors de l\'enregistrement', 'error');
+          const errorText = await response.text();
+          console.error('❌ Erreur HTTP:', response.status, errorText);
+          showToast(`❌ Erreur ${response.status}: ${errorText}`, 'error');
         }
       } catch (e) {
-        console.error('Error saving comment:', e);
-        showToast('❌ Erreur lors de l\'enregistrement', 'error');
+        console.error('❌ Erreur lors de la sauvegarde:', e);
+        showToast('❌ Erreur de connexion - Vérifiez que le serveur est démarré', 'error');
       }
     }
     

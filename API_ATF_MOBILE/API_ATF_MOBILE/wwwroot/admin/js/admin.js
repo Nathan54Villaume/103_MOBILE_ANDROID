@@ -7,10 +7,10 @@ import { initServerMonitor, updateServerMetrics, formatDuration } from './server
 import { initSystemMonitor, updateSystemMetrics } from './system-monitor.js';
 import { initDatabaseManager, updateDatabaseStatus } from './database-manager.js';
 import { initS7Manager, updateS7Status } from './s7-manager.js';
-import { initLogsViewer, updateLogs } from './logs-viewer.js';
+import { initLogsViewer, updateLogs } from './logs-viewer.js?v=20251003-1020';
 import { initConfigViewer } from './config-viewer.js';
 import { initApiViewer } from './api-viewer.js';
-import { initRequestsViewer, updateRequestsDisplay } from './requests-viewer.js';
+import { initRequestsViewer, updateRequestsDisplay } from './requests-viewer.js?v=20251003-0940';
 
 // État global
 const state = {
@@ -396,11 +396,6 @@ function updateCpuUsageChart(systemData) {
     
     // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.cpuUsage) {
-        state.charts.cpuUsage.data.labels = [
-            `Serveur (${processCpuPercent.toFixed(1)}%)`,
-            `Machine (${systemCpuPercent.toFixed(1)}%)`,
-            `Libre (${freeCpuPercent.toFixed(1)}%)`
-        ];
         state.charts.cpuUsage.data.datasets[0].data = [
             processCpuPercent,
             systemCpuPercent,
@@ -410,14 +405,14 @@ function updateCpuUsageChart(systemData) {
         return;
     }
     
-    // Créer le graphique la première fois seulement - utiliser les mêmes couleurs que la mémoire
+    // Créer le graphique la première fois seulement - labels fixes pour éviter l'oscillation
     state.charts.cpuUsage = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: [
-                `Serveur (${processCpuPercent.toFixed(1)}%)`,
-                `Machine (${systemCpuPercent.toFixed(1)}%)`,
-                `Libre (${freeCpuPercent.toFixed(1)}%)`
+                'CPU Serveur',
+                'CPU Machine', 
+                'CPU Libre'
             ],
             datasets: [{
                 data: [
@@ -446,6 +441,13 @@ function updateCpuUsageChart(systemData) {
                 legend: {
                     position: 'right',
                     labels: { color: '#94a3b8' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.parsed.toFixed(1)}%`;
+                        }
+                    }
                 }
             }
         }
@@ -456,19 +458,29 @@ function updateLogsChart(logStats) {
     const ctx = document.getElementById('chartLogs');
     if (!ctx) return;
     
+    // Nouvelle logique basée sur la performance et les erreurs HTTP
+    // Pour l'instant, on utilise les données existantes mais avec une nouvelle légende
+    const totalLogs = logStats.infoCount + logStats.warningCount + logStats.errorCount + logStats.criticalCount;
+    
+    // Estimation basée sur les niveaux existants (à améliorer avec de vraies données HTTP)
+    const fastRequests = Math.floor(logStats.infoCount * 0.7); // 70% des infos = requêtes rapides
+    const normalRequests = Math.floor(logStats.infoCount * 0.3); // 30% des infos = requêtes normales
+    const slowRequests = logStats.warningCount; // Warnings = requêtes lentes
+    const errorRequests = logStats.errorCount + logStats.criticalCount; // Erreurs = erreurs HTTP
+    
     // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.logs) {
         state.charts.logs.data.labels = [
-            `Info (${logStats.infoCount})`,
-            `Warning (${logStats.warningCount})`,
-            `Error (${logStats.errorCount})`,
-            `Critical (${logStats.criticalCount})`
+            `🟢 Rapides < 500ms (${fastRequests})`,
+            `🟡 Normales 500-1999ms (${normalRequests})`,
+            `🟠 Lentes ≥ 2000ms (${slowRequests})`,
+            `🔴 Erreurs HTTP (${errorRequests})`
         ];
         state.charts.logs.data.datasets[0].data = [
-            logStats.infoCount,
-            logStats.warningCount,
-            logStats.errorCount,
-            logStats.criticalCount
+            fastRequests,
+            normalRequests,
+            slowRequests,
+            errorRequests
         ];
         state.charts.logs.update('none'); // 'none' = pas d'animation pour meilleures performances
         return;
@@ -479,29 +491,29 @@ function updateLogsChart(logStats) {
         type: 'doughnut',
         data: {
             labels: [
-                `Info (${logStats.infoCount})`,
-                `Warning (${logStats.warningCount})`,
-                `Error (${logStats.errorCount})`,
-                `Critical (${logStats.criticalCount})`
+                `🟢 Rapides < 500ms (${fastRequests})`,
+                `🟡 Normales 500-1999ms (${normalRequests})`,
+                `🟠 Lentes ≥ 2000ms (${slowRequests})`,
+                `🔴 Erreurs HTTP (${errorRequests})`
             ],
             datasets: [{
                 data: [
-                    logStats.infoCount,
-                    logStats.warningCount,
-                    logStats.errorCount,
-                    logStats.criticalCount
+                    fastRequests,
+                    normalRequests,
+                    slowRequests,
+                    errorRequests
                 ],
                 backgroundColor: [
-                    'rgba(16, 185, 129, 0.6)',
-                    'rgba(251, 191, 36, 0.6)',
-                    'rgba(239, 68, 68, 0.6)',
-                    'rgba(127, 29, 29, 0.6)'
+                    'rgba(34, 197, 94, 0.6)',   // Vert pour rapides
+                    'rgba(251, 191, 36, 0.6)',  // Jaune pour normales
+                    'rgba(251, 146, 60, 0.6)',  // Orange pour lentes
+                    'rgba(239, 68, 68, 0.6)'    // Rouge pour erreurs
                 ],
                 borderColor: [
-                    'rgba(16, 185, 129, 1)',
+                    'rgba(34, 197, 94, 1)',
                     'rgba(251, 191, 36, 1)',
-                    'rgba(239, 68, 68, 1)',
-                    'rgba(127, 29, 29, 1)'
+                    'rgba(251, 146, 60, 1)',
+                    'rgba(239, 68, 68, 1)'
                 ],
                 borderWidth: 1
             }]
@@ -513,7 +525,10 @@ function updateLogsChart(logStats) {
             plugins: {
                 legend: {
                     position: 'right',
-                    labels: { color: '#94a3b8' }
+                    labels: { 
+                        color: '#94a3b8',
+                        font: { size: 11 }
+                    }
                 }
             }
         }

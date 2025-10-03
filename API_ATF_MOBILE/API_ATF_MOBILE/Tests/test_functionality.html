@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test des fonctionnalités - Supervision Poste Électrique</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .info { background: #dbeafe; color: #1e40af; }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        .status-pending { background: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test des fonctionnalités - Supervision Poste Électrique</h1>
+    
+    <div class="test-section">
+        <h2>📡 Test de l'API Backend</h2>
+        <div id="api-status">
+            <span class="status-indicator status-pending"></span>
+            <span>En attente des tests...</span>
+        </div>
+        <button class="test-button" onclick="testApiEndpoints()">Tester les endpoints API</button>
+        <div id="api-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Test des fonctionnalités Frontend</h2>
+        <div class="test-grid">
+            <div>
+                <h3>Interface utilisateur</h3>
+                <button class="test-button" onclick="testUIComponents()">Tester les composants UI</button>
+                <div id="ui-results"></div>
+            </div>
+            <div>
+                <h3>Graphiques</h3>
+                <button class="test-button" onclick="testCharts()">Tester les graphiques</button>
+                <div id="charts-results"></div>
+            </div>
+            <div>
+                <h3>Mode démonstration</h3>
+                <button class="test-button" onclick="testDemoMode()">Tester le mode démo</button>
+                <div id="demo-results"></div>
+            </div>
+            <div>
+                <h3>Export de données</h3>
+                <button class="test-button" onclick="testExport()">Tester l'export</button>
+                <div id="export-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Test des paramètres et configuration</h2>
+        <button class="test-button" onclick="testSettings()">Tester les paramètres</button>
+        <div id="settings-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Résumé des tests</h2>
+        <div id="test-summary">
+            <p>Cliquez sur les boutons de test pour commencer la validation...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://localhost:7000/api';
+        let testResults = {
+            api: { passed: 0, failed: 0, total: 0 },
+            ui: { passed: 0, failed: 0, total: 0 },
+            charts: { passed: 0, failed: 0, total: 0 },
+            demo: { passed: 0, failed: 0, total: 0 },
+            export: { passed: 0, failed: 0, total: 0 },
+            settings: { passed: 0, failed: 0, total: 0 }
+        };
+
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            const indicator = element.querySelector('.status-indicator');
+            const text = element.querySelector('span:last-child');
+            
+            indicator.className = `status-indicator status-${status}`;
+            text.textContent = message;
+        }
+
+        function addResult(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            container.appendChild(div);
+        }
+
+        function updateTestCount(category, passed, failed) {
+            testResults[category].passed += passed;
+            testResults[category].failed += failed;
+            testResults[category].total += passed + failed;
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('test-summary');
+            let totalPassed = 0, totalFailed = 0, totalTests = 0;
+            
+            for (const category in testResults) {
+                totalPassed += testResults[category].passed;
+                totalFailed += testResults[category].failed;
+                totalTests += testResults[category].total;
+            }
+            
+            summary.innerHTML = `
+                <h3>Résultats globaux</h3>
+                <p><strong>Tests réussis:</strong> ${totalPassed}/${totalTests}</p>
+                <p><strong>Tests échoués:</strong> ${totalFailed}/${totalTests}</p>
+                <p><strong>Taux de réussite:</strong> ${totalTests > 0 ? Math.round((totalPassed/totalTests)*100) : 0}%</p>
+            `;
+        }
+
+        async function testApiEndpoints() {
+            updateStatus('api-status', 'pending', 'Test en cours...');
+            document.getElementById('api-results').innerHTML = '';
+            
+            const endpoints = [
+                { name: 'Health Check', url: '/health' },
+                { name: 'Snapshots TR1', url: '/energy/snapshots/tr1' },
+                { name: 'Snapshots TR2', url: '/energy/snapshots/tr2' },
+                { name: 'Series TR1', url: '/energy/series/tr1?from=2024-01-01&to=2024-01-02' },
+                { name: 'Series TR2', url: '/energy/series/tr2?from=2024-01-01&to=2024-01-02' },
+                { name: 'Daily Summary', url: '/energy/daily-summary?date=2024-01-01' }
+            ];
+
+            let passed = 0, failed = 0;
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${API_BASE}${endpoint.url}`);
+                    if (response.ok) {
+                        addResult('api-results', 'success', `✅ ${endpoint.name}: OK (${response.status})`);
+                        passed++;
+                    } else {
+                        addResult('api-results', 'error', `❌ ${endpoint.name}: Erreur ${response.status}`);
+                        failed++;
+                    }
+                } catch (error) {
+                    addResult('api-results', 'error', `❌ ${endpoint.name}: ${error.message}`);
+                    failed++;
+                }
+            }
+
+            updateTestCount('api', passed, failed);
+            updateStatus('api-status', failed === 0 ? 'success' : 'error', 
+                failed === 0 ? 'Tous les tests API réussis' : `${failed} test(s) échoué(s)`);
+        }
+
+        function testUIComponents() {
+            document.getElementById('ui-results').innerHTML = '';
+            let passed = 0, failed = 0;
+
+            // Test des éléments DOM essentiels
+            const requiredElements = [
+                'chart-toolbar-tr1', 'chart-toolbar-tr2',
+                'settings-dialog', 'chart-settings-dialog',
+                'daily-view', 'kpi-detail-dialog'
+            ];
+
+            for (const elementId of requiredElements) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    addResult('ui-results', 'success', `✅ Élément ${elementId} présent`);
+                    passed++;
+                } else {
+                    addResult('ui-results', 'error', `❌ Élément ${elementId} manquant`);
+                    failed++;
+                }
+            }
+
+            // Test des classes CSS
+            const requiredClasses = ['chart-toolbar', 'daily-view', 'contextmenu'];
+            for (const className of requiredClasses) {
+                const elements = document.getElementsByClassName(className);
+                if (elements.length > 0) {
+                    addResult('ui-results', 'success', `✅ Classe CSS ${className} trouvée`);
+                    passed++;
+                } else {
+                    addResult('ui-results', 'error', `❌ Classe CSS ${className} manquante`);
+                    failed++;
+                }
+            }
+
+            updateTestCount('ui', passed, failed);
+        }
+
+        function testCharts() {
+            document.getElementById('charts-results').innerHTML = '';
+            let passed = 0, failed = 0;
+
+            // Test de la présence de Chart.js
+            if (typeof Chart !== 'undefined') {
+                addResult('charts-results', 'success', '✅ Chart.js chargé');
+                passed++;
+            } else {
+                addResult('charts-results', 'error', '❌ Chart.js non chargé');
+                failed++;
+            }
+
+            // Test des canvas des graphiques
+            const chartCanvases = document.querySelectorAll('canvas[data-chart]');
+            if (chartCanvases.length >= 2) {
+                addResult('charts-results', 'success', `✅ ${chartCanvases.length} canvas de graphiques trouvés`);
+                passed++;
+            } else {
+                addResult('charts-results', 'error', '❌ Canvas de graphiques manquants');
+                failed++;
+            }
+
+            updateTestCount('charts', passed, failed);
+        }
+
+        function testDemoMode() {
+            document.getElementById('demo-results').innerHTML = '';
+            let passed = 0, failed = 0;
+
+            // Test du mode démo dans l'URL
+            const isDevMode = window.location.href.includes('index_dev.html');
+            if (isDevMode) {
+                addResult('demo-results', 'success', '✅ Mode développement détecté');
+                passed++;
+            } else {
+                addResult('demo-results', 'info', 'ℹ️ Mode production détecté');
+            }
+
+            // Test des données de démonstration
+            if (typeof window.DEMO_SIGNALS !== 'undefined') {
+                addResult('demo-results', 'success', '✅ Données de démonstration disponibles');
+                passed++;
+            } else {
+                addResult('demo-results', 'error', '❌ Données de démonstration manquantes');
+                failed++;
+            }
+
+            updateTestCount('demo', passed, failed);
+        }
+
+        function testExport() {
+            document.getElementById('export-results').innerHTML = '';
+            let passed = 0, failed = 0;
+
+            // Test des boutons d'export
+            const exportButtons = document.querySelectorAll('[data-action="export"]');
+            if (exportButtons.length > 0) {
+                addResult('export-results', 'success', `✅ ${exportButtons.length} bouton(s) d'export trouvé(s)`);
+                passed++;
+            } else {
+                addResult('export-results', 'error', '❌ Boutons d\'export manquants');
+                failed++;
+            }
+
+            // Test des fonctions d'export
+            if (typeof window.exportChartAsPNG === 'function') {
+                addResult('export-results', 'success', '✅ Fonction d\'export PNG disponible');
+                passed++;
+            } else {
+                addResult('export-results', 'error', '❌ Fonction d\'export PNG manquante');
+                failed++;
+            }
+
+            updateTestCount('export', passed, failed);
+        }
+
+        function testSettings() {
+            document.getElementById('settings-results').innerHTML = '';
+            let passed = 0, failed = 0;
+
+            // Test du dialogue des paramètres
+            const settingsDialog = document.getElementById('settings-dialog');
+            if (settingsDialog) {
+                addResult('settings-results', 'success', '✅ Dialogue des paramètres présent');
+                passed++;
+            } else {
+                addResult('settings-results', 'error', '❌ Dialogue des paramètres manquant');
+                failed++;
+            }
+
+            // Test du stockage local
+            try {
+                localStorage.setItem('test', 'value');
+                localStorage.removeItem('test');
+                addResult('settings-results', 'success', '✅ Stockage local fonctionnel');
+                passed++;
+            } catch (error) {
+                addResult('settings-results', 'error', '❌ Stockage local non disponible');
+                failed++;
+            }
+
+            updateTestCount('settings', passed, failed);
+        }
+
+        // Auto-test au chargement de la page
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testUIComponents();
+                testCharts();
+                testDemoMode();
+                testExport();
+                testSettings();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
