@@ -1,0 +1,430 @@
+/**
+ * Styles CSS pour le Dashboard Projets 2025
+ * Thème sombre avec effets glassmorphism et animations
+ */
+
+/* Variables CSS pour la cohérence */
+:root {
+  --color-ink-900: #0b0f14;
+  --color-ink-800: #0f141b;
+  --color-ink-700: #131924;
+  --color-ink-600: #1a2332;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --shadow-glass: 0 10px 30px -12px rgba(0,0,0,.5);
+}
+
+/* Reset et base */
+html, body { 
+  background: var(--color-ink-900); 
+  min-height: 100vh; 
+}
+
+/* Composants de base */
+.card { 
+  backdrop-filter: blur(6px); 
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); 
+  border: 1px solid rgba(255,255,255,0.08); 
+}
+
+.chip { 
+  border: 1px solid rgba(255,255,255,0.14); 
+}
+
+.glow { 
+  box-shadow: 0 0 0 1px rgba(16,185,129,.18), 0 0 60px rgba(16,185,129,.08) inset; 
+}
+
+.ribbon { 
+  position: absolute; 
+  top: 10px; 
+  right: -36px; 
+  rotate: 45deg; 
+  background: linear-gradient(90deg, rgba(234,179,8,.95), rgba(250,204,21,.85)); 
+  color: #111827; 
+  font-weight: 700; 
+  font-size: 10px; 
+  letter-spacing: .08em; 
+  padding: 4px 40px; 
+  border: 1px solid rgba(255,255,255,.25); 
+  text-transform: uppercase; 
+  box-shadow: 0 6px 18px rgba(0,0,0,.35); 
+}
+
+/* Scrollbar personnalisée */
+.hide-scrollbar::-webkit-scrollbar { 
+  display: none; 
+}
+
+.hide-scrollbar { 
+  -ms-overflow-style: none; 
+  scrollbar-width: none; 
+}
+
+/* Sélecteur de langue */
+.lang-switch { 
+  display: flex; 
+  gap: 2px; 
+  background: rgba(255,255,255,0.05); 
+  border-radius: 8px; 
+  padding: 2px; 
+  border: 1px solid rgba(255,255,255,0.1); 
+}
+
+.lang-btn { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  padding: 6px 10px; 
+  border-radius: 6px; 
+  background: transparent; 
+  border: none; 
+  color: rgba(255,255,255,0.7); 
+  font-size: 12px; 
+  font-weight: 500; 
+  cursor: pointer; 
+  transition: all 0.2s; 
+}
+
+.lang-btn:hover { 
+  background: rgba(255,255,255,0.1); 
+  color: rgba(255,255,255,0.9); 
+}
+
+.lang-btn[aria-pressed="true"] { 
+  background: rgba(16,185,129,0.2); 
+  color: var(--color-brand-500); 
+  border: 1px solid rgba(16,185,129,0.3); 
+}
+
+.lang-btn:focus { 
+  outline: 2px solid var(--color-brand-500); 
+  outline-offset: 2px; 
+}
+
+/* Drapeaux */
+.flag { 
+  width: 18px; 
+  height: 12px; 
+  border-radius: 2px; 
+  display: inline-block; 
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); 
+  overflow: hidden; 
+  flex-shrink: 0; 
+}
+
+.flag-fr { 
+  background: linear-gradient(90deg, #0055A4 33.33%, #FFF 33.33% 66.66%, #EF4135 66.66%); 
+}
+
+.flag-it { 
+  background: linear-gradient(90deg, #009246 33.33%, #FFF 33.33% 66.66%, #CE2B37 66.66%); 
+}
+
+/* Styles pour l'impression */
+@media print { 
+  .no-print { 
+    display: none !important; 
+  } 
+  
+  .print-grid { 
+    grid-template-columns: repeat(2, minmax(0, 1fr)); 
+  } 
+  
+  body { 
+    background: #fff; 
+  } 
+}
+
+/* Animations et transitions */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.transition-colors {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.transition-transform {
+  transition: transform 0.2s ease;
+}
+
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+
+.hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.hover\:shadow-black\/30:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+}
+
+/* Effets de survol pour les cartes */
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glass), 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+}
+
+/* Styles pour les compétences dans le lexique */
+.skill-card {
+  transition: all 0.3s ease;
+}
+
+.skill-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+/* Styles pour les notifications */
+.notification {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Styles pour les modales */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: scale(0.9) translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Styles pour les boutons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600));
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Styles pour les formulaires */
+.form-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Styles pour les images dans les galeries */
+.gallery-image {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.gallery-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Styles pour les graphiques */
+.chart-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+/* Styles pour les filtres */
+.filter-chip {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.filter-chip.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--color-brand-500);
+  color: var(--color-brand-400);
+}
+
+/* Styles pour les KPIs */
+.kpi-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.kpi-card.clickable:hover {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Styles pour les commentaires */
+.comment-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.comment-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Styles pour les tooltips */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.875rem;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Styles responsifs */
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
+  
+  .lang-switch {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .lang-btn {
+    padding: 8px 12px;
+  }
+  
+  .modal-content {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+}
+
+/* Styles pour les états de chargement */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid var(--color-brand-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Styles pour les erreurs */
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.success-message {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--color-brand-400);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+}

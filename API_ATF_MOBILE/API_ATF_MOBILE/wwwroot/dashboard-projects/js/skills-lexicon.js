@@ -1,0 +1,67 @@
+/**
+ * Lexique des compétences techniques
+ * Définitions des compétences utilisées dans les projets
+ */
+
+window.skillsLexicon = {
+  fr: {
+    "SQL Server": "Système de gestion de base de données relationnelle Microsoft pour stocker, gérer et exploiter les données de production.",
+    "Automatisme": "Programmation et configuration d'automates industriels (PLC) pour piloter les machines et processus de production.",
+    "RFID": "Technologie de Radio-Identification pour l'identification automatique et la traçabilité par badges sans contact.",
+    "Cimplicity": "Logiciel de supervision industrielle GE Digital pour la visualisation et le contrôle des processus en temps réel.",
+    "Basic Script": "Langage de script intégré à Cimplicity pour automatiser les tâches et créer des logiques personnalisées.",
+    "Gestion projet": "Coordination, planification et suivi de projets industriels du cadrage à la livraison.",
+    "C#": "Langage de programmation orienté objet Microsoft pour développer des applications desktop Windows.",
+    "OPC": "Standard de communication industrielle (OPC DA/UA) pour échanger des données entre automates et logiciels.",
+    "S7": "Gamme d'automates programmables Siemens (S7-300, S7-1200, S7-1500) et langage de programmation associé.",
+    "HTML5": "Langage de balisage web moderne pour créer des interfaces utilisateur interactives et responsives.",
+    "Tailwind CSS": "Framework CSS utilitaire pour concevoir rapidement des interfaces web modernes et élégantes.",
+    "Chart.js": "Bibliothèque JavaScript open-source pour créer des graphiques et visualisations de données interactifs.",
+    "Communication industrielle": "Mise en place et exploitation de réseaux industriels (Profinet, Ethernet/IP, Modbus...).",
+    "Android": "Développement d'applications mobiles natives pour la plateforme Android.",
+    "Kotlin": "Langage de programmation moderne et officiel pour le développement d'applications Android.",
+    "Retrofit": "Bibliothèque Android pour gérer les communications HTTP avec des API REST de manière simplifiée.",
+    "API REST": "Conception et utilisation d'interfaces de programmation web pour l'échange de données entre systèmes.",
+    "Architecture client/serveur": "Conception d'applications distribuées avec séparation des responsabilités entre client et serveur.",
+    "UI/UX": "Design d'interfaces utilisateur intuitives et conception d'expériences utilisateur optimales.",
+    "Réseau industriel": "Configuration et exploitation de réseaux dédiés à l'automatisme (Profinet, Ethernet industriel).",
+    "Analyse de données": "Exploitation et interprétation de données industrielles pour optimiser les processus.",
+    "Vision industrielle": "Systèmes de contrôle qualité par caméra pour la détection et l'inspection automatisée.",
+    "IFM Vision Assistant": "Logiciel et système de vision industrielle IFM pour le paramétrage de caméras intelligentes.",
+    "Profinet": "Protocole de communication industriel Siemens basé sur Ethernet pour l'automatisation temps réel.",
+    "Statistiques": "Collecte, analyse et exploitation de données chiffrées pour le pilotage et l'amélioration continue.",
+    "Déploiement multi-site": "Déploiement et harmonisation de solutions techniques sur plusieurs sites de production.",
+    "Impression étiquettes": "Gestion et automatisation de l'impression d'étiquettes de traçabilité.",
+    "C# Desktop": "Développement d'applications Windows desktop avec l'environnement .NET et C#."
+  },
+  it: {
+    "SQL Server": "Sistema di gestione di database relazionali Microsoft per memorizzare, gestire e sfruttare i dati di produzione.",
+    "Automatisme": "Programmazione e configurazione di automi industriali (PLC) per pilotare macchine e processi di produzione.",
+    "RFID": "Tecnologia di Radio-Identificazione per l'identificazione automatica e la tracciabilità tramite badge senza contatto.",
+    "Cimplicity": "Software di supervisione industriale GE Digital per la visualizzazione e il controllo dei processi in tempo reale.",
+    "Basic Script": "Linguaggio di script integrato in Cimplicity per automatizzare le attività e creare logiche personalizzate.",
+    "Gestion projet": "Coordinamento, pianificazione e monitoraggio di progetti industriali dalla definizione alla consegna.",
+    "C#": "Linguaggio di programmazione orientato agli oggetti Microsoft per sviluppare applicazioni desktop Windows.",
+    "OPC": "Standard di comunicazione industriale (OPC DA/UA) per scambiare dati tra automi e software.",
+    "S7": "Gamma di automi programmabili Siemens (S7-300, S7-1200, S7-1500) e linguaggio di programmazione associato.",
+    "HTML5": "Linguaggio di markup web moderno per creare interfacce utente interattive e responsive.",
+    "Tailwind CSS": "Framework CSS utility per progettare rapidamente interfacce web moderne ed eleganti.",
+    "Chart.js": "Libreria JavaScript open-source per creare grafici e visualizzazioni di dati interattivi.",
+    "Communication industrielle": "Implementazione e sfruttamento di reti industriali (Profinet, Ethernet/IP, Modbus...).",
+    "Android": "Sviluppo di applicazioni mobili native per la piattaforma Android.",
+    "Kotlin": "Linguaggio di programmazione moderno e ufficiale per lo sviluppo di applicazioni Android.",
+    "Retrofit": "Libreria Android per gestire le comunicazioni HTTP con API REST in modo semplificato.",
+    "API REST": "Progettazione e utilizzo di interfacce di programmazione web per lo scambio di dati tra sistemi.",
+    "Architecture client/serveur": "Progettazione di applicazioni distribuite con separazione delle responsabilità tra client e server.",
+    "UI/UX": "Design di interfacce utente intuitive e progettazione di esperienze utente ottimali.",
+    "Réseau industriel": "Configurazione e sfruttamento di reti dedicate all'automazione (Profinet, Ethernet industriale).",
+    "Analyse de données": "Sfruttamento e interpretazione di dati industriali per ottimizzare i processi.",
+    "Vision industrielle": "Sistemi di controllo qualità tramite camera per il rilevamento e l'ispezione automatizzata.",
+    "IFM Vision Assistant": "Software e sistema di visione industriale IFM per la configurazione di camere intelligenti.",
+    "Profinet": "Protocollo di comunicazione industriale Siemens basato su Ethernet per l'automazione in tempo reale.",
+    "Statistiques": "Raccolta, analisi e sfruttamento di dati numerici per il pilotaggio e il miglioramento continuo.",
+    "Déploiement multi-site": "Implementazione e armonizzazione di soluzioni tecniche su più siti di produzione.",
+    "Impression étiquettes": "Gestione e automazione della stampa di etichette di tracciabilità.",
+    "C# Desktop": "Sviluppo di applicazioni Windows desktop con l'ambiente .NET e C#."
+  }
+};
