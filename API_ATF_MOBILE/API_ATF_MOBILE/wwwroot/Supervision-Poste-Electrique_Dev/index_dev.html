@@ -319,12 +319,22 @@
       .chart-wrapper {
         height: 300px !important;
       }
+      
+      /* Largeur complète sur mobile */
+      div[style*="max-width: 70%"] {
+        max-width: 100% !important;
+      }
     }
     
     @media (max-width: 1200px) {
       /* KPIs responsive - 2 lignes de 5 devient 2 lignes de 3 sur tablette */
       .tesla-grid[style*="grid-template-columns: repeat(5, 1fr)"] {
         grid-template-columns: repeat(3, 1fr) !important;
+      }
+      
+      /* Largeur élargie sur tablette */
+      div[style*="max-width: 70%"] {
+        max-width: 90% !important;
       }
     }
     
@@ -362,7 +372,7 @@
   <script>
     // Chart.js et plugins chargés
   </script>
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body style="background: var(--tesla-black); color: var(--tesla-white); min-height: 100vh; font-family: var(--tesla-font-primary);">
   <script>
@@ -401,6 +411,8 @@
     <symbol id="i-battery" viewBox="0 0 26 14" stroke="currentColor" fill="none" stroke-width="1.5">
       <rect x="1" y="2" width="20" height="10" rx="2" ry="2" />
       <rect x="22" y="5" width="3" height="4" rx="1" />
+      <!-- Barre verte pour le niveau d'énergie -->
+      <rect x="3" y="4" width="16" height="6" rx="1" fill="#00aa44" opacity="0.8" />
     </symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
       <path d="M20 11a8 8 0 1 0-3 5.9L20 18" />
@@ -447,6 +459,9 @@
 
   <!-- Tesla Main Container -->
   <div class="tesla-container" style="min-height: 100vh; padding: var(--tesla-space-lg); background: linear-gradient(135deg, var(--tesla-black) 0%, var(--tesla-gray-900) 100%);">
+    
+    <!-- Inner Container avec largeur limitée -->
+    <div style="max-width: 70%; margin: 0 auto;">
     
     <!-- Tesla Header -->
     <header class="tesla-header" style="margin-bottom: var(--tesla-space-2xl);">
@@ -738,6 +753,8 @@
         <span>N.Villaume</span>
       </div>
     </footer>
+    
+    </div><!-- Fin Inner Container 70% -->
   </div>
 
   <!-- Tesla Settings Button -->
@@ -803,6 +820,6 @@
   </template>
 
   <!-- Tesla Scripts -->
-  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
