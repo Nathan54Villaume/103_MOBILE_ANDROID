@@ -55,10 +55,13 @@ function ensureDialog() {
   return dialog;
 }
 
-function createIcon(iconId) {
+function createIcon(iconId, color = null) {
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
   svg.setAttribute('class', 'icon stroke');
+  if (color) {
+    svg.style.color = color;
+  }
   const use = document.createElementNS(svgNS, 'use');
   use.setAttributeNS(null, 'href', iconId);
   svg.appendChild(use);
@@ -72,6 +75,22 @@ function resolveIcon(def) {
   return suffix && ICON_BY_KIND[suffix] ? ICON_BY_KIND[suffix] : '#i-bolt';
 }
 
+function getIconColor(def) {
+  // Couleurs Tesla pour les différents types de KPI
+  const colorMap = {
+    p_kw: '#eab308',    // Jaune pour puissance active
+    q_kvar: '#3b82f6',  // Bleu pour puissance réactive
+    pf: '#06b6d4',      // Cyan pour facteur de puissance
+    u: '#10b981',       // Vert pour tension
+    i: '#f97316',       // Orange pour courant
+    e: '#6b7280'        // Gris pour énergie (comme avant)
+  };
+  
+  if (def.kind && colorMap[def.kind]) return colorMap[def.kind];
+  const suffix = def.key?.split('.').pop();
+  return suffix && colorMap[suffix] ? colorMap[suffix] : '#6b7280';
+}
+
 function buildCard(def) {
   const card = document.createElement('div');
   card.className = 'kpi card';
@@ -80,20 +99,26 @@ function buildCard(def) {
 
   const header = document.createElement('div');
   header.className = 'kpi-title';
-  header.appendChild(createIcon(resolveIcon(def)));
+  header.appendChild(createIcon(resolveIcon(def), getIconColor(def)));
   header.append(def.title || def.key);
 
   const stats = document.createElement('div');
   stats.className = 'kpi-stats';
-  stats.innerHTML = `
-    <div class="kpi-stats-labels">
-      <span class="kpi-stat-label">MOYENNE</span>
-      <span class="kpi-stat-label">MAX</span>
-    </div>
-    <div class="kpi-stats-values">
-      <span class="kpi-stat-value" data-role="avg">-</span>
-      <span class="kpi-stat-value" data-role="max">-</span>
-    </div>`;
+  
+  // Ne pas afficher moyenne/max pour l'énergie
+  if (def.kind === 'e' || def.key?.includes('e_kwh')) {
+    stats.style.display = 'none';
+  } else {
+    stats.innerHTML = `
+      <div class="kpi-stats-labels">
+        <span class="kpi-stat-label">MOYENNE</span>
+        <span class="kpi-stat-label">MAX</span>
+      </div>
+      <div class="kpi-stats-values">
+        <span class="kpi-stat-value" data-role="avg">-</span>
+        <span class="kpi-stat-value" data-role="max">-</span>
+      </div>`;
+  }
 
   const valueWrap = document.createElement('div');
   valueWrap.className = 'kpi-value';

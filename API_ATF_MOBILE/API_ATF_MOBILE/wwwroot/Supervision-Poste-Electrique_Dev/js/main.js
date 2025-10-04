@@ -128,7 +128,7 @@ function initKPIs() {
     { key: 'tr1.u1', title: 'U12', unit: 'V', kind: 'u', decimals: 0 },
     { key: 'tr1.u2', title: 'U23', unit: 'V', kind: 'u', decimals: 0 },
     { key: 'tr1.u3', title: 'U31', unit: 'V', kind: 'u', decimals: 0 },
-    { key: 'tr1.pf', title: 'Facteur de Puissance', unit: '', kind: 'pf', decimals: 3 },
+    { key: 'tr1.pf', title: 'Cos φ', unit: '', kind: 'pf', decimals: 3 },
     { key: 'tr1.q_kvar', title: 'Réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
     { key: 'tr1.i1', title: 'I1', unit: 'A', kind: 'i', decimals: 0 },
     { key: 'tr1.i2', title: 'I2', unit: 'A', kind: 'i', decimals: 0 },
@@ -142,7 +142,7 @@ function initKPIs() {
     { key: 'tr2.u1', title: 'U12', unit: 'V', kind: 'u', decimals: 0 },
     { key: 'tr2.u2', title: 'U23', unit: 'V', kind: 'u', decimals: 0 },
     { key: 'tr2.u3', title: 'U31', unit: 'V', kind: 'u', decimals: 0 },
-    { key: 'tr2.pf', title: 'Facteur de Puissance', unit: '', kind: 'pf', decimals: 3 },
+    { key: 'tr2.pf', title: 'Cos φ', unit: '', kind: 'pf', decimals: 3 },
     { key: 'tr2.q_kvar', title: 'Réactive', unit: 'kvar', kind: 'q_kvar', decimals: 1 },
     { key: 'tr2.i1', title: 'I1', unit: 'A', kind: 'i', decimals: 1 },
     { key: 'tr2.i2', title: 'I2', unit: 'A', kind: 'i', decimals: 1 },
@@ -292,36 +292,36 @@ function refreshNewChartSystem() {
       bufferKeys: ['p1', 'q1'], 
       signalIds: ['P_TR1', 'Q_TR1'], 
       labels: ['Puissance active — TR1', 'Puissance réactive — TR1'], 
-      colors: ['#3b82f6', '#f59e0b'] 
+      colors: ['#eab308', '#3b82f6'] 
     },
     'tr1-tension': { 
       bufferKeys: ['u1_12', 'u1_23', 'u1_31'], 
       signalIds: ['U12_TR1', 'U23_TR1', 'U31_TR1'], 
       labels: ['U12 — TR1', 'U23 — TR1', 'U31 — TR1'], 
-      colors: ['#ef4444', '#10b981', '#8b5cf6'] 
+      colors: ['#10b981', '#10b981', '#10b981'] 
     },
     'tr1-pf': { 
       bufferKeys: ['pf1'], 
       signalIds: ['PF_TR1'], 
-      labels: ['Facteur de puissance — TR1'], 
+      labels: ['Cos φ — TR1'], 
       colors: ['#06b6d4'] 
     },
     'tr2-power': { 
       bufferKeys: ['p2', 'q2'], 
       signalIds: ['P_TR2', 'Q_TR2'], 
       labels: ['Puissance active — TR2', 'Puissance réactive — TR2'], 
-      colors: ['#3b82f6', '#f59e0b'] 
+      colors: ['#eab308', '#3b82f6'] 
     },
     'tr2-tension': { 
       bufferKeys: ['u2_12', 'u2_23', 'u2_31'], 
       signalIds: ['U12_TR2', 'U23_TR2', 'U31_TR2'], 
       labels: ['U12 — TR2', 'U23 — TR2', 'U31 — TR2'], 
-      colors: ['#ef4444', '#10b981', '#8b5cf6'] 
+      colors: ['#10b981', '#10b981', '#10b981'] 
     },
     'tr2-pf': { 
       bufferKeys: ['pf2'], 
       signalIds: ['PF_TR2'], 
-      labels: ['Facteur de puissance — TR2'], 
+      labels: ['Cos φ — TR2'], 
       colors: ['#06b6d4'] 
     }
   };
