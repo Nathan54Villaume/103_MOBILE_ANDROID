@@ -186,25 +186,32 @@ export class TooltipFormatter {
     return {
       mode: 'index',
       intersect: false,
-      backgroundColor: 'rgba(30, 41, 59, 0.95)',
-      titleColor: '#f1f5f9',
-      bodyColor: '#e2e8f0',
-      borderColor: 'rgba(148,163,184,0.3)',
+      // Thème Tesla minimaliste
+      backgroundColor: 'rgba(23, 23, 23, 0.98)',  // Noir Tesla plus opaque
+      titleColor: '#ffffff',                       // Blanc pur pour le titre
+      bodyColor: '#d1d5db',                        // Gris clair pour le corps
+      borderColor: 'rgba(82, 82, 91, 0.5)',        // Bordure subtile
       borderWidth: 1,
-      cornerRadius: 8,
-      padding: 12,
+      cornerRadius: 6,                             // Coins moins arrondis (style Tesla)
+      padding: 10,                                 // Padding plus compact
       displayColors: true,
+      boxWidth: 8,                                 // Petits carrés de couleur
+      boxHeight: 8,
+      boxPadding: 6,                               // Espacement entre couleur et texte
       titleFont: {
-        size: 13,
-        weight: '600'
+        size: 12,
+        weight: '500',
+        family: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       },
       bodyFont: {
-        size: 12,
-        weight: 'normal'
+        size: 11,
+        weight: '400',
+        family: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       },
-      titleMarginBottom: 8,
-      bodySpacing: 6,
-      caretPadding: 6,
+      titleMarginBottom: 6,                        // Espacement réduit
+      bodySpacing: 4,                              // Espacement réduit entre lignes
+      caretPadding: 8,
+      caretSize: 6,
       ...options,
       callbacks: {
         title: this.getTitleCallback(),
