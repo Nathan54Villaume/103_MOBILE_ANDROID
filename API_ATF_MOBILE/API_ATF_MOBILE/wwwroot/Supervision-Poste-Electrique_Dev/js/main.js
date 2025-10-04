@@ -341,6 +341,15 @@ function refreshNewChartSystem() {
         return;
       }
       
+      // Récupérer l'état actuel des datasets pour préserver la visibilité
+      const currentDatasets = chartInstance.host.chart?.data?.datasets || [];
+      const datasetVisibility = {};
+      currentDatasets.forEach(dataset => {
+        if (dataset.label) {
+          datasetVisibility[dataset.label] = dataset.hidden || false;
+        }
+      });
+      
       const datasets = [];
       bufferKeys.forEach((bufferKey, index) => {
         const buffer = bufs[bufferKey];
@@ -364,8 +373,10 @@ function refreshNewChartSystem() {
         const alphaHex = Math.round(alpha * 2.55).toString(16).padStart(2, '0');
         const backgroundColor = baseColor + alphaHex;
         
+        const label = labels[index] || bufferKey;
+        
         datasets.push({
-          label: labels[index] || bufferKey,
+          label: label,
           signalId: signalIds[index], // Ajouter l'ID du signal pour le menu contextuel
           data: data,
           borderColor: baseColor,
@@ -376,7 +387,8 @@ function refreshNewChartSystem() {
           pointRadius: 0,           // Pas de points visibles
           pointHoverRadius: 0,      // Pas de points au survol non plus
           pointBorderWidth: 0,      // Pas de bordure de points
-          pointBackgroundColor: 'transparent'  // Points transparents
+          pointBackgroundColor: 'transparent',  // Points transparents
+          hidden: datasetVisibility[label] || false // Préserver l'état de visibilité
         });
         
         // Dataset créé

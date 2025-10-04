@@ -181,6 +181,31 @@ export class ChartHost {
       });
       this.handleContextMenu(event);
     });
+
+    // Event listener pour les clics sur la légende (gestion de la visibilité des datasets)
+    this.chart.options.plugins.legend.onClick = (event, legendItem, legend) => {
+      const index = legendItem.datasetIndex;
+      const dataset = this.chart.data.datasets[index];
+      
+      if (dataset) {
+        // Toggle la visibilité
+        dataset.hidden = !dataset.hidden;
+        
+        // Sauvegarder l'état de visibilité
+        const visibility = {};
+        this.chart.data.datasets.forEach(ds => {
+          if (ds.label) {
+            visibility[ds.label] = ds.hidden || false;
+          }
+        });
+        this.saveDatasetVisibility(visibility);
+        
+        // Mettre à jour le graphique
+        this.chart.update('none');
+        
+        console.log(`[ChartHost] Dataset ${dataset.label} ${dataset.hidden ? 'masqué' : 'affiché'}`);
+      }
+    };
     
     
     // Appliquer les paramètres sauvegardés après initialisation
@@ -200,6 +225,14 @@ export class ChartHost {
       console.warn('[ChartHost] setData: datasets doit être un array');
       return;
     }
+    
+    // Restaurer l'état de visibilité des datasets depuis localStorage
+    const savedVisibility = this.loadDatasetVisibility();
+    datasets.forEach(dataset => {
+      if (dataset.label && savedVisibility[dataset.label] !== undefined) {
+        dataset.hidden = savedVisibility[dataset.label];
+      }
+    });
     
     this.datasets = datasets;
     this.chart.data.datasets = [...datasets];
@@ -572,6 +605,35 @@ export class ChartHost {
     } catch (error) {
       console.warn('[ChartHost] Erreur chargement paramètres localStorage:', error);
     }
+  }
+
+  /**
+   * Sauvegarde l'état de visibilité des datasets dans localStorage
+   * @param {Object} visibility - Objet {label: boolean} pour chaque dataset
+   */
+  saveDatasetVisibility(visibility) {
+    try {
+      localStorage.setItem(`${this.persistenceKey}-dataset-visibility`, JSON.stringify(visibility));
+      // Visibilité des datasets sauvegardée
+    } catch (error) {
+      console.warn('[ChartHost] Erreur sauvegarde visibilité datasets:', error);
+    }
+  }
+
+  /**
+   * Restaure l'état de visibilité des datasets depuis localStorage
+   * @returns {Object} Objet {label: boolean} pour chaque dataset
+   */
+  loadDatasetVisibility() {
+    try {
+      const saved = localStorage.getItem(`${this.persistenceKey}-dataset-visibility`);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.warn('[ChartHost] Erreur chargement visibilité datasets:', error);
+    }
+    return {};
   }
 
   /**
