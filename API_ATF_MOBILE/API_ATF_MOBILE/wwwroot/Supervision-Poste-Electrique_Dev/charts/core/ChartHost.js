@@ -168,19 +168,19 @@ export class ChartHost {
     // Utiliser directement l'URL de l'API sans proxy local
     const baseUrl = 'http://10.250.13.4:8088/api/energy';
     this.signalService = new SignalService(baseUrl);
-    this.contextMenu = new ContextMenu(this.signalService);
+    // this.contextMenu = new ContextMenu(this.signalService); // Désactivé temporairement
     
-    // Event listener pour clic droit
-    this.canvas.addEventListener('contextmenu', (event) => {
-      console.log('[ChartHost] Clic droit détecté sur canvas:', this.canvas.id);
-      console.log('[ChartHost] Event details:', { 
-        clientX: event.clientX, 
-        clientY: event.clientY, 
-        target: event.target,
-        canvas: this.canvas 
-      });
-      this.handleContextMenu(event);
-    });
+    // Event listener pour clic droit - DÉSACTIVÉ TEMPORAIREMENT
+    // this.canvas.addEventListener('contextmenu', (event) => {
+    //   console.log('[ChartHost] Clic droit détecté sur canvas:', this.canvas.id);
+    //   console.log('[ChartHost] Event details:', { 
+    //     clientX: event.clientX, 
+    //     clientY: event.clientY, 
+    //     target: event.target,
+    //     canvas: this.canvas 
+    //   });
+    //   this.handleContextMenu(event);
+    // });
 
     // Event listener pour les clics sur la légende (gestion de la visibilité des datasets)
     this.chart.options.plugins.legend.onClick = (event, legendItem, legend) => {
@@ -367,31 +367,33 @@ export class ChartHost {
   }
   
   /**
-   * Gère le clic droit sur le canvas
+   * Gère le clic droit sur le canvas - DÉSACTIVÉ TEMPORAIREMENT
    * @param {MouseEvent} event - Événement de clic droit
    */
   async handleContextMenu(event) {
-    console.log('[ChartHost] handleContextMenu appelé');
-    if (!this.contextMenu) {
-      console.warn('[ChartHost] Pas de contextMenu disponible');
-      return;
-    }
+    console.log('[ChartHost] handleContextMenu appelé - DÉSACTIVÉ TEMPORAIREMENT');
+    return; // Désactivé temporairement
     
-    // Extraire les IDs des signaux actuels
-    const currentSignalIds = this.datasets.map(dataset => dataset.signalId || dataset.label).filter(Boolean);
+    // if (!this.contextMenu) {
+    //   console.warn('[ChartHost] Pas de contextMenu disponible');
+    //   return;
+    // }
     
-    try {
-      console.log('[ChartHost] Ouverture du menu contextuel...');
-      await this.contextMenu.show(
-        event, 
-        this.chart, 
-        currentSignalIds, 
-        (selectedSignalIds) => this.onSignalSelectionChange(selectedSignalIds)
-      );
-      console.log('[ChartHost] Menu contextuel ouvert avec succès');
-    } catch (error) {
-      console.error('[ChartHost] Erreur ouverture menu contextuel:', error);
-    }
+    // // Extraire les IDs des signaux actuels
+    // const currentSignalIds = this.datasets.map(dataset => dataset.signalId || dataset.label).filter(Boolean);
+    
+    // try {
+    //   console.log('[ChartHost] Ouverture du menu contextuel...');
+    //   await this.contextMenu.show(
+    //     event, 
+    //     this.chart, 
+    //     currentSignalIds, 
+    //     (selectedSignalIds) => this.onSignalSelectionChange(selectedSignalIds)
+    //   );
+    //   console.log('[ChartHost] Menu contextuel ouvert avec succès');
+    // } catch (error) {
+    //   console.error('[ChartHost] Erreur ouverture menu contextuel:', error);
+    // }
   }
   
   /**
@@ -712,11 +714,11 @@ export class ChartHost {
    * Nettoie l'instance
    */
   destroy() {
-    // Cleanup du menu contextuel
-    if (this.contextMenu) {
-      this.contextMenu.destroy();
-      this.contextMenu = null;
-    }
+    // Cleanup du menu contextuel - DÉSACTIVÉ TEMPORAIREMENT
+    // if (this.contextMenu) {
+    //   this.contextMenu.destroy();
+    //   this.contextMenu = null;
+    // }
     
     if (this.zoomPanController) {
       this.zoomPanController.destroy();
@@ -728,10 +730,10 @@ export class ChartHost {
       this.chart = null;
     }
     
-    // Cleanup event listeners
-    if (this.canvas) {
-      this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
-    }
+    // Cleanup event listeners - DÉSACTIVÉ TEMPORAIREMENT
+    // if (this.canvas) {
+    //   this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
+    // }
     
     // Instance détruite
   }
