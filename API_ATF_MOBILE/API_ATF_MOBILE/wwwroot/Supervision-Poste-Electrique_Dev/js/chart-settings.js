@@ -129,18 +129,18 @@ function openNewSystemSettings(chartKey, chartInstance) {
                 .settings-row {
                   display: grid;
                   grid-template-columns: repeat(2, 1fr);
-                  gap: 12px;
-                  margin-bottom: 16px;
+                  gap: 8px;
+                  margin-bottom: 8px;
                 }
                 
                 .settings-field {
                   display: flex;
                   flex-direction: column;
-                  gap: 6px;
+                  gap: 4px;
                 }
                 
                 .settings-label {
-                  font-size: 12px;
+                  font-size: 11px;
                   font-weight: 500;
                   color: var(--tesla-gray-200);
                 }
@@ -149,10 +149,10 @@ function openNewSystemSettings(chartKey, chartInstance) {
                 .settings-select {
                   background: var(--tesla-gray-800);
                   border: 1px solid var(--tesla-gray-500);
-                  border-radius: 6px;
-                  padding: 8px 12px;
+                  border-radius: 4px;
+                  padding: 6px 8px;
                   color: var(--tesla-white);
-                  font-size: 13px;
+                  font-size: 12px;
                   transition: all 0.2s;
                 }
                 
@@ -166,9 +166,9 @@ function openNewSystemSettings(chartKey, chartInstance) {
                 .settings-checkbox {
                   display: flex;
                   align-items: center;
-                  gap: 8px;
-                  padding: 8px;
-                  border-radius: 6px;
+                  gap: 6px;
+                  padding: 4px 6px;
+                  border-radius: 4px;
                   transition: background 0.2s;
                   cursor: pointer;
                 }
@@ -178,14 +178,14 @@ function openNewSystemSettings(chartKey, chartInstance) {
                 }
                 
                 .settings-checkbox input {
-                  width: 16px;
-                  height: 16px;
+                  width: 14px;
+                  height: 14px;
                   accent-color: var(--tesla-blue);
                   cursor: pointer;
                 }
                 
                 .settings-checkbox label {
-                  font-size: 13px;
+                  font-size: 11px;
                   color: var(--tesla-gray-100);
                   cursor: pointer;
                 }
@@ -193,30 +193,30 @@ function openNewSystemSettings(chartKey, chartInstance) {
                 .settings-divider {
                   height: 1px;
                   background: var(--tesla-border);
-                  margin: 16px 0;
+                  margin: 10px 0;
                 }
                 
                 .settings-actions {
                   display: grid;
                   grid-template-columns: repeat(3, 1fr);
-                  gap: 8px;
-                  margin-top: 16px;
+                  gap: 6px;
+                  margin-top: 10px;
                 }
                 
                 .action-btn {
                   background: var(--tesla-gray-800);
                   border: 1px solid var(--tesla-gray-500);
-                  border-radius: 6px;
-                  padding: 8px;
+                  border-radius: 4px;
+                  padding: 6px;
                   color: var(--tesla-gray-100);
-                  font-size: 12px;
+                  font-size: 11px;
                   font-weight: 500;
                   cursor: pointer;
                   transition: all 0.2s;
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  gap: 6px;
+                  gap: 4px;
                 }
                 
                 .action-btn:hover {
@@ -225,27 +225,6 @@ function openNewSystemSettings(chartKey, chartInstance) {
                   transform: translateY(-1px);
                 }
                 
-                .collapse-trigger {
-                  background: var(--tesla-gray-800);
-                  border: 1px solid var(--tesla-gray-500);
-                  border-radius: 6px;
-                  padding: 10px 12px;
-                  color: var(--tesla-gray-100);
-                  font-size: 13px;
-                  font-weight: 500;
-                  cursor: pointer;
-                  transition: all 0.2s;
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  width: 100%;
-                  margin-top: 12px;
-                }
-                
-                .collapse-trigger:hover {
-                  background: var(--tesla-gray-700);
-                  border-color: var(--tesla-gray-400);
-                }
                 
                 .collapse-icon {
                   transition: transform 0.3s;
@@ -257,8 +236,8 @@ function openNewSystemSettings(chartKey, chartInstance) {
                 
                 .collapse-content {
                   display: none;
-                  margin-top: 16px;
-                  padding-top: 16px;
+                  margin-top: 8px;
+                  padding-top: 8px;
                   border-top: 1px solid var(--tesla-border);
                 }
                 
@@ -270,8 +249,8 @@ function openNewSystemSettings(chartKey, chartInstance) {
                   background: var(--tesla-gray-800);
                   border: 1px solid var(--tesla-gray-500);
                   border-radius: 4px;
-                  padding: 6px 10px;
-                  font-size: 11px;
+                  padding: 4px 8px;
+                  font-size: 10px;
                   color: var(--tesla-gray-200);
                   margin-top: 8px;
                 }
@@ -312,9 +291,27 @@ function openNewSystemSettings(chartKey, chartInstance) {
 
       
       <!-- Bouton collapse pour paramètres avancés -->
-      <button type="button" id="toggle-advanced-settings" class="collapse-trigger">
-        <span>Paramètres avancés</span>
-        <svg id="chevron-icon" class="collapse-icon" style="width: 14px; height: 14px;" aria-hidden="true">
+      <button type="button" id="toggle-advanced-settings" style="
+        background: var(--tesla-gray-800);
+        border: 1px solid var(--tesla-gray-500);
+        border-radius: 6px;
+        padding: 12px;
+        color: var(--tesla-gray-100);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 12px;
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        line-height: 1;
+        vertical-align: middle;
+      ">
+        <span style="display: inline; white-space: nowrap;">Avancés</span>
+        <svg id="chevron-icon" style="width: 14px; height: 14px; display: inline-block; transition: transform 0.3s;" aria-hidden="true">
           <use href="#i-arrow-right" />
         </svg>
       </button>
@@ -419,21 +416,21 @@ function openNewSystemSettings(chartKey, chartInstance) {
       
       <div class="settings-actions">
         <button type="button" id="new-chart-reset" class="action-btn">
-          <svg class="icon stroke" style="width: 14px; height: 14px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+          <svg class="icon stroke" style="width: 12px; height: 12px;" aria-hidden="true"><use href="#i-refresh" /></svg>
           <span>Reset</span>
         </button>
         <button type="button" id="new-chart-export-png" class="action-btn">
-          <svg class="icon stroke" style="width: 14px; height: 14px;" aria-hidden="true"><use href="#i-download" /></svg>
+          <svg class="icon stroke" style="width: 12px; height: 12px;" aria-hidden="true"><use href="#i-download" /></svg>
           <span>PNG</span>
         </button>
         <button type="button" id="new-chart-export-csv" class="action-btn">
-          <svg class="icon stroke" style="width: 14px; height: 14px;" aria-hidden="true"><use href="#i-download" /></svg>
+          <svg class="icon stroke" style="width: 12px; height: 12px;" aria-hidden="true"><use href="#i-download" /></svg>
           <span>CSV</span>
         </button>
       </div>
       
       <!-- Signaux -->
-      <div id="new-chart-signals" style="display: flex; flex-direction: column; gap: 6px;">
+      <div id="new-chart-signals" style="display: flex; flex-direction: column; gap: 4px;">
         <!-- Les signaux seront ajoutés dynamiquement -->
       </div>
     </div>
@@ -454,6 +451,17 @@ function openNewSystemSettings(chartKey, chartInstance) {
     
     if (toggleAdvancedBtn && advancedSettings) {
       console.log(`[chart-settings] Configuration du toggle paramètres avancés`);
+      
+      // Ajouter les événements hover
+      toggleAdvancedBtn.addEventListener('mouseenter', () => {
+        toggleAdvancedBtn.style.background = 'var(--tesla-gray-700)';
+        toggleAdvancedBtn.style.borderColor = 'var(--tesla-gray-400)';
+      });
+      
+      toggleAdvancedBtn.addEventListener('mouseleave', () => {
+        toggleAdvancedBtn.style.background = 'var(--tesla-gray-800)';
+        toggleAdvancedBtn.style.borderColor = 'var(--tesla-gray-500)';
+      });
       
       toggleAdvancedBtn.addEventListener('click', (e) => {
         e.preventDefault();
