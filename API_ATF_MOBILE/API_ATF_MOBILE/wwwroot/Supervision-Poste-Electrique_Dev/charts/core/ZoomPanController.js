@@ -191,6 +191,9 @@ export class ZoomPanController {
     const scale = this.chart.scales[zoomAxis];
     if (!scale) return;
     
+    // Émettre un événement de début de zoom
+    this.emitZoomStart();
+    
     // Direction et force du zoom
     const direction = event.deltaY > 0 ? 1 : -1; // 1 = zoom out, -1 = zoom in
     const zoomFactor = 1 + (direction * this.config.zoom.wheel.speed);
@@ -225,6 +228,9 @@ export class ZoomPanController {
     scale.options.max = clampedMax;
     
     this.chart.update('none');
+    
+    // Émettre un événement de fin de zoom
+    setTimeout(() => this.emitZoomEnd(), 100);
     
     // Zoom applied
   }
@@ -414,5 +420,31 @@ export class ZoomPanController {
     this.canvas.removeEventListener('touchend', this.handleTouchEnd);
     
     // ZoomPanController détruit
+  }
+  
+  /**
+   * Émet un événement de début de zoom
+   */
+  emitZoomStart() {
+    const event = new CustomEvent('chart:zoom-start', {
+      detail: {
+        chartId: this.chart.id,
+        canvasId: this.chart.canvas.id
+      }
+    });
+    document.dispatchEvent(event);
+  }
+  
+  /**
+   * Émet un événement de fin de zoom
+   */
+  emitZoomEnd() {
+    const event = new CustomEvent('chart:zoom-end', {
+      detail: {
+        chartId: this.chart.id,
+        canvasId: this.chart.canvas.id
+      }
+    });
+    document.dispatchEvent(event);
   }
 }

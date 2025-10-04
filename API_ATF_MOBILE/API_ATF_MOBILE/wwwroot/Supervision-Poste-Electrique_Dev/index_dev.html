@@ -439,6 +439,9 @@
     <symbol id="i-arrow-right" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
       <path d="M9 6l6 6-6 6" />
     </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <polygon points="5,3 19,12 5,21"/>
+    </symbol>
     <symbol id="i-info" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
       <circle cx="12" cy="12" r="10" />
       <path d="M12 16v-4" />
@@ -797,14 +800,12 @@
         </div>
         <button type="button" class="tesla-btn" data-dialog-close aria-label="Fermer">Fermer</button>
       </header>
-      <div class="dialog-body" style="padding: var(--tesla-space-lg);" id="chart-settings-body">
+      <div class="dialog-body" style="padding: 16px;" id="chart-settings-body">
         <!-- Le contenu est injecté côté JS -->
       </div>
-      <footer class="dialog-actions" style="padding: var(--tesla-space-lg); border-top: 1px solid var(--tesla-border); display: flex; justify-content: space-between; gap: var(--tesla-space-sm);">
-        <div style="display: flex; gap: var(--tesla-space-sm);">
-          <button type="button" class="tesla-btn" id="chart-settings-reset">Réinitialiser</button>
-          <button type="submit" class="tesla-btn tesla-btn-primary" id="chart-settings-save">Valider</button>
-        </div>
+      <footer class="dialog-actions" style="padding: 16px; border-top: 1px solid var(--tesla-border); display: flex; justify-content: flex-end; gap: 12px; background: var(--tesla-gray-800);">
+        <button type="button" class="tesla-btn" id="chart-settings-reset" style="background: var(--tesla-gray-700); border: 1px solid var(--tesla-gray-500); color: var(--tesla-gray-100); padding: 8px 16px; font-size: 13px;">Réinitialiser</button>
+        <button type="submit" class="tesla-btn" id="chart-settings-save" style="background: var(--tesla-gray-600); border: 1px solid var(--tesla-gray-400); color: var(--tesla-white); padding: 8px 16px; font-size: 13px; font-weight: 500;">Valider</button>
       </footer>
     </form>
   </dialog>

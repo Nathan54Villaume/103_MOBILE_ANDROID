@@ -334,6 +334,13 @@ function refreshNewChartSystem() {
         return;
       }
       
+      // Vérifier si le chart est zoomé (arrêter le rafraîchissement automatique)
+      const canvasId = chartInstance.host?.canvasId;
+      if (canvasId && isChartZoomed(canvasId)) {
+        console.log(`[main] Chart ${canvasId} is zoomed, skipping auto-refresh`);
+        return;
+      }
+      
       const datasets = [];
       bufferKeys.forEach((bufferKey, index) => {
         const buffer = bufs[bufferKey];
@@ -384,6 +391,133 @@ function refreshNewChartSystem() {
       console.error(`❌ [main] Error refreshing chart ${cardId}:`, error);
     }
   });
+}
+
+// Gestion des charts zoomés (arrêt du rafraîchissement automatique)
+const zoomedCharts = new Set();
+
+// Écouter les événements de zoom
+document.addEventListener('chart:zoom-start', (event) => {
+  const { canvasId } = event.detail;
+  zoomedCharts.add(canvasId);
+  console.log(`[main] Chart ${canvasId} zoomed - refresh stopped`);
+  showResumeButton(canvasId);
+});
+
+document.addEventListener('chart:zoom-end', (event) => {
+  const { canvasId } = event.detail;
+  // Ne pas retirer immédiatement, laisser l'utilisateur décider
+  console.log(`[main] Chart ${canvasId} zoom ended`);
+});
+
+// Fonction pour réactiver le rafraîchissement d'un chart
+export function resumeChartRefresh(canvasId) {
+  zoomedCharts.delete(canvasId);
+  console.log(`[main] Chart ${canvasId} refresh resumed`);
+  hideResumeButton(canvasId);
+}
+
+// Fonction pour afficher le bouton "Reprendre" au-dessus de la légende
+function showResumeButton(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  
+  // Vérifier si le bouton existe déjà
+  let resumeBtn = document.getElementById(`resume-btn-${canvasId}`);
+  if (resumeBtn) return;
+  
+  // Trouver le conteneur parent du canvas (généralement un div avec position relative)
+  let container = canvas.parentElement;
+  while (container && container.tagName !== 'DIV') {
+    container = container.parentElement;
+  }
+  
+  if (!container) {
+    console.warn(`[main] No suitable container found for ${canvasId}`);
+    return;
+  }
+  
+  // S'assurer que le conteneur a une position relative
+  if (getComputedStyle(container).position === 'static') {
+    container.style.position = 'relative';
+  }
+  
+  // Créer le bouton
+  resumeBtn = document.createElement('button');
+  resumeBtn.id = `resume-btn-${canvasId}`;
+  resumeBtn.className = 'resume-refresh-btn';
+  resumeBtn.innerHTML = `
+    <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true">
+      <use href="#i-play" />
+    </svg>
+    <span>Reprendre</span>
+  `;
+  
+  // Styles du bouton
+  resumeBtn.style.cssText = `
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    background: #10b981 !important;
+    border: 1px solid #10b981 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    color: white !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    z-index: 9999 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    font-family: inherit !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  `;
+  
+  // Hover effect
+  resumeBtn.addEventListener('mouseenter', () => {
+    resumeBtn.style.background = '#059669';
+    resumeBtn.style.transform = 'translateY(-1px)';
+  });
+  
+  resumeBtn.addEventListener('mouseleave', () => {
+    resumeBtn.style.background = '#10b981';
+    resumeBtn.style.transform = 'translateY(0)';
+  });
+  
+  // Click handler
+  resumeBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log(`[main] Resume button clicked for ${canvasId}`);
+    resumeChartRefresh(canvasId);
+    refreshNewChartSystem();
+  });
+  
+  // Ajouter le bouton au conteneur
+  container.appendChild(resumeBtn);
+  
+  console.log(`[main] Resume button shown for ${canvasId} in container:`, container);
+  console.log(`[main] Button element:`, resumeBtn);
+  console.log(`[main] Button computed style:`, getComputedStyle(resumeBtn));
+}
+
+// Fonction pour masquer le bouton "Reprendre"
+function hideResumeButton(canvasId) {
+  const resumeBtn = document.getElementById(`resume-btn-${canvasId}`);
+  if (resumeBtn) {
+    resumeBtn.remove();
+    console.log(`[main] Resume button hidden for ${canvasId}`);
+  }
+}
+
+// Fonction pour vérifier si un chart est zoomé
+export function isChartZoomed(canvasId) {
+  return zoomedCharts.has(canvasId);
 }
 
 // Export pour utilisation dans polling.js
