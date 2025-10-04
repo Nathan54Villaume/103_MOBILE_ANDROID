@@ -258,12 +258,15 @@ function openNewSystemSettings(chartKey, chartInstance) {
       
       <!-- Réglages principaux -->
       <div class="settings-row">
-        <select id="new-chart-timerange" class="settings-select">
-          <option value="15">15 minutes</option>
-          <option value="60">1 heure</option>
-          <option value="240">4 heures</option>
-          <option value="1440">24 heures</option>
-        </select>
+        <div class="settings-field">
+          <label class="settings-label">Base de temps</label>
+          <select id="new-chart-timerange" class="settings-select">
+            <option value="15">15 minutes</option>
+            <option value="60">1 heure</option>
+            <option value="240">4 heures</option>
+            <option value="1440">24 heures</option>
+          </select>
+        </div>
         <div class="settings-field">
           <label class="settings-label">Épaisseur ligne</label>
           <select id="new-chart-line-width" class="settings-select">
