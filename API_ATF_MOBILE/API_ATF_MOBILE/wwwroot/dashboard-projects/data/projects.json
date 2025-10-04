@@ -29,8 +29,8 @@
     ],
     "skills": ["SQL Server","Automatisme","RFID","Cimplicity","Basic Script","Gestion projet"],
     "images": [
-      { "src": "/images/projets/suivi-produit-1.jpg?v=2", "title": "Étiquette roquette" },
-      { "src": "/images/projets/suivi-produit-2.jpg?v=3", "title": "Interface supervision" }
+      { "src": "../images/projets/suivi-produit-1.jpg?v=2", "title": "Étiquette roquette" },
+      { "src": "../images/projets/suivi-produit-2.jpg?v=3", "title": "Interface supervision" }
     ],
     "media": []
   },
@@ -64,8 +64,8 @@
     ],
     "skills": ["C#","SQL Server","Cimplicity","Basic Script","RFID"],
     "images": [
-      { "src": "/images/projets/Gestion_RFID_ATS-1.jpg?v=2", "title": "Interface RFID" },
-      { "src": "/images/projets/Gestion_RFID_ATS-2.jpg?v=2", "title": "Badge opérateur" }
+      { "src": "../images/projets/Gestion_RFID_ATS-1.jpg?v=2", "title": "Interface RFID" },
+      { "src": "../images/projets/Gestion_RFID_ATS-2.jpg?v=2", "title": "Badge opérateur" }
     ],
     "media": []
   },
@@ -100,7 +100,7 @@
     ],
     "skills": ["C#","SQL Server","Cimplicity","Basic Script","RFID","Déploiement multi-site"],
     "images": [
-      { "src": "/images/projets/Gestion_RFID_ATR-1.jpg?v=1", "title": "Interface RFID ATR" }
+      { "src": "../images/projets/Gestion_RFID_ATR-1.jpg?v=1", "title": "Interface RFID ATR" }
     ],
     "media": []
   },
@@ -135,7 +135,7 @@
     ],
     "skills": ["OPC","S7","HTML5","Tailwind CSS","Chart.js","SQL Server","Communication industrielle"],
     "images": [
-      { "src": "/images/projets/Suivis_des_Energies-1.jpg", "title": "Tableau de bord énergétique" }
+      { "src": "../images/projets/Suivis_des_Energies-1.jpg", "title": "Tableau de bord énergétique" }
     ],
     "media": [
       { "type": "chart", "label": "TR1 — conso synthèse" }
@@ -172,10 +172,10 @@
     ],
     "skills": ["Android","Kotlin","Retrofit","API REST","Architecture client/serveur","UI/UX"],
     "images": [
-      { "src": "/images/projets/Appli_Chgt_Gamme_1.png?v=2", "title": "Écran d'accueil" },
-      { "src": "/images/projets/Appli_Chgt_Gamme_2.png?v=2", "title": "Liste des Gammes" },
-      { "src": "/images/projets/Appli_Chgt_Gamme_3.png?v=2", "title": "Validation étapes" },
-      { "src": "/images/projets/Appli_Chgt_Gamme_4.png?v=2", "title": "Interface Parametres" }
+      { "src": "../images/projets/Appli_Chgt_Gamme_1.png?v=2", "title": "Écran d'accueil" },
+      { "src": "../images/projets/Appli_Chgt_Gamme_2.png?v=2", "title": "Liste des Gammes" },
+      { "src": "../images/projets/Appli_Chgt_Gamme_3.png?v=2", "title": "Validation étapes" },
+      { "src": "../images/projets/Appli_Chgt_Gamme_4.png?v=2", "title": "Interface Parametres" }
     ],
     "media": []
   },
@@ -212,8 +212,8 @@
     ],
     "skills": ["Cimplicity","Basic Script","SQL Server","Réseau industriel","Analyse de données"],
     "images": [
-      { "src": "/images/projets/SuivisSoudure-1.jpg", "title": "Supervision soudures" },
-      { "src": "/images/projets/SuivisSoudure-2.jpg", "title": "Historique paramètres" }
+      { "src": "../images/projets/SuivisSoudure-1.jpg", "title": "Supervision soudures" },
+      { "src": "../images/projets/SuivisSoudure-2.jpg", "title": "Historique paramètres" }
     ],
     "media": []
   },
@@ -251,7 +251,7 @@
     ],
     "skills": ["Vision industrielle","IFM Vision Assistant","Automatisme","Profinet","Statistiques"],
     "images": [
-      { "src": "/images/projets/Détection_Etiquette-1.jpg", "title": "Caméra de détection" }
+      { "src": "../images/projets/Détection_Etiquette-1.jpg", "title": "Caméra de détection" }
     ],
     "media": []
   }

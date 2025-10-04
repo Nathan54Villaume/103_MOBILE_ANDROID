@@ -12,13 +12,13 @@
    Exemple pour "Suivi Produit - ATS" :
    
    images: [
-     { src: '/images/projets/suivi-produit-1.jpg', title: 'Étiquette roquette' },
-     { src: '/images/projets/suivi-produit-2.jpg', title: 'Interface supervision' }
+     { src: '../images/projets/suivi-produit-1.jpg', title: 'Étiquette roquette' },
+     { src: '../images/projets/suivi-produit-2.jpg', title: 'Interface supervision' }
    ],
 
 3. FORMAT
    { 
-     src: '/images/projets/nom-fichier.jpg',    // Chemin de l'image
+     src: '../images/projets/nom-fichier.jpg',    // Chemin de l'image
      title: 'Description de l'image'             // Titre optionnel
    }
 
