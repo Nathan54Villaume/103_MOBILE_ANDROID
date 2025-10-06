@@ -61,10 +61,6 @@ builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollect
 builder.Services.AddSingleton<DirisDataRetentionService>();
 builder.Services.AddHostedService<DirisDataRetentionService>(provider => provider.GetRequiredService<DirisDataRetentionService>());
 
-// 3.5) DIRIS Services - Device Registry et Reader
-builder.Services.AddSingleton<IDeviceRegistry, Diris.Storage.SqlServer.Repositories.DeviceRepository>();
-builder.Services.AddSingleton<IDeviceReader, Diris.Providers.WebMI.WebMiReaderSimple>();
-
 // 3.2) Configuration JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "VotreCleSecreteTresTresLongueEtComplexePourAPI_ATF_MOBILE_2024!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "API_ATF_MOBILE";
