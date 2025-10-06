@@ -61,6 +61,8 @@ builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollect
 builder.Services.AddSingleton<DirisDataRetentionService>();
 builder.Services.AddHostedService<DirisDataRetentionService>(provider => provider.GetRequiredService<DirisDataRetentionService>());
 
+
+
 // 3.2) Configuration JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "VotreCleSecreteTresTresLongueEtComplexePourAPI_ATF_MOBILE_2024!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "API_ATF_MOBILE";
