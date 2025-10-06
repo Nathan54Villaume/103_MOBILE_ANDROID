@@ -9,6 +9,9 @@ public class WebMiResponse
 {
     [JsonPropertyName("result")]
     public List<WebMiResult> Result { get; set; } = new();
+    
+    [JsonPropertyName("error")]
+    public int Error { get; set; }
 }
 
 /// <summary>
@@ -22,8 +25,8 @@ public class WebMiResult
     [JsonPropertyName("error")]
     public int Error { get; set; }
     
-    [JsonPropertyName("quality")]
-    public int Quality { get; set; }
+    [JsonPropertyName("status")]
+    public int Status { get; set; }
     
     [JsonPropertyName("timestamp")]
     public long Timestamp { get; set; }

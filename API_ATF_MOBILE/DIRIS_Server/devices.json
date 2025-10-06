@@ -23,6 +23,22 @@
       "enabled": false,
       "pollIntervalMs": 2000,
       "metaJson": "{\"location\": \"Salle électrique 3\", \"description\": \"Compteur de réserve\"}"
+    },
+    {
+      "name": "DIRIS-004",
+      "ipAddress": "192.168.2.195", 
+      "protocol": "webmi",
+      "enabled": true,
+      "pollIntervalMs": 1500,
+      "metaJson": "{\"location\": \"Nouveau compteur 1\", \"description\": \"DIRIS A40 - Faible charge\"}"
+    },
+    {
+      "name": "DIRIS-005",
+      "ipAddress": "192.168.2.132", 
+      "protocol": "webmi",
+      "enabled": true,
+      "pollIntervalMs": 1500,
+      "metaJson": "{\"location\": \"Nouveau compteur 2\", \"description\": \"DIRIS A40 - Forte charge\"}"
     }
   ],
   "tagMappings": {
