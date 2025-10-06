@@ -67,6 +67,7 @@ export class DirisManager {
     
     // Configuration
     document.getElementById('btnSaveDirisConfig')?.addEventListener('click', () => this.saveConfiguration());
+    document.getElementById('btnResetDirisConfig')?.addEventListener('click', () => this.resetConfiguration());
     
     // Configuration validation
     document.getElementById('configParallelism')?.addEventListener('input', (e) => this.validateConfigField('parallelism', e.target.value));
@@ -137,6 +138,9 @@ export class DirisManager {
       // Check alerts
       this.checkAlerts(response);
       
+      // Update global status
+      this.updateGlobalStatus(response);
+      
     } catch (error) {
       console.error('Erreur chargement métriques:', error);
     }
@@ -188,6 +192,64 @@ export class DirisManager {
         acqStatusDot.className = 'status-dot offline';
         acqStatus.textContent = '⏸️ Arrêté ou aucune donnée';
       }
+    }
+  }
+
+  updateGlobalStatus(metrics) {
+    try {
+      // Update devices count
+      const devicesCount = metrics.devices?.length || 0;
+      document.getElementById('dirisDevicesCount').textContent = devicesCount;
+      
+      // Update performance status
+      const throughput = metrics.throughput?.pointsPerSecond || 0;
+      const latency = metrics.throughput?.p95LatencyMs || 0;
+      
+      let performanceStatus = '⚡ Bon';
+      let performanceClass = 'text-green-400';
+      
+      if (throughput < 1) {
+        performanceStatus = '⚠️ Faible';
+        performanceClass = 'text-orange-400';
+      } else if (latency > 2000) {
+        performanceStatus = '🐌 Lent';
+        performanceClass = 'text-red-400';
+      } else if (throughput > 10) {
+        performanceStatus = '🚀 Excellent';
+        performanceClass = 'text-green-400';
+      }
+      
+      const performanceElement = document.getElementById('dirisPerformanceStatus');
+      performanceElement.textContent = performanceStatus;
+      performanceElement.className = `text-lg font-bold ${performanceClass}`;
+      
+      // Update alerts count
+      document.getElementById('dirisAlertsCount').textContent = this.alerts.length;
+      
+      // Update global status
+      const globalStatusDot = document.getElementById('dirisGlobalStatusDot');
+      const globalStatusText = document.getElementById('dirisGlobalStatusText');
+      
+      const isAcquisitionRunning = metrics.throughput?.pointsPerSecond > 0;
+      const hasActiveDevices = devicesCount > 0;
+      const hasAlerts = this.alerts.length > 0;
+      
+      if (isAcquisitionRunning && hasActiveDevices && !hasAlerts) {
+        globalStatusDot.className = 'status-dot online';
+        globalStatusText.textContent = '✅ Système opérationnel';
+      } else if (isAcquisitionRunning && hasActiveDevices) {
+        globalStatusDot.className = 'status-dot warning';
+        globalStatusText.textContent = '⚠️ Fonctionnel avec alertes';
+      } else if (!isAcquisitionRunning) {
+        globalStatusDot.className = 'status-dot offline';
+        globalStatusText.textContent = '⏸️ Acquisition arrêtée';
+      } else {
+        globalStatusDot.className = 'status-dot warning';
+        globalStatusText.textContent = '⚠️ Problèmes détectés';
+      }
+      
+    } catch (error) {
+      console.error('Erreur mise à jour statut global:', error);
     }
   }
 
@@ -351,6 +413,36 @@ export class DirisManager {
       console.error('Erreur sauvegarde configuration:', error);
       this.showError('Erreur lors de la sauvegarde de la configuration');
       this.addHistoryEvent('error', 'Erreur sauvegarde configuration', error.message);
+    }
+  }
+
+  async resetConfiguration() {
+    if (!confirm('Restaurer la configuration DIRIS aux valeurs par défaut ? Cette action est irréversible.')) {
+      return;
+    }
+
+    try {
+      this.showInfo('🔄 Restauration de la configuration par défaut...');
+      
+      const response = await this.apiClient.request('/api/diris/config/reset', {
+        method: 'POST'
+      });
+      
+      if (response.success) {
+        this.showSuccess('✅ Configuration restaurée aux valeurs par défaut');
+        this.addHistoryEvent('success', 'Configuration réinitialisée', 'Paramètres DIRIS restaurés aux valeurs par défaut');
+        
+        // Reload configuration to update UI
+        await this.loadConfiguration();
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de restaurer la configuration'}`);
+        this.addHistoryEvent('error', 'Échec réinitialisation', response.message || 'Erreur inconnue');
+      }
+      
+    } catch (error) {
+      console.error('Erreur réinitialisation configuration:', error);
+      this.showError('Erreur lors de la réinitialisation de la configuration');
+      this.addHistoryEvent('error', 'Erreur réinitialisation', error.message);
     }
   }
 
