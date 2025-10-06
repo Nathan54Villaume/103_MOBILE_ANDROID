@@ -1129,7 +1129,7 @@ export class DirisManager {
             </span>
             <span class="text-sm font-medium">${alert.title}</span>
           </div>
-          <span class="text-xs text-slate-400">${alert.timestamp.toLocaleTimeString('fr-FR')}</span>
+          <span class="text-xs text-slate-400">${new Date(alert.timestamp).toLocaleTimeString('fr-FR')}</span>
         </div>
         <p class="text-xs text-slate-300">${alert.message}</p>
       </div>
@@ -1224,7 +1224,7 @@ export class DirisManager {
             </span>
             <span class="text-sm font-medium">${event.action}</span>
           </div>
-          <span class="text-xs text-slate-400">${event.timestamp.toLocaleString('fr-FR')}</span>
+          <span class="text-xs text-slate-400">${new Date(event.timestamp).toLocaleString('fr-FR')}</span>
         </div>
         ${event.details ? `<p class="text-xs text-slate-300">${event.details}</p>` : ''}
       </div>
@@ -1263,7 +1263,7 @@ export class DirisManager {
   generateHistoryCsv() {
     let csv = 'Timestamp,Type,Action,Détails\n';
     this.history.forEach(event => {
-      csv += `${event.timestamp.toLocaleString('fr-FR')},${event.type},${event.action},"${event.details}"\n`;
+      csv += `${new Date(event.timestamp).toLocaleString('fr-FR')},${event.type},${event.action},"${event.details}"\n`;
     });
     return csv;
   }
