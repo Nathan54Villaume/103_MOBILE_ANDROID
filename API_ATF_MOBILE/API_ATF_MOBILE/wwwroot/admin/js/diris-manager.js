@@ -59,7 +59,7 @@ export class DirisManager {
   // ========================================
   async loadMetrics() {
     try {
-      const response = await this.apiClient.get('/api/diris/metrics/acquisition');
+      const response = await this.apiClient.request('/api/diris/metrics/acquisition');
       
       if (response.throughput) {
         document.getElementById('dirisPointsPerSec').textContent = 
@@ -108,7 +108,7 @@ export class DirisManager {
   // ========================================
   async loadDatabaseStats() {
     try {
-      const response = await this.apiClient.get('/api/diris/cleanup/stats');
+      const response = await this.apiClient.request('/api/diris/admin/cleanup/stats');
       
       if (response.success && response.data) {
         const data = response.data;
@@ -136,7 +136,7 @@ export class DirisManager {
   async loadConfiguration() {
     try {
       // Load from appsettings or config endpoint
-      const config = await this.apiClient.get('/api/admin/config');
+      const config = await this.apiClient.request('/api/admin/config');
       
       if (config.acquisition) {
         document.getElementById('configParallelism').value = config.acquisition.parallelism || 6;
@@ -191,7 +191,7 @@ export class DirisManager {
   // ========================================
   async loadDevices() {
     try {
-      const devices = await this.apiClient.get('/api/diris/devices');
+      const devices = await this.apiClient.request('/api/diris/devices');
       const container = document.getElementById('dirisDevicesList');
       
       if (!devices || devices.length === 0) {
@@ -231,7 +231,7 @@ export class DirisManager {
   async testDevice(deviceId) {
     try {
       this.showInfo(`Test du device ${deviceId} en cours...`);
-      const result = await this.apiClient.post(`/api/diris/devices/${deviceId}/poll`);
+      const result = await this.apiClient.request(`/api/diris/devices/${deviceId}/poll`, { method: 'POST' });
       
       if (result.isSuccess) {
         this.showSuccess(`✅ Device ${deviceId}: ${result.measurements?.length || 0} mesures lues en ${Math.round(result.pollDuration * 1000)}ms`);
@@ -264,7 +264,7 @@ export class DirisManager {
   // ========================================
   async loadLatestReadings() {
     try {
-      const readings = await this.apiClient.get('/api/diris/readings/latest');
+      const readings = await this.apiClient.request('/api/diris/readings/latest');
       const container = document.getElementById('dirisLatestReadings');
       
       if (!readings || readings.length === 0) {
@@ -324,7 +324,7 @@ export class DirisManager {
     
     try {
       this.showInfo('🧹 Nettoyage en cours...');
-      const result = await this.apiClient.post('/api/diris/cleanup');
+      const result = await this.apiClient.request('/api/diris/admin/cleanup', { method: 'POST' });
       
       if (result.success && result.stats) {
         this.showSuccess(`✅ Nettoyage terminé: ${result.stats.deletedCount} mesures supprimées, ${result.stats.retainedCount} conservées`);
