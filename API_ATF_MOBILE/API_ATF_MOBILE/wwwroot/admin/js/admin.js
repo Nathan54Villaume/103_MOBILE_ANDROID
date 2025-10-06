@@ -7,6 +7,7 @@ import { initServerMonitor, updateServerMetrics, formatDuration } from './server
 import { initSystemMonitor, updateSystemMetrics } from './system-monitor.js';
 import { initDatabaseManager, updateDatabaseStatus } from './database-manager.js';
 import { initS7Manager, updateS7Status } from './s7-manager.js';
+import { DirisManager } from './diris-manager.js';
 import { initLogsViewer, updateLogs } from './logs-viewer.js?v=20251003-1020';
 import { initConfigViewer } from './config-viewer.js';
 import { initApiViewer } from './api-viewer.js';
@@ -109,6 +110,11 @@ async function initApp() {
     initSystemMonitor();
     initDatabaseManager();
     initS7Manager();
+    
+    // Initialiser DIRIS Manager
+    window.dirisManager = new DirisManager(apiClient);
+    window.dirisManager.init();
+    
     initLogsViewer();
     initConfigViewer();
     initApiViewer();
@@ -175,6 +181,16 @@ function navigateToSection(section) {
     
     // Charger les données de la section
     state.currentSection = section;
+    
+    // Gérer l'auto-refresh DIRIS
+    if (window.dirisManager) {
+        if (section === 'diris') {
+            window.dirisManager.startAutoRefresh(5000);
+        } else {
+            window.dirisManager.stopAutoRefresh();
+        }
+    }
+    
     refreshCurrentSection();
 }
 
@@ -184,6 +200,7 @@ function updatePageTitle(section) {
         server: { title: 'Serveur', subtitle: 'Informations et métriques' },
         database: { title: 'Bases de données', subtitle: 'État et statistiques' },
         s7: { title: 'PLC S7', subtitle: 'Connexion et variables' },
+        diris: { title: 'DIRIS', subtitle: 'Acquisition et gestion des données' },
         logs: { title: 'Logs', subtitle: 'Journaux système' },
         config: { title: 'Configuration', subtitle: 'Paramètres actuels' },
         api: { title: 'API', subtitle: 'Contrôleurs et endpoints' },
@@ -211,6 +228,11 @@ async function refreshCurrentSection() {
                 break;
             case 's7':
                 await updateS7Status();
+                break;
+            case 'diris':
+                if (window.dirisManager) {
+                    await window.dirisManager.loadAllData();
+                }
                 break;
             case 'logs':
                 await updateLogs();

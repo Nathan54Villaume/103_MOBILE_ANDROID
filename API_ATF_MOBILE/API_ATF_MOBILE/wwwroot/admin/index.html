@@ -167,6 +167,10 @@
           <span>🔌</span>
           <span class="text-sm font-medium">PLC S7</span>
         </a>
+        <a href="#diris" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>⚡</span>
+          <span class="text-sm font-medium">DIRIS</span>
+        </a>
         <a href="#logs" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
           <span>📝</span>
           <span class="text-sm font-medium">Logs</span>
@@ -546,6 +550,191 @@
               <!-- Dynamically populated -->
             </div>
           </div>
+        </section>
+
+        <!-- DIRIS Section (hidden by default) -->
+        <section id="section-diris" class="hidden space-y-6">
+          
+          <!-- Services DIRIS -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Services DIRIS</h3>
+                <p class="text-xs text-slate-400 mt-1">Gestion des services d'acquisition</p>
+              </div>
+              <button id="btnRefreshDiris" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                🔄 Actualiser
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Acquisition Service -->
+              <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium">Service d'Acquisition</h4>
+                  <div id="dirisAcqStatusDot" class="status-dot unknown"></div>
+                </div>
+                <p id="dirisAcqStatus" class="text-sm text-slate-400 mb-3">Chargement...</p>
+                <div class="flex gap-2">
+                  <button id="btnStartAcquisition" class="flex-1 px-3 py-2 text-sm rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 transition-colors">
+                    ▶️ Démarrer
+                  </button>
+                  <button id="btnStopAcquisition" class="flex-1 px-3 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors">
+                    ⏸️ Arrêter
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Data Retention Service -->
+              <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium">Service de Rétention</h4>
+                  <div id="dirisRetStatusDot" class="status-dot unknown"></div>
+                </div>
+                <p id="dirisRetStatus" class="text-sm text-slate-400 mb-3">Chargement...</p>
+                <button id="btnTriggerCleanup" class="w-full px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
+                  🧹 Nettoyage manuel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Métriques d'acquisition en temps réel -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Métriques d'acquisition</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Points/seconde</p>
+                <p id="dirisPointsPerSec" class="text-2xl font-bold text-brand-400">0</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Devices/seconde</p>
+                <p id="dirisDevicesPerSec" class="text-2xl font-bold text-blue-400">0</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Latence P95</p>
+                <p id="dirisP95Latency" class="text-2xl font-bold text-purple-400">0ms</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Devices actifs</p>
+                <p id="dirisActiveDevices" class="text-2xl font-bold text-green-400">0</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Statistiques de base de données -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Base de données DIRIS</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">Total mesures</p>
+                <p id="dirisTotalMeasurements" class="text-2xl font-bold">0</p>
+                <p class="text-xs text-slate-400 mt-1">Dans DIRIS.Measurements</p>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">À supprimer</p>
+                <p id="dirisMeasurementsToDelete" class="text-2xl font-bold text-orange-400">0</p>
+                <p class="text-xs text-slate-400 mt-1">Ancienneté > rétention</p>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">Taille BDD</p>
+                <p id="dirisDatabaseSize" class="text-2xl font-bold text-blue-400">0 MB</p>
+                <p class="text-xs text-slate-400 mt-1">Table DIRIS</p>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-sm text-slate-400">Mesure la plus ancienne</p>
+                <p id="dirisOldestMeasurement" class="font-mono text-xs mt-1">-</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-sm text-slate-400">Mesure la plus récente</p>
+                <p id="dirisNewestMeasurement" class="font-mono text-xs mt-1">-</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Configuration DIRIS</h3>
+                <p class="text-xs text-slate-400 mt-1">Paramètres d'acquisition et rétention</p>
+              </div>
+              <button id="btnSaveDirisConfig" class="px-4 py-2 text-sm rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors">
+                💾 Sauvegarder
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Acquisition Settings -->
+              <div>
+                <h4 class="font-medium mb-3 text-sm">Acquisition</h4>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Parallélisme (devices simultanés)</label>
+                    <input type="number" id="configParallelism" min="1" max="20" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="6">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Intervalle de poll (ms)</label>
+                    <input type="number" id="configPollInterval" min="500" max="10000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1500">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Taille max des lots</label>
+                    <input type="number" id="configMaxBatch" min="100" max="5000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1000">
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Retention Settings -->
+              <div>
+                <h4 class="font-medium mb-3 text-sm">Rétention des données</h4>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Durée de rétention (jours)</label>
+                    <input type="number" id="configRetentionDays" min="1" max="365" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="10">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Heure de nettoyage</label>
+                    <input type="number" id="configCleanupHour" min="0" max="23" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="2">
+                    <p class="text-xs text-slate-500 mt-1">Format 24h (0-23)</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="configRetentionEnabled" class="w-4 h-4 rounded bg-white/5 border-white/10">
+                    <label for="configRetentionEnabled" class="text-xs text-slate-400">Activer le nettoyage automatique</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Devices DIRIS -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Devices DIRIS</h3>
+                <p class="text-xs text-slate-400 mt-1">Liste des équipements configurés</p>
+              </div>
+              <button id="btnAddDevice" class="px-3 py-2 text-sm rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors">
+                ➕ Ajouter
+              </button>
+            </div>
+            <div id="dirisDevicesList" class="space-y-2">
+              <!-- Dynamically populated -->
+              <p class="text-center text-slate-400 py-8">Chargement des devices...</p>
+            </div>
+          </div>
+
+          <!-- Dernières mesures -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Dernières mesures</h3>
+            <div id="dirisLatestReadings" class="space-y-3 max-h-[400px] overflow-y-auto hide-scrollbar">
+              <!-- Dynamically populated -->
+              <p class="text-center text-slate-400 py-8">Chargement des mesures...</p>
+            </div>
+          </div>
+
         </section>
 
         <!-- API Section (hidden by default) -->
