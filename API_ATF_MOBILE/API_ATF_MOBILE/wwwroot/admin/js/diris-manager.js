@@ -83,24 +83,53 @@ export class DirisManager {
     }
   }
 
-  updateServiceStatus(metrics) {
-    // Acquisition Service
-    const acqStatusDot = document.getElementById('dirisAcqStatusDot');
-    const acqStatus = document.getElementById('dirisAcqStatus');
-    
-    if (metrics && metrics.throughput && metrics.throughput.pointsPerSecond > 0) {
-      acqStatusDot.className = 'status-dot online';
-      acqStatus.textContent = '✅ En cours d\'acquisition';
-    } else {
-      acqStatusDot.className = 'status-dot offline';
-      acqStatus.textContent = '⏸️ Arrêté ou aucune donnée';
+  async updateServiceStatus(metrics) {
+    try {
+      // Récupérer le statut de l'acquisition
+      const statusResponse = await this.apiClient.request('/api/diris/acquisition/status');
+      
+      // Acquisition Service
+      const acqStatusDot = document.getElementById('dirisAcqStatusDot');
+      const acqStatus = document.getElementById('dirisAcqStatus');
+      
+      if (statusResponse.success && statusResponse.data) {
+        const isRunning = statusResponse.data.isRunning;
+        if (isRunning) {
+          acqStatusDot.className = 'status-dot online';
+          acqStatus.textContent = '✅ En cours d\'acquisition';
+        } else {
+          acqStatusDot.className = 'status-dot offline';
+          acqStatus.textContent = '⏸️ Arrêté';
+        }
+      } else {
+        // Fallback sur les métriques si le statut n'est pas disponible
+        if (metrics && metrics.throughput && metrics.throughput.pointsPerSecond > 0) {
+          acqStatusDot.className = 'status-dot online';
+          acqStatus.textContent = '✅ En cours d\'acquisition';
+        } else {
+          acqStatusDot.className = 'status-dot offline';
+          acqStatus.textContent = '⏸️ Arrêté ou aucune donnée';
+        }
+      }
+      
+      // Retention Service
+      const retStatusDot = document.getElementById('dirisRetStatusDot');
+      const retStatus = document.getElementById('dirisRetStatus');
+      retStatusDot.className = 'status-dot online';
+      retStatus.textContent = '✅ Service actif';
+    } catch (error) {
+      console.error('Erreur mise à jour statut service:', error);
+      // Fallback sur les métriques
+      const acqStatusDot = document.getElementById('dirisAcqStatusDot');
+      const acqStatus = document.getElementById('dirisAcqStatus');
+      if (metrics && metrics.throughput && metrics.throughput.pointsPerSecond > 0) {
+        acqStatusDot.className = 'status-dot online';
+        acqStatus.textContent = '✅ En cours d\'acquisition';
+      } else {
+        acqStatusDot.className = 'status-dot offline';
+        acqStatus.textContent = '⏸️ Arrêté ou aucune donnée';
+      }
     }
-    
-    // Retention Service
-    const retStatusDot = document.getElementById('dirisRetStatusDot');
-    const retStatus = document.getElementById('dirisRetStatus');
-    retStatusDot.className = 'status-dot online';
-    retStatus.textContent = '✅ Service actif';
   }
 
   // ========================================
@@ -301,7 +330,17 @@ export class DirisManager {
   // ========================================
   async startAcquisition() {
     try {
-      this.showInfo('⚠️ Fonctionnalité en cours de développement. L\'acquisition démarre automatiquement au lancement du serveur.');
+      this.showInfo('▶️ Démarrage de l\'acquisition DIRIS...');
+      
+      const result = await this.apiClient.request('/api/diris/acquisition/start', { method: 'POST' });
+      
+      if (result.success) {
+        this.showSuccess('✅ Acquisition DIRIS démarrée avec succès');
+        // Rafraîchir les métriques pour voir le changement
+        await this.loadMetrics();
+      } else {
+        this.showError(`❌ Erreur: ${result.message || 'Impossible de démarrer l\'acquisition'}`);
+      }
     } catch (error) {
       console.error('Erreur démarrage acquisition:', error);
       this.showError('Erreur lors du démarrage de l\'acquisition');
@@ -310,7 +349,17 @@ export class DirisManager {
 
   async stopAcquisition() {
     try {
-      this.showInfo('⚠️ Fonctionnalité en cours de développement. Redémarrez le serveur pour arrêter l\'acquisition.');
+      this.showInfo('⏸️ Arrêt de l\'acquisition DIRIS...');
+      
+      const result = await this.apiClient.request('/api/diris/acquisition/stop', { method: 'POST' });
+      
+      if (result.success) {
+        this.showSuccess('✅ Acquisition DIRIS arrêtée avec succès');
+        // Rafraîchir les métriques pour voir le changement
+        await this.loadMetrics();
+      } else {
+        this.showError(`❌ Erreur: ${result.message || 'Impossible d\'arrêter l\'acquisition'}`);
+      }
     } catch (error) {
       console.error('Erreur arrêt acquisition:', error);
       this.showError('Erreur lors de l\'arrêt de l\'acquisition');

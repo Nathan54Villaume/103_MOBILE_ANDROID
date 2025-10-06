@@ -53,6 +53,7 @@ builder.Services.AddSqlServerStorage(builder.Configuration);
 
 // 3.3) DIRIS Services - Acquisition et Métriques
 builder.Services.Configure<DirisAcquisitionOptions>(builder.Configuration.GetSection(DirisAcquisitionOptions.SectionName));
+builder.Services.AddSingleton<DirisAcquisitionControlService>();
 builder.Services.AddHostedService<DirisAcquisitionService>();
 builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollector>();
 
