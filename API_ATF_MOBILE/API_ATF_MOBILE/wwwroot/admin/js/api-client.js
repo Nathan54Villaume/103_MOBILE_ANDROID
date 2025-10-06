@@ -389,7 +389,7 @@ class ApiClient {
      * Configuration
      */
     async getConfiguration() {
-        return await this.request('/api/admin/config');
+        return await this.request('/api/admin/configuration');
     }
 
     /**

@@ -13,6 +13,110 @@ import { initConfigViewer } from './config-viewer.js';
 import { initApiViewer } from './api-viewer.js';
 import { initRequestsViewer, updateRequestsDisplay } from './requests-viewer.js?v=20251003-0940';
 
+// Fonctions pour recharger les données
+async function loadConfiguration() {
+    try {
+        const config = await apiClient.getConfiguration();
+        displayConfiguration(config);
+    } catch (error) {
+        console.error('Erreur lors du chargement de la configuration:', error);
+        const container = document.getElementById('configInfo');
+        if (container) {
+            container.innerHTML = '<p class="text-red-400">Erreur lors du chargement de la configuration</p>';
+        }
+    }
+}
+
+async function loadControllers() {
+    try {
+        const controllers = await apiClient.getControllers();
+        displayControllers(controllers);
+    } catch (error) {
+        console.error('Erreur lors du chargement des contrôleurs:', error);
+        const container = document.getElementById('controllersList');
+        if (container) {
+            container.innerHTML = '<p class="text-red-400">Erreur lors du chargement des contrôleurs</p>';
+        }
+    }
+}
+
+function displayConfiguration(config) {
+    const container = document.getElementById('configInfo');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="space-y-4">
+            <div>
+                <h4 class="font-semibold mb-2">Environnement</h4>
+                <div class="flex justify-between py-2 border-b border-white/5">
+                    <span class="text-slate-400">Mode</span>
+                    <span class="font-medium">${config.environment}</span>
+                </div>
+                <div class="flex justify-between py-2 border-b border-white/5">
+                    <span class="text-slate-400">URLs</span>
+                    <span class="font-medium font-mono text-sm">${config.urls}</span>
+                </div>
+                <div class="flex justify-between py-2 border-b border-white/5">
+                    <span class="text-slate-400">Niveau de log</span>
+                    <span class="font-medium">${config.logLevel}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                    <span class="text-slate-400">Hosts autorisés</span>
+                    <span class="font-medium">${config.allowedHosts}</span>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mb-2">Chaînes de connexion</h4>
+                ${config.connectionStrings.map(cs => `
+                    <div class="mb-2 p-3 bg-white/5 rounded-lg">
+                        <p class="font-medium text-sm mb-1">${cs.name}</p>
+                        <p class="font-mono text-xs text-slate-400 break-all">${cs.value}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function displayControllers(controllers) {
+    const container = document.getElementById('controllersList');
+    if (!container) return;
+    
+    container.innerHTML = controllers.map(ctrl => `
+        <div class="p-4 bg-white/5 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold">${ctrl.name}</h4>
+                <span class="px-2 py-1 rounded text-xs bg-brand-500/20 text-brand-400">
+                    ${ctrl.routes.length} routes
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 mb-3 font-mono">${ctrl.fullName}</p>
+            <div class="space-y-1">
+                ${ctrl.routes.map(route => {
+                    const [method, path] = route.split(' ');
+                    const methodColors = {
+                        'GET': 'bg-blue-500/20 text-blue-400',
+                        'POST': 'bg-green-500/20 text-green-400',
+                        'PUT': 'bg-yellow-500/20 text-yellow-400',
+                        'DELETE': 'bg-red-500/20 text-red-400'
+                    };
+                    const colorClass = methodColors[method] || 'bg-slate-500/20 text-slate-400';
+                    
+                    return `
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="px-2 py-0.5 rounded text-xs font-mono ${colorClass}">
+                                ${method}
+                            </span>
+                            <span class="font-mono text-slate-300">${path}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
 // État global
 const state = {
     currentSection: 'dashboard',
@@ -238,10 +342,10 @@ async function refreshCurrentSection() {
                 await updateLogs();
                 break;
             case 'config':
-                // Config est statique, pas besoin de rafraîchir
+                await loadConfiguration();
                 break;
             case 'api':
-                // API est statique, pas besoin de rafraîchir
+                await loadControllers();
                 break;
             case 'requests':
                 updateRequestsDisplay();
