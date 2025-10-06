@@ -1,0 +1,172 @@
+{
+  "format": 1,
+  "restore": {
+    "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Providers.WebMI\\Diris.Providers.WebMI.csproj": {}
+  },
+  "projects": {
+    "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
+        "projectName": "Diris.Core",
+        "projectPath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
+        "packagesPath": "C:\\Users\\nathan.villaume\\.nuget\\packages\\",
+        "outputPath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\nathan.villaume\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[8.0.5, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Providers.WebMI\\Diris.Providers.WebMI.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Providers.WebMI\\Diris.Providers.WebMI.csproj",
+        "projectName": "Diris.Providers.WebMI",
+        "projectPath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Providers.WebMI\\Diris.Providers.WebMI.csproj",
+        "packagesPath": "C:\\Users\\nathan.villaume\\.nuget\\packages\\",
+        "outputPath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Providers.WebMI\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\nathan.villaume\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj": {
+                "projectPath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.Http": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Http.Polly": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Polly": {
+              "target": "Package",
+              "version": "[8.4.2, )"
+            },
+            "Polly.Extensions.Http": {
+              "target": "Package",
+              "version": "[3.0.0, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[8.0.5, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

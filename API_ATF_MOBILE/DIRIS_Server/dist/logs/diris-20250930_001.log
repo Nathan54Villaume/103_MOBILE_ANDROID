@@ -1,0 +1,4 @@
+2025-09-30 20:56:03.850 +02:00 [INF] Starting DIRIS Server
+2025-09-30 20:56:03.910 +02:00 [INF] Acquisition service started with parallelism 6
+2025-09-30 20:56:04.034 +02:00 [INF] Data retention service started. Retention: 10 days, Cleanup at: 2:00
+2025-09-30 20:56:04.035 +02:00 [INF] Next cleanup scheduled for "2025-10-01T02:00:00.0000000+02:00"

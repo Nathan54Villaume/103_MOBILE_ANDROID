@@ -15,7 +15,7 @@ public class DirisAcquisitionService : BackgroundService
     private readonly ISystemMetricsCollector _metricsCollector;
     private readonly ILogger<DirisAcquisitionService> _logger;
     private readonly DirisAcquisitionOptions _options;
-    private readonly DirisAcquisitionControlService _controlService;
+    private readonly IServiceProvider _serviceProvider;
 
     public DirisAcquisitionService(
         IDeviceRegistry deviceRegistry,
@@ -24,7 +24,7 @@ public class DirisAcquisitionService : BackgroundService
         ISystemMetricsCollector metricsCollector,
         ILogger<DirisAcquisitionService> logger,
         IOptions<DirisAcquisitionOptions> options,
-        DirisAcquisitionControlService controlService)
+        IServiceProvider serviceProvider)
     {
         _deviceRegistry = deviceRegistry;
         _deviceReader = deviceReader;
@@ -32,7 +32,7 @@ public class DirisAcquisitionService : BackgroundService
         _metricsCollector = metricsCollector;
         _logger = logger;
         _options = options.Value;
-        _controlService = controlService;
+        _serviceProvider = serviceProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,7 +44,8 @@ public class DirisAcquisitionService : BackgroundService
             try
             {
                 // Vérifier si l'acquisition est activée
-                if (_controlService.IsRunning)
+                var controlService = _serviceProvider.GetRequiredService<DirisAcquisitionControlService>();
+                if (controlService.IsRunning)
                 {
                     await PerformAcquisitionCycleAsync(stoppingToken);
                 }

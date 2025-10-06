@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
             return new WebMiClient(httpClient, logger, requestTimeoutMs);
         });
 
-        services.AddScoped<IDeviceReader, WebMiReaderSimple>();
+        services.AddSingleton<IDeviceReader, WebMiReaderSimple>();
 
         return services;
     }

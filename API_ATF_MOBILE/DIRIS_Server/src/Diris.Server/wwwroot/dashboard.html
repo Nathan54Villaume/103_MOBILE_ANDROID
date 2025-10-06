@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIRIS Server - Tableau de Bord</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .metric-card {
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-healthy { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        .status-unknown { background-color: #6c757d; }
+        .chart-container {
+            height: 300px;
+            margin: 20px 0;
+        }
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .device-table {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                DIRIS Server
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="dashboard.html">
+                    <i class="fas fa-chart-line me-1"></i>
+                    Tableau de Bord
+                </a>
+                <a class="nav-link" href="charts.html">
+                    <i class="fas fa-chart-area me-1"></i>
+                    Courbes
+                </a>
+                <a class="nav-link" href="health.html">
+                    <i class="fas fa-heartbeat me-1"></i>
+                    Santé
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Tableau de Bord - Supervision Système
+                </h1>
+            </div>
+        </div>
+
+        <!-- System Metrics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-microchip fa-2x text-primary mb-2"></i>
+                        <h6 class="card-title">CPU Process</h6>
+                        <h4 class="text-primary" id="cpu-process">0%</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-server fa-2x text-info mb-2"></i>
+                        <h6 class="card-title">CPU Système</h6>
+                        <h4 class="text-info" id="cpu-system">0%</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-memory fa-2x text-warning mb-2"></i>
+                        <h6 class="card-title">RAM Process</h6>
+                        <h4 class="text-warning" id="memory-process">0 MB</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-database fa-2x text-success mb-2"></i>
+                        <h6 class="card-title">Points/s</h6>
+                        <h4 class="text-success" id="throughput">0</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock fa-2x text-danger mb-2"></i>
+                        <h6 class="card-title">Latence P95</h6>
+                        <h4 class="text-danger" id="latency-p95">0 ms</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-hdd fa-2x text-secondary mb-2"></i>
+                        <h6 class="card-title">Buffer</h6>
+                        <h4 class="text-secondary" id="buffer-size">0</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            CPU & Mémoire
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="systemChart" class="chart-container"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Débit & Latence
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="performanceChart" class="chart-container"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices Status -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            État des Devices
+                        </h5>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshDevices()">
+                            <i class="fas fa-sync-alt me-1"></i>
+                            Actualiser
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover device-table">
+                                <thead>
+                                    <tr>
+                                        <th>Device</th>
+                                        <th>IP</th>
+                                        <th>Statut</th>
+                                        <th>Circuit Breaker</th>
+                                        <th>Dernière Lecture</th>
+                                        <th>Durée (ms)</th>
+                                        <th>Erreurs</th>
+                                        <th>Taux Succès</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="devices-table-body">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Chargement...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Indicator -->
+    <div class="refresh-indicator">
+        <div class="spinner-border text-primary" role="status" id="refresh-spinner" style="display: none;">
+            <span class="visually-hidden">Actualisation...</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let refreshInterval;
+        let systemChart, performanceChart;
+        let systemData = { cpu: [], memory: [], time: [] };
+        let performanceData = { throughput: [], latency: [], time: [] };
+        const maxDataPoints = 60; // 2 minutes at 2s intervals
+
+        // Initialize charts
+        function initializeCharts() {
+            // System Chart
+            const systemCtx = document.getElementById('systemChart').getContext('2d');
+            systemChart = new Chart(systemCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'CPU %',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }, {
+                        label: 'Mémoire MB',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'CPU %'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Mémoire (MB)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+
+            // Performance Chart
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Points/s',
+                        data: [],
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.1
+                    }, {
+                        label: 'Latence P95 (ms)',
+                        data: [],
+                        borderColor: 'rgb(255, 159, 64)',
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Points/s'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Latence (ms)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        // Add data point to chart
+        function addDataPoint(chart, label, value, maxPoints = maxDataPoints) {
+            chart.data.labels.push(label);
+            chart.data.datasets[0].data.push(value);
+            
+            if (chart.data.labels.length > maxPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update('none');
+        }
+
+        // Add dual data point to chart
+        function addDualDataPoint(chart, label, value1, value2, maxPoints = maxDataPoints) {
+            chart.data.labels.push(label);
+            chart.data.datasets[0].data.push(value1);
+            chart.data.datasets[1].data.push(value2);
+            
+            if (chart.data.labels.length > maxPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.shift();
+            }
+            
+            chart.update('none');
+        }
+
+        // Format bytes to human readable
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Load system metrics
+        async function loadSystemMetrics() {
+            try {
+                const response = await fetch('/api/metrics/system');
+                const data = await response.json();
+                
+                const now = new Date().toLocaleTimeString();
+                
+                // Update cards
+                document.getElementById('cpu-process').textContent = `${data.process.cpuPercent.toFixed(1)}%`;
+                document.getElementById('cpu-system').textContent = `${data.system.cpuPercent.toFixed(1)}%`;
+                document.getElementById('memory-process').textContent = `${data.process.memoryMB.toFixed(1)} MB`;
+                
+                // Update charts
+                addDualDataPoint(systemChart, now, data.process.cpuPercent, data.process.memoryMB);
+            } catch (error) {
+                console.error('Error loading system metrics:', error);
+            }
+        }
+
+        // Load acquisition metrics
+        async function loadAcquisitionMetrics() {
+            try {
+                const response = await fetch('/api/metrics/acquisition');
+                const data = await response.json();
+                
+                const now = new Date().toLocaleTimeString();
+                
+                // Update cards
+                document.getElementById('throughput').textContent = data.throughput.pointsPerSecond.toFixed(1);
+                document.getElementById('latency-p95').textContent = `${data.throughput.p95LatencyMs.toFixed(1)} ms`;
+                document.getElementById('buffer-size').textContent = data.queues.measurementBufferSize;
+                
+                // Update charts
+                addDualDataPoint(performanceChart, now, data.throughput.pointsPerSecond, data.throughput.p95LatencyMs);
+            } catch (error) {
+                console.error('Error loading acquisition metrics:', error);
+            }
+        }
+
+        // Load devices status
+        async function loadDevicesStatus() {
+            try {
+                const response = await fetch('/api/devices/enabled');
+                const devices = await response.json();
+                
+                const tbody = document.getElementById('devices-table-body');
+                tbody.innerHTML = '';
+                
+                for (const device of devices) {
+                    const healthResponse = await fetch(`/api/devices/${device.deviceId}/health`);
+                    const health = await healthResponse.json();
+                    
+                    const statusClass = health.isHealthy ? 'status-healthy' : 'status-error';
+                    const statusText = health.isHealthy ? 'OK' : 'Erreur';
+                    const lastRead = device.lastSeenUtc ? new Date(device.lastSeenUtc).toLocaleString() : 'Jamais';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${device.name}</td>
+                        <td>${device.ipAddress}</td>
+                        <td><span class="status-indicator ${statusClass}"></span>${statusText}</td>
+                        <td><span class="badge bg-${health.circuitBreakerState === 'Closed' ? 'success' : 'danger'}">${health.circuitBreakerState}</span></td>
+                        <td>${lastRead}</td>
+                        <td>-</td>
+                        <td>${health.errorCount}</td>
+                        <td>-</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            } catch (error) {
+                console.error('Error loading devices status:', error);
+                document.getElementById('devices-table-body').innerHTML = 
+                    '<tr><td colspan="8" class="text-center text-danger">Erreur de chargement</td></tr>';
+            }
+        }
+
+        // Refresh all data
+        async function refreshData() {
+            const spinner = document.getElementById('refresh-spinner');
+            spinner.style.display = 'block';
+            
+            try {
+                await Promise.all([
+                    loadSystemMetrics(),
+                    loadAcquisitionMetrics(),
+                    loadDevicesStatus()
+                ]);
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Refresh devices only
+        async function refreshDevices() {
+            await loadDevicesStatus();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            refreshData();
+            
+            // Auto-refresh every 2 seconds
+            refreshInterval = setInterval(refreshData, 2000);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

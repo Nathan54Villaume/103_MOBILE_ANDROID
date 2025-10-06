@@ -9,16 +9,13 @@ namespace API_ATF_MOBILE.Services;
 /// </summary>
 public class DirisAcquisitionControlService
 {
-    private readonly IHostedService _acquisitionService;
     private readonly ILogger<DirisAcquisitionControlService> _logger;
     private volatile bool _isRunning = true;
     private readonly object _lock = new object();
 
     public DirisAcquisitionControlService(
-        DirisAcquisitionService acquisitionService,
         ILogger<DirisAcquisitionControlService> logger)
     {
-        _acquisitionService = acquisitionService;
         _logger = logger;
     }
 

@@ -1,0 +1,116 @@
+{
+  "devices": [
+    {
+      "name": "DIRIS-001",
+      "ipAddress": "192.168.2.133",
+      "protocol": "webmi",
+      "enabled": true,
+      "pollIntervalMs": 1500,
+      "metaJson": "{\"location\": \"Salle électrique 1\", \"description\": \"Compteur principal\"}"
+    },
+    {
+      "name": "DIRIS-002", 
+      "ipAddress": "192.168.2.134",
+      "protocol": "webmi",
+      "enabled": true,
+      "pollIntervalMs": 1500,
+      "metaJson": "{\"location\": \"Salle électrique 2\", \"description\": \"Compteur secondaire\"}"
+    },
+    {
+      "name": "DIRIS-003",
+      "ipAddress": "192.168.2.135", 
+      "protocol": "webmi",
+      "enabled": false,
+      "pollIntervalMs": 2000,
+      "metaJson": "{\"location\": \"Salle électrique 3\", \"description\": \"Compteur de réserve\"}"
+    }
+  ],
+  "tagMappings": {
+    "default": [
+      {
+        "signal": "I_PH1_255",
+        "webMiKey": "I_PH1_255",
+        "unit": "A",
+        "scale": 1000,
+        "enabled": true
+      },
+      {
+        "signal": "I_PH2_255", 
+        "webMiKey": "I_PH2_255",
+        "unit": "A",
+        "scale": 1000,
+        "enabled": true
+      },
+      {
+        "signal": "I_PH3_255",
+        "webMiKey": "I_PH3_255", 
+        "unit": "A",
+        "scale": 1000,
+        "enabled": true
+      },
+      {
+        "signal": "I_NUL_255",
+        "webMiKey": "I_NUL_255",
+        "unit": "A", 
+        "scale": 1000,
+        "enabled": true
+      },
+      {
+        "signal": "F_255",
+        "webMiKey": "F_255",
+        "unit": "Hz",
+        "scale": 100,
+        "enabled": true
+      },
+      {
+        "signal": "PV1_255",
+        "webMiKey": "PV1_255",
+        "unit": "V",
+        "scale": 100,
+        "enabled": true
+      },
+      {
+        "signal": "PV2_255",
+        "webMiKey": "PV2_255", 
+        "unit": "V",
+        "scale": 100,
+        "enabled": true
+      },
+      {
+        "signal": "PV3_255",
+        "webMiKey": "PV3_255",
+        "unit": "V",
+        "scale": 100,
+        "enabled": true
+      },
+      {
+        "signal": "SUM_RP_255",
+        "webMiKey": "SUM_RP_255",
+        "unit": "kW",
+        "scale": 100,
+        "enabled": true
+      },
+      {
+        "signal": "SUM_IP_255",
+        "webMiKey": "SUM_IP_255",
+        "unit": "kVAR", 
+        "scale": 100,
+        "enabled": true
+      },
+      {
+        "signal": "SUM_AP_255",
+        "webMiKey": "SUM_AP_255",
+        "unit": "kVA",
+        "scale": 100,
+        "enabled": true
+      },
+      {
+        "signal": "SUM_PF_255",
+        "webMiKey": "SUM_PF_255",
+        "unit": "%",
+        "scale": 100,
+        "enabled": true
+      }
+    ]
+  }
+}
