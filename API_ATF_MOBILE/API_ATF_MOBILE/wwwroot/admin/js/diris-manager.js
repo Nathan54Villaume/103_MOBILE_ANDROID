@@ -7,6 +7,22 @@ export class DirisManager {
   constructor(apiClient) {
     this.apiClient = apiClient;
     this.autoRefreshInterval = null;
+    this.charts = {};
+    this.chartData = {
+      throughput: [],
+      latency: [],
+      devices: [],
+      labels: []
+    };
+    this.maxDataPoints = 50;
+    this.chartsPaused = false;
+    this.alerts = [];
+    this.alertThresholds = {
+      maxLatency: 2000,
+      minThroughput: 1,
+      minDevices: 1
+    };
+    this.history = [];
   }
 
   // ========================================
@@ -15,6 +31,9 @@ export class DirisManager {
   init() {
     console.log('🚀 Initialisation DIRIS Manager');
     this.attachEventListeners();
+    this.initCharts();
+    this.initAlerts();
+    this.initHistory();
     
     // Start auto-refresh if checkbox is checked
     const autoRefreshCheckbox = document.getElementById('dirisAutoRefresh');
@@ -58,6 +77,16 @@ export class DirisManager {
     
     // Devices
     document.getElementById('btnAddDevice')?.addEventListener('click', () => this.showAddDeviceDialog());
+    
+    // Charts controls
+    document.getElementById('btnPauseCharts')?.addEventListener('click', () => this.toggleChartsPause());
+    document.getElementById('btnResetCharts')?.addEventListener('click', () => this.resetCharts());
+    
+    // Alerts controls
+    document.getElementById('dirisAlertsEnabled')?.addEventListener('change', (e) => this.toggleAlerts(e.target.checked));
+    document.getElementById('alertMaxLatency')?.addEventListener('input', (e) => this.updateAlertThreshold('maxLatency', e.target.value));
+    document.getElementById('alertMinThroughput')?.addEventListener('input', (e) => this.updateAlertThreshold('minThroughput', e.target.value));
+    document.getElementById('alertMinDevices')?.addEventListener('input', (e) => this.updateAlertThreshold('minDevices', e.target.value));
   }
 
   // ========================================
@@ -101,6 +130,12 @@ export class DirisManager {
       
       // Update service status
       this.updateServiceStatus(response);
+      
+      // Update charts with new data
+      this.updateCharts(response);
+      
+      // Check alerts
+      this.checkAlerts(response);
       
     } catch (error) {
       console.error('Erreur chargement métriques:', error);
@@ -565,10 +600,12 @@ export class DirisManager {
       
       if (result.success) {
         this.showSuccess('✅ Acquisition DIRIS démarrée avec succès');
+        this.addHistoryEvent('success', 'Acquisition démarrée', 'Service d\'acquisition DIRIS démarré avec succès');
         // Rafraîchir les métriques pour voir le changement
         await this.loadMetrics();
       } else {
         this.showError(`❌ Erreur: ${result.message || 'Impossible de démarrer l\'acquisition'}`);
+        this.addHistoryEvent('error', 'Échec démarrage acquisition', result.message || 'Erreur inconnue');
       }
     } catch (error) {
       console.error('Erreur démarrage acquisition:', error);
@@ -584,10 +621,12 @@ export class DirisManager {
       
       if (result.success) {
         this.showSuccess('✅ Acquisition DIRIS arrêtée avec succès');
+        this.addHistoryEvent('success', 'Acquisition arrêtée', 'Service d\'acquisition DIRIS arrêté avec succès');
         // Rafraîchir les métriques pour voir le changement
         await this.loadMetrics();
       } else {
         this.showError(`❌ Erreur: ${result.message || 'Impossible d\'arrêter l\'acquisition'}`);
+        this.addHistoryEvent('error', 'Échec arrêt acquisition', result.message || 'Erreur inconnue');
       }
     } catch (error) {
       console.error('Erreur arrêt acquisition:', error);
@@ -606,9 +645,11 @@ export class DirisManager {
       
       if (result.success && result.stats) {
         this.showSuccess(`✅ Nettoyage terminé: ${result.stats.deletedCount} mesures supprimées, ${result.stats.retainedCount} conservées`);
+        this.addHistoryEvent('success', 'Nettoyage effectué', `${result.stats.deletedCount} mesures supprimées, ${result.stats.retainedCount} conservées`);
         await this.loadDatabaseStats();
       } else {
         this.showError('❌ Erreur lors du nettoyage');
+        this.addHistoryEvent('error', 'Échec nettoyage', 'Erreur lors du nettoyage des données');
       }
     } catch (error) {
       console.error('Erreur nettoyage:', error);
@@ -632,6 +673,456 @@ export class DirisManager {
       clearInterval(this.autoRefreshInterval);
       this.autoRefreshInterval = null;
     }
+  }
+
+  // ========================================
+  // Graphiques temps réel
+  // ========================================
+  initCharts() {
+    try {
+      // Throughput Chart
+      const throughputCtx = document.getElementById('dirisThroughputChart');
+      if (throughputCtx) {
+        this.charts.throughput = new Chart(throughputCtx, {
+          type: 'line',
+          data: {
+            labels: this.chartData.labels,
+            datasets: [{
+              label: 'Points/seconde',
+              data: this.chartData.throughput,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                display: false
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: '#94a3b8' }
+              }
+            },
+            elements: {
+              point: { radius: 0 }
+            }
+          }
+        });
+      }
+
+      // Latency Chart
+      const latencyCtx = document.getElementById('dirisLatencyChart');
+      if (latencyCtx) {
+        this.charts.latency = new Chart(latencyCtx, {
+          type: 'line',
+          data: {
+            labels: this.chartData.labels,
+            datasets: [{
+              label: 'Latence P95 (ms)',
+              data: this.chartData.latency,
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                display: false
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: '#94a3b8' }
+              }
+            },
+            elements: {
+              point: { radius: 0 }
+            }
+          }
+        });
+      }
+
+      // Devices Chart
+      const devicesCtx = document.getElementById('dirisDevicesChart');
+      if (devicesCtx) {
+        this.charts.devices = new Chart(devicesCtx, {
+          type: 'line',
+          data: {
+            labels: this.chartData.labels,
+            datasets: [{
+              label: 'Devices actifs',
+              data: this.chartData.devices,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                display: false
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: '#94a3b8' }
+              }
+            },
+            elements: {
+              point: { radius: 0 }
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Erreur initialisation graphiques:', error);
+    }
+  }
+
+  updateCharts(metrics) {
+    if (this.chartsPaused) return;
+
+    const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
+    // Add new data points
+    this.chartData.labels.push(now);
+    this.chartData.throughput.push(metrics.throughput?.pointsPerSecond || 0);
+    this.chartData.latency.push(metrics.throughput?.p95LatencyMs || 0);
+    this.chartData.devices.push(metrics.devices?.filter(d => d.status === 'Healthy' || d.status === 'healthy').length || 0);
+
+    // Keep only last maxDataPoints
+    if (this.chartData.labels.length > this.maxDataPoints) {
+      this.chartData.labels.shift();
+      this.chartData.throughput.shift();
+      this.chartData.latency.shift();
+      this.chartData.devices.shift();
+    }
+
+    // Update charts
+    Object.values(this.charts).forEach(chart => {
+      if (chart) {
+        chart.update('none');
+      }
+    });
+  }
+
+  toggleChartsPause() {
+    this.chartsPaused = !this.chartsPaused;
+    const btn = document.getElementById('btnPauseCharts');
+    if (btn) {
+      btn.textContent = this.chartsPaused ? '▶️ Reprendre' : '⏸️ Pause';
+    }
+    this.showInfo(this.chartsPaused ? 'Graphiques en pause' : 'Graphiques repris');
+  }
+
+  resetCharts() {
+    this.chartData = {
+      throughput: [],
+      latency: [],
+      devices: [],
+      labels: []
+    };
+
+    Object.values(this.charts).forEach(chart => {
+      if (chart) {
+        chart.data.labels = this.chartData.labels;
+        chart.data.datasets.forEach(dataset => {
+          dataset.data = [];
+        });
+        chart.update();
+      }
+    });
+
+    this.showInfo('Graphiques réinitialisés');
+  }
+
+  // ========================================
+  // Système d'alertes
+  // ========================================
+  initAlerts() {
+    // Load alert thresholds from localStorage or use defaults
+    const savedThresholds = localStorage.getItem('diris-alert-thresholds');
+    if (savedThresholds) {
+      this.alertThresholds = { ...this.alertThresholds, ...JSON.parse(savedThresholds) };
+    }
+    
+    // Update UI with current thresholds
+    document.getElementById('alertMaxLatency').value = this.alertThresholds.maxLatency;
+    document.getElementById('alertMinThroughput').value = this.alertThresholds.minThroughput;
+    document.getElementById('alertMinDevices').value = this.alertThresholds.minDevices;
+    
+    // Load saved alerts
+    const savedAlerts = localStorage.getItem('diris-alerts');
+    if (savedAlerts) {
+      this.alerts = JSON.parse(savedAlerts);
+      this.updateAlertsDisplay();
+    }
+  }
+
+  updateAlertThreshold(type, value) {
+    this.alertThresholds[type] = parseInt(value);
+    localStorage.setItem('diris-alert-thresholds', JSON.stringify(this.alertThresholds));
+  }
+
+  toggleAlerts(enabled) {
+    const checkbox = document.getElementById('dirisAlertsEnabled');
+    if (checkbox) {
+      checkbox.checked = enabled;
+    }
+    this.showInfo(enabled ? 'Alertes activées' : 'Alertes désactivées');
+  }
+
+  checkAlerts(metrics) {
+    const alertsEnabled = document.getElementById('dirisAlertsEnabled')?.checked;
+    if (!alertsEnabled) return;
+
+    const now = new Date();
+    const newAlerts = [];
+
+    // Check latency threshold
+    const latency = metrics.throughput?.p95LatencyMs || 0;
+    if (latency > this.alertThresholds.maxLatency) {
+      newAlerts.push({
+        id: `latency-${now.getTime()}`,
+        type: 'warning',
+        title: 'Latence élevée',
+        message: `Latence P95: ${latency}ms (seuil: ${this.alertThresholds.maxLatency}ms)`,
+        timestamp: now,
+        metric: 'latency',
+        value: latency,
+        threshold: this.alertThresholds.maxLatency
+      });
+    }
+
+    // Check throughput threshold
+    const throughput = metrics.throughput?.pointsPerSecond || 0;
+    if (throughput < this.alertThresholds.minThroughput) {
+      newAlerts.push({
+        id: `throughput-${now.getTime()}`,
+        type: 'error',
+        title: 'Throughput faible',
+        message: `Throughput: ${throughput.toFixed(1)} pts/s (seuil: ${this.alertThresholds.minThroughput} pts/s)`,
+        timestamp: now,
+        metric: 'throughput',
+        value: throughput,
+        threshold: this.alertThresholds.minThroughput
+      });
+    }
+
+    // Check devices threshold
+    const activeDevices = metrics.devices?.filter(d => d.status === 'Healthy' || d.status === 'healthy').length || 0;
+    if (activeDevices < this.alertThresholds.minDevices) {
+      newAlerts.push({
+        id: `devices-${now.getTime()}`,
+        type: 'error',
+        title: 'Peu de devices actifs',
+        message: `Devices actifs: ${activeDevices} (seuil: ${this.alertThresholds.minDevices})`,
+        timestamp: now,
+        metric: 'devices',
+        value: activeDevices,
+        threshold: this.alertThresholds.minDevices
+      });
+    }
+
+    // Add new alerts and limit to last 20
+    this.alerts = [...newAlerts, ...this.alerts].slice(0, 20);
+    
+    // Save to localStorage
+    localStorage.setItem('diris-alerts', JSON.stringify(this.alerts));
+    
+    // Update display
+    this.updateAlertsDisplay();
+    
+    // Show notifications for new alerts
+    newAlerts.forEach(alert => {
+      this.showAlertNotification(alert);
+    });
+  }
+
+  updateAlertsDisplay() {
+    const container = document.getElementById('dirisAlertsList');
+    if (!container) return;
+
+    if (this.alerts.length === 0) {
+      container.innerHTML = '<p class="text-center text-slate-400 py-4">Aucune alerte récente</p>';
+      return;
+    }
+
+    container.innerHTML = this.alerts.map(alert => `
+      <div class="p-3 bg-white/5 rounded-lg border border-white/10">
+        <div class="flex items-start justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xs px-2 py-1 rounded ${
+              alert.type === 'error' ? 'bg-red-500/20 text-red-400' :
+              alert.type === 'warning' ? 'bg-orange-500/20 text-orange-400' :
+              'bg-blue-500/20 text-blue-400'
+            }">
+              ${alert.type === 'error' ? '🚨' : alert.type === 'warning' ? '⚠️' : 'ℹ️'}
+            </span>
+            <span class="text-sm font-medium">${alert.title}</span>
+          </div>
+          <span class="text-xs text-slate-400">${alert.timestamp.toLocaleTimeString('fr-FR')}</span>
+        </div>
+        <p class="text-xs text-slate-300">${alert.message}</p>
+      </div>
+    `).join('');
+  }
+
+  showAlertNotification(alert) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 left-4 z-50 px-4 py-3 rounded-lg shadow-lg border transition-all duration-300 max-w-sm ${
+      alert.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
+      alert.type === 'warning' ? 'bg-orange-500/20 border-orange-500/30 text-orange-400' :
+      'bg-blue-500/20 border-blue-500/30 text-blue-400'
+    }`;
+    
+    notification.innerHTML = `
+      <div class="flex items-start gap-2">
+        <span class="text-lg">${alert.type === 'error' ? '🚨' : alert.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+        <div>
+          <p class="font-medium text-sm">${alert.title}</p>
+          <p class="text-xs opacity-90">${alert.message}</p>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 8 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => notification.remove(), 300);
+    }, 8000);
+  }
+
+  // ========================================
+  // Historique des actions
+  // ========================================
+  initHistory() {
+    // Load saved history from localStorage
+    const savedHistory = localStorage.getItem('diris-history');
+    if (savedHistory) {
+      this.history = JSON.parse(savedHistory).map(item => ({
+        ...item,
+        timestamp: new Date(item.timestamp)
+      }));
+      this.updateHistoryDisplay();
+    }
+  }
+
+  addHistoryEvent(type, action, details = '') {
+    const event = {
+      id: `event-${Date.now()}`,
+      type, // 'info', 'success', 'warning', 'error'
+      action,
+      details,
+      timestamp: new Date()
+    };
+
+    this.history.unshift(event);
+    
+    // Keep only last 100 events
+    this.history = this.history.slice(0, 100);
+    
+    // Save to localStorage
+    localStorage.setItem('diris-history', JSON.stringify(this.history));
+    
+    // Update display
+    this.updateHistoryDisplay();
+  }
+
+  updateHistoryDisplay() {
+    const container = document.getElementById('dirisHistoryList');
+    if (!container) return;
+
+    if (this.history.length === 0) {
+      container.innerHTML = '<p class="text-center text-slate-400 py-8">Aucun événement enregistré</p>';
+      return;
+    }
+
+    container.innerHTML = this.history.map(event => `
+      <div class="p-3 bg-white/5 rounded-lg border border-white/10">
+        <div class="flex items-start justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xs px-2 py-1 rounded ${
+              event.type === 'error' ? 'bg-red-500/20 text-red-400' :
+              event.type === 'warning' ? 'bg-orange-500/20 text-orange-400' :
+              event.type === 'success' ? 'bg-green-500/20 text-green-400' :
+              'bg-blue-500/20 text-blue-400'
+            }">
+              ${event.type === 'error' ? '❌' : 
+                event.type === 'warning' ? '⚠️' : 
+                event.type === 'success' ? '✅' : 'ℹ️'}
+            </span>
+            <span class="text-sm font-medium">${event.action}</span>
+          </div>
+          <span class="text-xs text-slate-400">${event.timestamp.toLocaleString('fr-FR')}</span>
+        </div>
+        ${event.details ? `<p class="text-xs text-slate-300">${event.details}</p>` : ''}
+      </div>
+    `).join('');
+  }
+
+  clearHistory() {
+    if (confirm('Vider tout l\'historique des actions DIRIS ?')) {
+      this.history = [];
+      localStorage.removeItem('diris-history');
+      this.updateHistoryDisplay();
+      this.showSuccess('Historique vidé');
+    }
+  }
+
+  exportHistory() {
+    try {
+      const csvContent = this.generateHistoryCsv();
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `diris-history-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      this.showSuccess('✅ Historique exporté en CSV');
+    } catch (error) {
+      console.error('Erreur export historique:', error);
+      this.showError('Erreur lors de l\'export de l\'historique');
+    }
+  }
+
+  generateHistoryCsv() {
+    let csv = 'Timestamp,Type,Action,Détails\n';
+    this.history.forEach(event => {
+      csv += `${event.timestamp.toLocaleString('fr-FR')},${event.type},${event.action},"${event.details}"\n`;
+    });
+    return csv;
   }
 
   // ========================================

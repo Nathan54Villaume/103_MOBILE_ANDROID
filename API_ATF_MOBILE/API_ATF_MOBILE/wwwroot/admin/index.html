@@ -686,6 +686,41 @@
             </div>
           </div>
 
+          <!-- Graphiques temps réel -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Graphiques temps réel</h3>
+              <div class="flex gap-2">
+                <button id="btnPauseCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  ⏸️ Pause
+                </button>
+                <button id="btnResetCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🔄 Reset
+                </button>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="p-4 bg-white/5 rounded-lg">
+                <h4 class="text-sm font-medium mb-3">Throughput (Points/seconde)</h4>
+                <div style="height: 200px; position: relative;">
+                  <canvas id="dirisThroughputChart"></canvas>
+                </div>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <h4 class="text-sm font-medium mb-3">Latence (ms)</h4>
+                <div style="height: 200px; position: relative;">
+                  <canvas id="dirisLatencyChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 p-4 bg-white/5 rounded-lg">
+              <h4 class="text-sm font-medium mb-3">Devices Actifs</h4>
+              <div style="height: 150px; position: relative;">
+                <canvas id="dirisDevicesChart"></canvas>
+              </div>
+            </div>
+          </div>
+
           <!-- Statistiques de base de données -->
           <div class="card rounded-xl p-5 shadow-glass">
             <h3 class="font-semibold mb-4">Base de données DIRIS</h3>
@@ -715,6 +750,54 @@
               <div class="p-3 bg-white/5 rounded-lg">
                 <p class="text-sm text-slate-400">Mesure la plus récente</p>
                 <p id="dirisNewestMeasurement" class="font-mono text-xs mt-1">-</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Système d'alertes -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Système d'alertes</h3>
+                <p class="text-xs text-slate-400 mt-1">Configuration des seuils de performance</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="dirisAlertsEnabled" class="w-4 h-4 rounded bg-white/5 border-white/10" checked>
+                <label for="dirisAlertsEnabled" class="text-xs text-slate-400">Alertes actives</label>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="space-y-3">
+                <h4 class="text-sm font-medium">Seuils d'alerte</h4>
+                <div>
+                  <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                    Latence max (ms)
+                    <span class="config-info-icon" data-tooltip="Seuil maximum de latence avant déclenchement d'une alerte. Recommandé: 1000-5000ms">ℹ️</span>
+                  </label>
+                  <input type="number" id="alertMaxLatency" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="2000" min="100" max="10000">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                    Throughput min (pts/s)
+                    <span class="config-info-icon" data-tooltip="Seuil minimum de throughput avant déclenchement d'une alerte. Recommandé: 1-10 pts/s">ℹ️</span>
+                  </label>
+                  <input type="number" id="alertMinThroughput" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1" min="0" max="100">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                    Devices actifs min
+                    <span class="config-info-icon" data-tooltip="Nombre minimum de devices actifs avant déclenchement d'une alerte">ℹ️</span>
+                  </label>
+                  <input type="number" id="alertMinDevices" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1" min="0" max="50">
+                </div>
+              </div>
+              
+              <div>
+                <h4 class="text-sm font-medium mb-3">Alertes récentes</h4>
+                <div id="dirisAlertsList" class="space-y-2 max-h-48 overflow-y-auto hide-scrollbar">
+                  <p class="text-center text-slate-400 py-4">Aucune alerte récente</p>
+                </div>
               </div>
             </div>
           </div>
@@ -824,6 +907,27 @@
             <div id="dirisLatestReadings" class="space-y-3 max-h-[400px] overflow-y-auto hide-scrollbar">
               <!-- Dynamically populated -->
               <p class="text-center text-slate-400 py-8">Chargement des mesures...</p>
+            </div>
+          </div>
+
+          <!-- Historique des actions -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Historique des actions</h3>
+                <p class="text-xs text-slate-400 mt-1">Journal des événements DIRIS</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="window.dirisManager.clearHistory()" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🗑️ Vider
+                </button>
+                <button onclick="window.dirisManager.exportHistory()" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  📄 Export
+                </button>
+              </div>
+            </div>
+            <div id="dirisHistoryList" class="space-y-2 max-h-64 overflow-y-auto hide-scrollbar">
+              <p class="text-center text-slate-400 py-8">Aucun événement enregistré</p>
             </div>
           </div>
 
