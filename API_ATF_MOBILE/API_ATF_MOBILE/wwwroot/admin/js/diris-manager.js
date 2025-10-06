@@ -237,15 +237,21 @@ export class DirisManager {
       if (isAcquisitionRunning && hasActiveDevices && !hasAlerts) {
         globalStatusDot.className = 'status-dot online';
         globalStatusText.textContent = '✅ Système opérationnel';
-      } else if (isAcquisitionRunning && hasActiveDevices) {
+      } else if (isAcquisitionRunning && hasActiveDevices && hasAlerts) {
         globalStatusDot.className = 'status-dot warning';
         globalStatusText.textContent = '⚠️ Fonctionnel avec alertes';
-      } else if (!isAcquisitionRunning) {
+      } else if (isAcquisitionRunning && !hasActiveDevices) {
+        globalStatusDot.className = 'status-dot warning';
+        globalStatusText.textContent = '⚠️ Acquisition active, pas de devices';
+      } else if (!isAcquisitionRunning && hasActiveDevices) {
         globalStatusDot.className = 'status-dot offline';
         globalStatusText.textContent = '⏸️ Acquisition arrêtée';
+      } else if (!isAcquisitionRunning && !hasActiveDevices) {
+        globalStatusDot.className = 'status-dot unknown';
+        globalStatusText.textContent = '❓ Aucun device configuré';
       } else {
         globalStatusDot.className = 'status-dot warning';
-        globalStatusText.textContent = '⚠️ Problèmes détectés';
+        globalStatusText.textContent = '⚠️ État inconnu';
       }
       
     } catch (error) {
@@ -1032,9 +1038,12 @@ export class DirisManager {
     const now = new Date();
     const newAlerts = [];
 
-    // Check latency threshold
+    // Check if acquisition is running
+    const isAcquisitionRunning = metrics.throughput?.pointsPerSecond > 0;
+    
+    // Check latency threshold (only if acquisition is running)
     const latency = metrics.throughput?.p95LatencyMs || 0;
-    if (latency > this.alertThresholds.maxLatency) {
+    if (isAcquisitionRunning && latency > this.alertThresholds.maxLatency) {
       newAlerts.push({
         id: `latency-${now.getTime()}`,
         type: 'warning',
@@ -1047,9 +1056,9 @@ export class DirisManager {
       });
     }
 
-    // Check throughput threshold
+    // Check throughput threshold (only if acquisition is running)
     const throughput = metrics.throughput?.pointsPerSecond || 0;
-    if (throughput < this.alertThresholds.minThroughput) {
+    if (isAcquisitionRunning && throughput < this.alertThresholds.minThroughput) {
       newAlerts.push({
         id: `throughput-${now.getTime()}`,
         type: 'error',
@@ -1062,14 +1071,20 @@ export class DirisManager {
       });
     }
 
-    // Check devices threshold
+    // Check devices threshold (only if acquisition is running and devices are configured)
+    const totalDevices = metrics.devices?.length || 0;
     const activeDevices = metrics.devices?.filter(d => d.status === 'Healthy' || d.status === 'healthy').length || 0;
-    if (activeDevices < this.alertThresholds.minDevices) {
+    
+    // Only alert about devices if:
+    // 1. Acquisition is running (we expect devices to be active)
+    // 2. We have devices configured (totalDevices > 0)
+    // 3. Active devices are below threshold
+    if (isAcquisitionRunning && totalDevices > 0 && activeDevices < this.alertThresholds.minDevices) {
       newAlerts.push({
         id: `devices-${now.getTime()}`,
         type: 'error',
         title: 'Peu de devices actifs',
-        message: `Devices actifs: ${activeDevices} (seuil: ${this.alertThresholds.minDevices})`,
+        message: `Devices actifs: ${activeDevices}/${totalDevices} (seuil: ${this.alertThresholds.minDevices})`,
         timestamp: now,
         metric: 'devices',
         value: activeDevices,

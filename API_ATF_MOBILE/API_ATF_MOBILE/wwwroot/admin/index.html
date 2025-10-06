@@ -719,6 +719,39 @@
             </div>
           </div>
 
+          <!-- Statistiques de base de données -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Base de données DIRIS</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">Total mesures</p>
+                <p id="dirisTotalMeasurements" class="text-2xl font-bold">0</p>
+                <p class="text-xs text-slate-400 mt-1">Dans DIRIS.Measurements</p>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">À supprimer</p>
+                <p id="dirisMeasurementsToDelete" class="text-2xl font-bold text-orange-400">0</p>
+                <p class="text-xs text-slate-400 mt-1">Ancienneté > rétention</p>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">Taille BDD</p>
+                <p id="dirisDatabaseSize" class="text-2xl font-bold text-blue-400">0 MB</p>
+                <p class="text-xs text-slate-400 mt-1">Table DIRIS</p>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-sm text-slate-400">Mesure la plus ancienne</p>
+                <p id="dirisOldestMeasurement" class="font-mono text-xs mt-1">-</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-sm text-slate-400">Mesure la plus récente</p>
+                <p id="dirisNewestMeasurement" class="font-mono text-xs mt-1">-</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Graphiques temps réel -->
           <div class="card rounded-xl p-5 shadow-glass">
             <div class="flex items-center justify-between mb-4">
@@ -750,39 +783,6 @@
               <h4 class="text-sm font-medium mb-3">Devices Actifs</h4>
               <div style="height: 150px; position: relative;">
                 <canvas id="dirisDevicesChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Statistiques de base de données -->
-          <div class="card rounded-xl p-5 shadow-glass">
-            <h3 class="font-semibold mb-4">Base de données DIRIS</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div class="p-4 bg-white/5 rounded-lg">
-                <p class="text-xs text-slate-400 mb-1">Total mesures</p>
-                <p id="dirisTotalMeasurements" class="text-2xl font-bold">0</p>
-                <p class="text-xs text-slate-400 mt-1">Dans DIRIS.Measurements</p>
-              </div>
-              <div class="p-4 bg-white/5 rounded-lg">
-                <p class="text-xs text-slate-400 mb-1">À supprimer</p>
-                <p id="dirisMeasurementsToDelete" class="text-2xl font-bold text-orange-400">0</p>
-                <p class="text-xs text-slate-400 mt-1">Ancienneté > rétention</p>
-              </div>
-              <div class="p-4 bg-white/5 rounded-lg">
-                <p class="text-xs text-slate-400 mb-1">Taille BDD</p>
-                <p id="dirisDatabaseSize" class="text-2xl font-bold text-blue-400">0 MB</p>
-                <p class="text-xs text-slate-400 mt-1">Table DIRIS</p>
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="p-3 bg-white/5 rounded-lg">
-                <p class="text-sm text-slate-400">Mesure la plus ancienne</p>
-                <p id="dirisOldestMeasurement" class="font-mono text-xs mt-1">-</p>
-              </div>
-              <div class="p-3 bg-white/5 rounded-lg">
-                <p class="text-sm text-slate-400">Mesure la plus récente</p>
-                <p id="dirisNewestMeasurement" class="font-mono text-xs mt-1">-</p>
               </div>
             </div>
           </div>
