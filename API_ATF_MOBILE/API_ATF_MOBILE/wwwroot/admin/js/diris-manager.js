@@ -1138,10 +1138,10 @@ export class DirisManager {
 
   showAlertNotification(alert) {
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 left-4 z-50 px-4 py-3 rounded-lg shadow-lg border transition-all duration-300 max-w-sm ${
-      alert.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
-      alert.type === 'warning' ? 'bg-orange-500/20 border-orange-500/30 text-orange-400' :
-      'bg-blue-500/20 border-blue-500/30 text-blue-400'
+    notification.className = `fixed top-20 left-4 z-50 px-4 py-3 rounded-lg shadow-lg border transition-all duration-300 max-w-sm backdrop-blur-sm ${
+      alert.type === 'error' ? 'bg-red-500/90 border-red-500/50 text-red-100' :
+      alert.type === 'warning' ? 'bg-orange-500/90 border-orange-500/50 text-orange-100' :
+      'bg-blue-500/90 border-blue-500/50 text-blue-100'
     }`;
     
     notification.innerHTML = `
@@ -1296,10 +1296,10 @@ export class DirisManager {
   showNotification(message, type = 'info') {
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border transition-all duration-300 ${
-      type === 'success' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
-      type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
-      'bg-blue-500/20 border-blue-500/30 text-blue-400'
+    notification.className = `fixed top-20 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border transition-all duration-300 backdrop-blur-sm ${
+      type === 'success' ? 'bg-green-500/90 border-green-500/50 text-green-100' :
+      type === 'error' ? 'bg-red-500/90 border-red-500/50 text-red-100' :
+      'bg-blue-500/90 border-blue-500/50 text-blue-100'
     }`;
     notification.textContent = message;
     
