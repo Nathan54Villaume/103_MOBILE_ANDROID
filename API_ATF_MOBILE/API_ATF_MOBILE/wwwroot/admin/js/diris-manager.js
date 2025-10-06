@@ -108,7 +108,7 @@ export class DirisManager {
   // ========================================
   async loadDatabaseStats() {
     try {
-      const response = await this.apiClient.request('/api/diris/admin/cleanup/stats');
+      const response = await this.apiClient.request('/api/diris/cleanup/stats');
       
       if (response.success && response.data) {
         const data = response.data;
@@ -324,7 +324,7 @@ export class DirisManager {
     
     try {
       this.showInfo('🧹 Nettoyage en cours...');
-      const result = await this.apiClient.request('/api/diris/admin/cleanup', { method: 'POST' });
+      const result = await this.apiClient.request('/api/diris/cleanup', { method: 'POST' });
       
       if (result.success && result.stats) {
         this.showSuccess(`✅ Nettoyage terminé: ${result.stats.deletedCount} mesures supprimées, ${result.stats.retainedCount} conservées`);
