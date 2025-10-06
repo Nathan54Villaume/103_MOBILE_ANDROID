@@ -213,5 +213,58 @@ public class DirisDevicesController : ControllerBase
             return StatusCode(500, "Error checking device health");
         }
     }
+
+    /// <summary>
+    /// Toggle device enabled/disabled status
+    /// </summary>
+    [HttpPut("{id}/toggle")]
+    public async Task<IActionResult> ToggleDevice(int id, [FromBody] ToggleDeviceRequest request)
+    {
+        try
+        {
+            var device = await _deviceRegistry.GetDeviceAsync(id);
+            if (device == null)
+            {
+                return NotFound(new { success = false, message = "Device not found" });
+            }
+
+            device.Enabled = request.Enabled;
+            await _deviceRegistry.UpdateDeviceAsync(device);
+
+            _logger.LogInformation("Device {DeviceId} {Action}", id, request.Enabled ? "enabled" : "disabled");
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Device {id} {(request.Enabled ? "enabled" : "disabled")} successfully",
+                device = new
+                {
+                    device.DeviceId,
+                    device.Name,
+                    device.IpAddress,
+                    device.Enabled,
+                    device.PollIntervalMs
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error toggling device {DeviceId}", id);
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error toggling device",
+                error = ex.Message
+            });
+        }
+    }
+}
+
+/// <summary>
+/// Request model for toggling device status
+/// </summary>
+public class ToggleDeviceRequest
+{
+    public bool Enabled { get; set; }
 }
 

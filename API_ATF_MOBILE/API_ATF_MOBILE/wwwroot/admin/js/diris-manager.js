@@ -223,19 +223,23 @@ export class DirisManager {
   // ========================================
   async loadConfiguration() {
     try {
-      // Load from appsettings or config endpoint
-      const config = await this.apiClient.request('/api/admin/config');
+      // Load from DIRIS config endpoint
+      const response = await this.apiClient.request('/api/diris/config');
       
-      if (config.acquisition) {
-        document.getElementById('configParallelism').value = config.acquisition.parallelism || 6;
-        document.getElementById('configPollInterval').value = config.acquisition.defaultPollIntervalMs || 1500;
-        document.getElementById('configMaxBatch').value = config.acquisition.maxBatchPoints || 1000;
-      }
-      
-      if (config.dataRetention) {
-        document.getElementById('configRetentionDays').value = config.dataRetention.retentionDays || 10;
-        document.getElementById('configCleanupHour').value = config.dataRetention.cleanupHour || 2;
-        document.getElementById('configRetentionEnabled').checked = config.dataRetention.enabled !== false;
+      if (response.success && response.data) {
+        const config = response.data;
+        
+        if (config.acquisition) {
+          document.getElementById('configParallelism').value = config.acquisition.parallelism || 6;
+          document.getElementById('configPollInterval').value = config.acquisition.defaultPollIntervalMs || 1500;
+          document.getElementById('configMaxBatch').value = config.acquisition.maxBatchPoints || 1000;
+        }
+        
+        if (config.dataRetention) {
+          document.getElementById('configRetentionDays').value = config.dataRetention.retentionDays || 10;
+          document.getElementById('configCleanupHour').value = config.dataRetention.cleanupHour || 2;
+          document.getElementById('configRetentionEnabled').checked = config.dataRetention.enabled !== false;
+        }
       }
     } catch (error) {
       console.error('Erreur chargement configuration:', error);
@@ -328,13 +332,25 @@ export class DirisManager {
         }
       };
       
-      // Note: This would need a backend endpoint to save config
-      // For now, just show success message
-      this.showSuccess('⚠️ Fonctionnalité en cours de développement. Modifiez appsettings.json pour changer la configuration.');
+      this.showInfo('💾 Sauvegarde de la configuration en cours...');
+      
+      const response = await this.apiClient.request('/api/diris/config', {
+        method: 'POST',
+        body: JSON.stringify(config)
+      });
+      
+      if (response.success) {
+        this.showSuccess('✅ Configuration DIRIS sauvegardée avec succès');
+        this.addHistoryEvent('success', 'Configuration sauvegardée', 'Paramètres DIRIS mis à jour');
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de sauvegarder la configuration'}`);
+        this.addHistoryEvent('error', 'Échec sauvegarde configuration', response.message || 'Erreur inconnue');
+      }
       
     } catch (error) {
       console.error('Erreur sauvegarde configuration:', error);
       this.showError('Erreur lors de la sauvegarde de la configuration');
+      this.addHistoryEvent('error', 'Erreur sauvegarde configuration', error.message);
     }
   }
 
@@ -400,16 +416,26 @@ export class DirisManager {
     try {
       this.showInfo(`${enable ? 'Activation' : 'Désactivation'} du device ${deviceId}...`);
       
-      // This would need a backend endpoint like PUT /api/diris/devices/{id}/toggle
-      // For now, simulate the action
-      const action = enable ? 'activer' : 'désactiver';
-      this.showSuccess(`⚠️ Fonctionnalité en cours de développement. Utilisez l'API pour ${action} le device ${deviceId}.`);
+      const response = await this.apiClient.request(`/api/diris/devices/${deviceId}/toggle`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled: enable })
+      });
+      
+      if (response.success) {
+        const action = enable ? 'activé' : 'désactivé';
+        this.showSuccess(`✅ Device ${deviceId} ${action} avec succès`);
+        this.addHistoryEvent('success', `Device ${action}`, `Device ${deviceId} ${action} avec succès`);
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de modifier le statut du device'}`);
+        this.addHistoryEvent('error', 'Échec modification device', response.message || 'Erreur inconnue');
+      }
       
       // Reload devices after toggle
       setTimeout(() => this.loadDevices(), 1000);
     } catch (error) {
       console.error('Erreur toggle device:', error);
       this.showError(`Erreur lors de la ${enable ? 'activation' : 'désactivation'} du device ${deviceId}`);
+      this.addHistoryEvent('error', 'Erreur modification device', error.message);
     }
   }
 
@@ -482,9 +508,18 @@ export class DirisManager {
     try {
       this.showInfo('Ajout du device en cours...');
       
-      // This would need a backend endpoint
-      // For now, just show success message
-      this.showSuccess('⚠️ Fonctionnalité en cours de développement. Ajoutez le device via l\'API ou la base de données.');
+      const response = await this.apiClient.request('/api/diris/devices', {
+        method: 'POST',
+        body: JSON.stringify(deviceData)
+      });
+      
+      if (response && response.deviceId) {
+        this.showSuccess(`✅ Device ajouté avec succès (ID: ${response.deviceId})`);
+        this.addHistoryEvent('success', 'Device ajouté', `Device ${deviceData.name} ajouté avec succès`);
+      } else {
+        this.showError('❌ Erreur lors de l\'ajout du device');
+        this.addHistoryEvent('error', 'Échec ajout device', 'Erreur lors de l\'ajout du device');
+      }
       
       // Reload devices list
       setTimeout(() => this.loadDevices(), 1000);
@@ -492,6 +527,7 @@ export class DirisManager {
     } catch (error) {
       console.error('Erreur ajout device:', error);
       this.showError('Erreur lors de l\'ajout du device');
+      this.addHistoryEvent('error', 'Erreur ajout device', error.message);
     }
   }
 
