@@ -77,7 +77,7 @@ async function login() {
 
         const data = await response.json();
         localStorage.setItem("user", JSON.stringify(data));
-        window.location.href = "supervision-poste-electrique/index.html";
+        window.location.href = "supervision-poste-electrique_dev/index_dev.html";
     } catch (error) {
         errorDiv.textContent = error.message;
     }
