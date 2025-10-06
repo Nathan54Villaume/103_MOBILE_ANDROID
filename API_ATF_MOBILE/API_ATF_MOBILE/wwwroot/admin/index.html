@@ -83,6 +83,64 @@
     .value-warning { color: #f59e0b; } /* Orange - Attention */
     .value-danger { color: #ef4444; } /* Rouge - Danger */
     .value-critical { color: #dc2626; } /* Rouge foncé - Critique */
+    
+    /* Configuration info icons and tooltips */
+    .config-info-icon {
+      cursor: help;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+      position: relative;
+    }
+    
+    .config-info-icon:hover {
+      opacity: 1;
+    }
+    
+    .config-info-icon::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      max-width: 300px;
+      white-space: normal;
+      text-align: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .config-info-icon:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .config-info-icon::before {
+      content: '';
+      position: absolute;
+      bottom: 115%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(0, 0, 0, 0.9);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .config-info-icon:hover::before {
+      opacity: 1;
+      visibility: visible;
+    }
   </style>
 </head>
 <body class="h-full text-slate-100 font-sans">
@@ -562,9 +620,15 @@
                 <h3 class="font-semibold">Services DIRIS</h3>
                 <p class="text-xs text-slate-400 mt-1">Gestion des services d'acquisition</p>
               </div>
-              <button id="btnRefreshDiris" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
-                🔄 Actualiser
-              </button>
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="dirisAutoRefresh" class="w-4 h-4 rounded bg-white/5 border-white/10" checked>
+                  <label for="dirisAutoRefresh" class="text-xs text-slate-400">Auto-refresh</label>
+                </div>
+                <button id="btnRefreshDiris" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🔄 Actualiser
+                </button>
+              </div>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -673,15 +737,24 @@
                 <h4 class="font-medium mb-3 text-sm">Acquisition</h4>
                 <div class="space-y-3">
                   <div>
-                    <label class="block text-xs text-slate-400 mb-1">Parallélisme (devices simultanés)</label>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Parallélisme (devices simultanés)
+                      <span class="config-info-icon" data-tooltip="Nombre de devices interrogés simultanément. Plus élevé = plus rapide mais plus de charge réseau. Recommandé: 4-8">ℹ️</span>
+                    </label>
                     <input type="number" id="configParallelism" min="1" max="20" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="6">
                   </div>
                   <div>
-                    <label class="block text-xs text-slate-400 mb-1">Intervalle de poll (ms)</label>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Intervalle de poll (ms)
+                      <span class="config-info-icon" data-tooltip="Fréquence d'interrogation des devices. Plus bas = plus réactif mais plus de charge. Recommandé: 1000-3000ms">ℹ️</span>
+                    </label>
                     <input type="number" id="configPollInterval" min="500" max="10000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1500">
                   </div>
                   <div>
-                    <label class="block text-xs text-slate-400 mb-1">Taille max des lots</label>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Taille max des lots
+                      <span class="config-info-icon" data-tooltip="Nombre maximum de mesures traitées par lot en base. Plus élevé = plus efficace mais plus de mémoire. Recommandé: 500-2000">ℹ️</span>
+                    </label>
                     <input type="number" id="configMaxBatch" min="100" max="5000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1000">
                   </div>
                 </div>
@@ -692,17 +765,26 @@
                 <h4 class="font-medium mb-3 text-sm">Rétention des données</h4>
                 <div class="space-y-3">
                   <div>
-                    <label class="block text-xs text-slate-400 mb-1">Durée de rétention (jours)</label>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Durée de rétention (jours)
+                      <span class="config-info-icon" data-tooltip="Nombre de jours de conservation des données. Les mesures plus anciennes seront supprimées. Recommandé: 7-30 jours selon l'usage">ℹ️</span>
+                    </label>
                     <input type="number" id="configRetentionDays" min="1" max="365" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="10">
                   </div>
                   <div>
-                    <label class="block text-xs text-slate-400 mb-1">Heure de nettoyage</label>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Heure de nettoyage
+                      <span class="config-info-icon" data-tooltip="Heure quotidienne (format 24h) pour le nettoyage automatique. Choisir une heure de faible activité. Recommandé: 2-4h du matin">ℹ️</span>
+                    </label>
                     <input type="number" id="configCleanupHour" min="0" max="23" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="2">
                     <p class="text-xs text-slate-500 mt-1">Format 24h (0-23)</p>
                   </div>
                   <div class="flex items-center gap-2">
                     <input type="checkbox" id="configRetentionEnabled" class="w-4 h-4 rounded bg-white/5 border-white/10">
-                    <label for="configRetentionEnabled" class="text-xs text-slate-400">Activer le nettoyage automatique</label>
+                    <label for="configRetentionEnabled" class="text-xs text-slate-400 flex items-center gap-2">
+                      Activer le nettoyage automatique
+                      <span class="config-info-icon" data-tooltip="Active le nettoyage automatique quotidien des données anciennes. Désactiver seulement pour maintenance manuelle">ℹ️</span>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -728,7 +810,17 @@
 
           <!-- Dernières mesures -->
           <div class="card rounded-xl p-5 shadow-glass">
-            <h3 class="font-semibold mb-4">Dernières mesures</h3>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Dernières mesures</h3>
+              <div class="flex gap-2">
+                <button onclick="window.dirisManager.exportData('csv')" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  📊 Export CSV
+                </button>
+                <button onclick="window.dirisManager.exportData('json')" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  📄 Export JSON
+                </button>
+              </div>
+            </div>
             <div id="dirisLatestReadings" class="space-y-3 max-h-[400px] overflow-y-auto hide-scrollbar">
               <!-- Dynamically populated -->
               <p class="text-center text-slate-400 py-8">Chargement des mesures...</p>

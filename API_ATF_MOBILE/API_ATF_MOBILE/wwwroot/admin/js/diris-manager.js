@@ -15,6 +15,12 @@ export class DirisManager {
   init() {
     console.log('🚀 Initialisation DIRIS Manager');
     this.attachEventListeners();
+    
+    // Start auto-refresh if checkbox is checked
+    const autoRefreshCheckbox = document.getElementById('dirisAutoRefresh');
+    if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
+      this.startAutoRefresh();
+    }
   }
 
   // ========================================
@@ -24,6 +30,17 @@ export class DirisManager {
     // Refresh
     document.getElementById('btnRefreshDiris')?.addEventListener('click', () => this.loadAllData());
     
+    // Auto-refresh toggle
+    document.getElementById('dirisAutoRefresh')?.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        this.startAutoRefresh();
+        this.showInfo('Auto-refresh activé (5s)');
+      } else {
+        this.stopAutoRefresh();
+        this.showInfo('Auto-refresh désactivé');
+      }
+    });
+    
     // Services Controls
     document.getElementById('btnStartAcquisition')?.addEventListener('click', () => this.startAcquisition());
     document.getElementById('btnStopAcquisition')?.addEventListener('click', () => this.stopAcquisition());
@@ -31,6 +48,13 @@ export class DirisManager {
     
     // Configuration
     document.getElementById('btnSaveDirisConfig')?.addEventListener('click', () => this.saveConfiguration());
+    
+    // Configuration validation
+    document.getElementById('configParallelism')?.addEventListener('input', (e) => this.validateConfigField('parallelism', e.target.value));
+    document.getElementById('configPollInterval')?.addEventListener('input', (e) => this.validateConfigField('pollInterval', e.target.value));
+    document.getElementById('configMaxBatch')?.addEventListener('input', (e) => this.validateConfigField('maxBatch', e.target.value));
+    document.getElementById('configRetentionDays')?.addEventListener('input', (e) => this.validateConfigField('retentionDays', e.target.value));
+    document.getElementById('configCleanupHour')?.addEventListener('input', (e) => this.validateConfigField('cleanupHour', e.target.value));
     
     // Devices
     document.getElementById('btnAddDevice')?.addEventListener('click', () => this.showAddDeviceDialog());
@@ -190,8 +214,72 @@ export class DirisManager {
     }
   }
 
+  validateConfigField(field, value) {
+    const numValue = parseInt(value);
+    let isValid = true;
+    let message = '';
+    
+    switch (field) {
+      case 'parallelism':
+        if (numValue < 1 || numValue > 20) {
+          isValid = false;
+          message = 'Parallélisme doit être entre 1 et 20';
+        }
+        break;
+      case 'pollInterval':
+        if (numValue < 500 || numValue > 10000) {
+          isValid = false;
+          message = 'Intervalle de poll doit être entre 500ms et 10000ms';
+        }
+        break;
+      case 'maxBatch':
+        if (numValue < 100 || numValue > 5000) {
+          isValid = false;
+          message = 'Taille des lots doit être entre 100 et 5000';
+        }
+        break;
+      case 'retentionDays':
+        if (numValue < 1 || numValue > 365) {
+          isValid = false;
+          message = 'Durée de rétention doit être entre 1 et 365 jours';
+        }
+        break;
+      case 'cleanupHour':
+        if (numValue < 0 || numValue > 23) {
+          isValid = false;
+          message = 'Heure de nettoyage doit être entre 0 et 23';
+        }
+        break;
+    }
+    
+    const input = document.getElementById(`config${field.charAt(0).toUpperCase() + field.slice(1)}`);
+    if (input) {
+      if (isValid) {
+        input.style.borderColor = 'rgba(255,255,255,0.1)';
+        input.title = '';
+      } else {
+        input.style.borderColor = '#ef4444';
+        input.title = message;
+      }
+    }
+    
+    return isValid;
+  }
+
   async saveConfiguration() {
     try {
+      // Validate all fields before saving
+      const fields = ['parallelism', 'pollInterval', 'maxBatch', 'retentionDays', 'cleanupHour'];
+      const allValid = fields.every(field => {
+        const value = document.getElementById(`config${field.charAt(0).toUpperCase() + field.slice(1)}`).value;
+        return this.validateConfigField(field, value);
+      });
+      
+      if (!allValid) {
+        this.showError('❌ Veuillez corriger les erreurs de validation avant de sauvegarder');
+        return;
+      }
+      
       const config = {
         acquisition: {
           parallelism: parseInt(document.getElementById('configParallelism').value),
@@ -275,17 +363,101 @@ export class DirisManager {
 
   async toggleDevice(deviceId, enable) {
     try {
-      // This would need a backend endpoint
       this.showInfo(`${enable ? 'Activation' : 'Désactivation'} du device ${deviceId}...`);
+      
+      // This would need a backend endpoint like PUT /api/diris/devices/{id}/toggle
+      // For now, simulate the action
+      const action = enable ? 'activer' : 'désactiver';
+      this.showSuccess(`⚠️ Fonctionnalité en cours de développement. Utilisez l'API pour ${action} le device ${deviceId}.`);
+      
       // Reload devices after toggle
       setTimeout(() => this.loadDevices(), 1000);
     } catch (error) {
       console.error('Erreur toggle device:', error);
+      this.showError(`Erreur lors de la ${enable ? 'activation' : 'désactivation'} du device ${deviceId}`);
     }
   }
 
   showAddDeviceDialog() {
-    this.showInfo('⚠️ Fonctionnalité en cours de développement. Ajoutez des devices via l\'API ou la base de données.');
+    // Create modal dialog
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+      <div class="bg-slate-800 rounded-xl p-6 w-full max-w-md border border-white/10">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Ajouter un device DIRIS</h3>
+          <button class="close-modal text-slate-400 hover:text-white">✕</button>
+        </div>
+        
+        <form id="addDeviceForm" class="space-y-4">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Nom du device</label>
+            <input type="text" id="deviceName" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" placeholder="Ex: DIRIS_Poste_01" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Adresse IP</label>
+            <input type="text" id="deviceIp" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" placeholder="192.168.1.100" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Intervalle de poll (ms)</label>
+            <input type="number" id="devicePollInterval" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1500" min="500" max="10000">
+          </div>
+          
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Description (optionnel)</label>
+            <textarea id="deviceDescription" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" rows="2" placeholder="Description du device..."></textarea>
+          </div>
+          
+          <div class="flex gap-3 pt-4">
+            <button type="submit" class="flex-1 px-4 py-2 bg-brand-500 hover:bg-brand-600 rounded-lg text-sm font-medium transition-colors">
+              ➕ Ajouter
+            </button>
+            <button type="button" class="close-modal px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Event listeners
+    modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+    
+    modal.querySelector('#addDeviceForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.addDevice({
+        name: document.getElementById('deviceName').value,
+        ipAddress: document.getElementById('deviceIp').value,
+        pollIntervalMs: parseInt(document.getElementById('devicePollInterval').value),
+        description: document.getElementById('deviceDescription').value,
+        enabled: true
+      });
+      modal.remove();
+    });
+  }
+
+  async addDevice(deviceData) {
+    try {
+      this.showInfo('Ajout du device en cours...');
+      
+      // This would need a backend endpoint
+      // For now, just show success message
+      this.showSuccess('⚠️ Fonctionnalité en cours de développement. Ajoutez le device via l\'API ou la base de données.');
+      
+      // Reload devices list
+      setTimeout(() => this.loadDevices(), 1000);
+      
+    } catch (error) {
+      console.error('Erreur ajout device:', error);
+      this.showError('Erreur lors de l\'ajout du device');
+    }
   }
 
   // ========================================
@@ -323,6 +495,63 @@ export class DirisManager {
       document.getElementById('dirisLatestReadings').innerHTML = 
         '<p class="text-center text-red-400 py-8">Erreur de chargement des mesures</p>';
     }
+  }
+
+  // ========================================
+  // Export des données
+  // ========================================
+  async exportData(format = 'csv') {
+    try {
+      this.showInfo(`Export des données DIRIS en ${format.toUpperCase()}...`);
+      
+      // Get latest readings for export
+      const readings = await this.apiClient.request('/api/diris/readings/latest');
+      const devices = await this.apiClient.request('/api/diris/devices');
+      
+      let content = '';
+      let filename = '';
+      
+      if (format === 'csv') {
+        content = this.generateCsvExport(readings, devices);
+        filename = `diris-export-${new Date().toISOString().split('T')[0]}.csv`;
+      } else if (format === 'json') {
+        content = JSON.stringify({ readings, devices, timestamp: new Date().toISOString() }, null, 2);
+        filename = `diris-export-${new Date().toISOString().split('T')[0]}.json`;
+      }
+      
+      // Download file
+      const blob = new Blob([content], { type: format === 'csv' ? 'text/csv' : 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      this.showSuccess(`✅ Export ${format.toUpperCase()} téléchargé: ${filename}`);
+      
+    } catch (error) {
+      console.error('Erreur export données:', error);
+      this.showError('Erreur lors de l\'export des données');
+    }
+  }
+
+  generateCsvExport(readings, devices) {
+    let csv = 'Device ID,Device Name,IP Address,Signal,Value,Unit,Timestamp\n';
+    
+    readings.forEach(device => {
+      const deviceInfo = devices.find(d => d.deviceId === device.deviceId);
+      const deviceName = deviceInfo?.name || `Device ${device.deviceId}`;
+      const ipAddress = deviceInfo?.ipAddress || 'N/A';
+      
+      (device.signals || []).forEach(signal => {
+        csv += `${device.deviceId},${deviceName},${ipAddress},${signal.signal},${signal.value},${signal.unit || ''},${device.timestamp || new Date().toISOString()}\n`;
+      });
+    });
+    
+    return csv;
   }
 
   // ========================================
