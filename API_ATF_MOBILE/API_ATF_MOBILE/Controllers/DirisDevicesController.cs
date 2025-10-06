@@ -72,13 +72,31 @@ public class DirisDevicesController : ControllerBase
 
         try
         {
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(device.Name))
+            {
+                return BadRequest(new { error = "Device name is required" });
+            }
+
+            if (string.IsNullOrWhiteSpace(device.IpAddress))
+            {
+                return BadRequest(new { error = "Device IP address is required" });
+            }
+
+            // Set required properties that might be missing from frontend
+            var now = DateTime.UtcNow;
+            device.CreatedUtc = now;
+            device.UpdatedUtc = now;
+            device.Protocol = device.Protocol ?? "webmi";
+            device.DeviceId = 0; // Will be set by the database
+
             var createdDevice = await _deviceRegistry.AddDeviceAsync(device);
             return CreatedAtAction(nameof(GetDevice), new { id = createdDevice.DeviceId }, createdDevice);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating device");
-            return StatusCode(500, "Error creating device");
+            _logger.LogError(ex, "Error creating device: {Error}", ex.Message);
+            return StatusCode(500, new { error = "Error creating device", message = ex.Message });
         }
     }
 
