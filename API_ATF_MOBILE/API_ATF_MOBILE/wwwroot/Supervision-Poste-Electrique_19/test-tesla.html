@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tesla Interface</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+        }
+        .test-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #0066cc;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+        }
+        .test-success {
+            color: #00aa44;
+        }
+        .test-error {
+            color: #d50000;
+        }
+        .test-warning {
+            color: #ffaa00;
+        }
+        .btn {
+            background: linear-gradient(135deg, #0066cc, #6a0dad);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 48px rgba(0, 102, 204, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 style="text-align: center; background: linear-gradient(135deg, #fff, #b0b0b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 30px;">
+            🚀 Test Interface Tesla
+        </h1>
+        
+        <div class="test-section">
+            <div class="test-title">📁 Structure des fichiers</div>
+            <div id="file-structure-test" class="test-item">
+                <span class="test-warning">⏳ Vérification en cours...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">🎨 Styles CSS Tesla</div>
+            <div id="css-test" class="test-item">
+                <span class="test-warning">⏳ Vérification en cours...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">📊 Composants JavaScript</div>
+            <div id="js-test" class="test-item">
+                <span class="test-warning">⏳ Vérification en cours...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">🔗 Liens et navigation</div>
+            <div id="links-test" class="test-item">
+                <span class="test-warning">⏳ Vérification en cours...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">🎯 Actions de test</div>
+            <div class="test-item">
+                <button class="btn" onclick="window.open('index.html', '_blank')">
+                    🚀 Ouvrir Interface Tesla
+                </button>
+                <button class="btn" onclick="window.open('serve-demo.py', '_blank')">
+                    🐍 Démarrer Serveur Python
+                </button>
+                <button class="btn" onclick="runAllTests()">
+                    🔄 Relancer tous les tests
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function checkFileExists(url) {
+            return fetch(url, { method: 'HEAD' })
+                .then(response => response.ok)
+                .catch(() => false);
+        }
+
+        function updateTestResult(elementId, success, message) {
+            const element = document.getElementById(elementId);
+            const className = success ? 'test-success' : 'test-error';
+            const icon = success ? '✅' : '❌';
+            element.innerHTML = `<span class="${className}">${icon} ${message}</span>`;
+        }
+
+        async function testFileStructure() {
+            const files = [
+                'index.html',
+                'style.css',
+                'js/main.js',
+                'js/charts.js',
+                'js/api.js',
+                'charts/core/ChartHost.js',
+                'charts/api/SignalService.js',
+                'cors-proxy.py',
+                'serve-demo.py'
+            ];
+
+            let allExist = true;
+            let results = [];
+
+            for (const file of files) {
+                const exists = await checkFileExists(file);
+                if (exists) {
+                    results.push(`✅ ${file}`);
+                } else {
+                    results.push(`❌ ${file}`);
+                    allExist = false;
+                }
+            }
+
+            updateTestResult('file-structure-test', allExist, 
+                allExist ? 'Tous les fichiers sont présents' : 'Certains fichiers manquent');
+            
+            if (!allExist) {
+                document.getElementById('file-structure-test').innerHTML += 
+                    '<br><br>' + results.join('<br>');
+            }
+        }
+
+        function testCSS() {
+            const testElement = document.createElement('div');
+            testElement.className = 'tesla-card';
+            testElement.style.position = 'absolute';
+            testElement.style.left = '-9999px';
+            document.body.appendChild(testElement);
+
+            const computedStyle = window.getComputedStyle(testElement);
+            const hasTeslaStyles = computedStyle.background.includes('rgba(255, 255, 255, 0.05)') ||
+                                 computedStyle.backdropFilter === 'blur(20px)';
+
+            document.body.removeChild(testElement);
+
+            updateTestResult('css-test', hasTeslaStyles, 
+                hasTeslaStyles ? 'Styles Tesla chargés correctement' : 'Styles Tesla non détectés');
+        }
+
+        function testJavaScript() {
+            // Test des modules principaux
+            const modules = [
+                'Chart',
+                'window.__SPE_MODE__',
+                'window.API_CONFIG'
+            ];
+
+            let allLoaded = true;
+            let results = [];
+
+            modules.forEach(module => {
+                try {
+                    const exists = eval(`typeof ${module} !== 'undefined'`);
+                    if (exists) {
+                        results.push(`✅ ${module}`);
+                    } else {
+                        results.push(`❌ ${module}`);
+                        allLoaded = false;
+                    }
+                } catch (e) {
+                    results.push(`❌ ${module} (erreur)`);
+                    allLoaded = false;
+                }
+            });
+
+            updateTestResult('js-test', allLoaded, 
+                allLoaded ? 'Modules JavaScript prêts' : 'Modules JavaScript manquants');
+            
+            if (!allLoaded) {
+                document.getElementById('js-test').innerHTML += 
+                    '<br><br>' + results.join('<br>');
+            }
+        }
+
+        function testLinks() {
+            const links = [
+                { url: 'index.html', name: 'Interface principale' },
+                { url: 'README.md', name: 'Documentation' },
+                { url: 'cors-proxy.py', name: 'Proxy CORS' },
+                { url: 'serve-demo.py', name: 'Serveur démo' }
+            ];
+
+            let allAccessible = true;
+            let results = [];
+
+            links.forEach(async (link) => {
+                const accessible = await checkFileExists(link.url);
+                if (accessible) {
+                    results.push(`✅ ${link.name} (${link.url})`);
+                } else {
+                    results.push(`❌ ${link.name} (${link.url})`);
+                    allAccessible = false;
+                }
+            });
+
+            updateTestResult('links-test', allAccessible, 
+                allAccessible ? 'Tous les liens sont accessibles' : 'Certains liens ne sont pas accessibles');
+        }
+
+        async function runAllTests() {
+            // Reset des tests
+            document.querySelectorAll('.test-item').forEach(item => {
+                item.innerHTML = '<span class="test-warning">⏳ Vérification en cours...</span>';
+            });
+
+            // Exécuter les tests
+            await testFileStructure();
+            testCSS();
+            testJavaScript();
+            await testLinks();
+        }
+
+        // Démarrer les tests au chargement
+        document.addEventListener('DOMContentLoaded', runAllTests);
+    </script>
+</body>
+</html>

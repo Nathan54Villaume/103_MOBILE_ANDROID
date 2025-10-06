@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIRIS Server - Courbes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        .chart-container {
+            height: 400px;
+            margin: 20px 0;
+        }
+        .filter-card {
+            margin-bottom: 20px;
+        }
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                DIRIS Server
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="dashboard.html">
+                    <i class="fas fa-chart-line me-1"></i>
+                    Tableau de Bord
+                </a>
+                <a class="nav-link active" href="charts.html">
+                    <i class="fas fa-chart-area me-1"></i>
+                    Courbes
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-chart-area me-2"></i>
+                    Courbes de Mesures
+                </h1>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card filter-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-filter me-2"></i>
+                            Filtres
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="deviceSelect" class="form-label">Device</label>
+                                <select class="form-select" id="deviceSelect">
+                                    <option value="">Tous les devices</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="signalSelect" class="form-label">Signal</label>
+                                <select class="form-select" id="signalSelect">
+                                    <option value="">Tous les signals</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="fromDate" class="form-label">De</label>
+                                <input type="datetime-local" class="form-control" id="fromDate">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="toDate" class="form-label">À</label>
+                                <input type="datetime-local" class="form-control" id="toDate">
+                            </div>
+                <div class="col-md-2">
+                    <label for="downsampleSelect" class="form-label">Échantillonnage</label>
+                    <select class="form-select" id="downsampleSelect">
+                        <option value="" selected>Aucun</option>
+                        <option value="1m">1 minute</option>
+                        <option value="5m">5 minutes</option>
+                        <option value="1h">1 heure</option>
+                    </select>
+                </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button class="btn btn-primary" onclick="loadChartData()">
+                                    <i class="fas fa-search me-1"></i>
+                                    Charger les Données
+                                </button>
+                                <button class="btn btn-secondary ms-2" onclick="resetFilters()">
+                                    <i class="fas fa-undo me-1"></i>
+                                    Réinitialiser
+                                </button>
+                                <button class="btn btn-success ms-2" onclick="startAutoRefresh()">
+                                    <i class="fas fa-play me-1"></i>
+                                    Auto-refresh
+                                </button>
+                                <button class="btn btn-warning ms-2" onclick="stopAutoRefresh()">
+                                    <i class="fas fa-stop me-1"></i>
+                                    Arrêter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Courbe de Mesures
+                        </h5>
+                        <div>
+                            <span class="badge bg-info me-2" id="dataCount">0 points</span>
+                            <span class="badge bg-success" id="lastUpdate">Dernière MAJ: -</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="measurementsChart" class="chart-container"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-table me-2"></i>
+                            Données Brutes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Device</th>
+                                        <th>Signal</th>
+                                        <th>Valeur</th>
+                                        <th>Unité</th>
+                                        <th>Qualité</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dataTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Aucune donnée chargée</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Indicator -->
+    <div class="refresh-indicator">
+        <div class="spinner-border text-primary" role="status" id="refresh-spinner" style="display: none;">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let measurementsChart;
+        let autoRefreshInterval;
+        let currentData = [];
+
+        // Initialize chart
+        function initializeChart() {
+            const ctx = document.getElementById('measurementsChart').getContext('2d');
+            measurementsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                displayFormats: {
+                                    minute: 'HH:mm',
+                                    hour: 'HH:mm',
+                                    day: 'dd/MM HH:mm'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Temps'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Valeur'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const point = context[0].raw;
+                                    if (point && point.timestamp) {
+                                        return new Date(point.timestamp).toLocaleString('fr-FR', {
+                                            timeZone: 'Europe/Paris',
+                                            year: 'numeric',
+                                            month: '2-digit',
+                                            day: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit'
+                                        });
+                                    }
+                                    return `Point ${context[0].dataIndex}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load devices for filter
+        async function loadDevices() {
+            try {
+                const response = await fetch('/api/devices/enabled');
+                const devices = await response.json();
+                
+                const select = document.getElementById('deviceSelect');
+                select.innerHTML = '<option value="">Tous les devices</option>';
+                
+                devices.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = `${device.name} (${device.ipAddress})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        }
+
+        // Load signals for filter
+        async function loadSignals() {
+            try {
+                const response = await fetch('/api/readings/latest');
+                const data = await response.json();
+                
+                const signals = new Set();
+                data.forEach(device => {
+                    device.signals.forEach(signal => {
+                        signals.add(signal.signal);
+                    });
+                });
+                
+                const select = document.getElementById('signalSelect');
+                select.innerHTML = '<option value="">Tous les signals</option>';
+                
+                Array.from(signals).sort().forEach(signal => {
+                    const option = document.createElement('option');
+                    option.value = signal;
+                    option.textContent = signal;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading signals:', error);
+            }
+        }
+
+        // Set default date range (last 2 hours to ensure we have data)
+        function setDefaultDateRange() {
+            const now = new Date();
+            const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+            
+            const fromDate = twoHoursAgo.toISOString().slice(0, 16);
+            const toDate = now.toISOString().slice(0, 16);
+            
+            console.log('Setting default date range:', { fromDate, toDate });
+            
+            const fromElement = document.getElementById('fromDate');
+            const toElement = document.getElementById('toDate');
+            
+            if (fromElement && toElement) {
+                fromElement.value = fromDate;
+                toElement.value = toDate;
+                console.log('Date range set successfully');
+            } else {
+                console.error('Date elements not found');
+            }
+        }
+
+        // Load chart data
+        async function loadChartData() {
+            const spinner = document.getElementById('refresh-spinner');
+            spinner.style.display = 'block';
+            
+            try {
+                // Mettre à jour la plage de temps à chaque chargement pour avoir les 2 dernières heures
+                setDefaultDateRange();
+                
+                const deviceId = document.getElementById('deviceSelect').value;
+                const signal = document.getElementById('signalSelect').value;
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                const downsample = document.getElementById('downsampleSelect').value;
+                
+                console.log('Loading chart data with parameters:', {
+                    deviceId, signal, fromDate, toDate, downsample
+                });
+                
+                const params = new URLSearchParams();
+                if (deviceId) params.append('deviceId', deviceId);
+                if (signal) params.append('signal', signal);
+                if (fromDate) {
+                    try {
+                        // Les champs datetime-local donnent des dates en heure locale
+                        // On les traite comme UTC pour éviter le décalage
+                        const fromIso = fromDate + 'Z'; // Ajouter Z pour indiquer UTC
+                        params.append('from', fromIso);
+                        console.log('Date de début locale:', fromDate);
+                        console.log('Date de début envoyée:', fromIso);
+                    } catch (e) {
+                        console.error('Invalid fromDate:', fromDate, e);
+                        throw new Error('Date de début invalide');
+                    }
+                }
+                if (toDate) {
+                    try {
+                        // Les champs datetime-local donnent des dates en heure locale
+                        // On les traite comme UTC pour éviter le décalage
+                        const toIso = toDate + 'Z'; // Ajouter Z pour indiquer UTC
+                        params.append('to', toIso);
+                        console.log('Date de fin locale:', toDate);
+                        console.log('Date de fin envoyée:', toIso);
+                    } catch (e) {
+                        console.error('Invalid toDate:', toDate, e);
+                        throw new Error('Date de fin invalide');
+                    }
+                }
+                if (downsample) params.append('downsample', downsample);
+                
+                const response = await fetch(`/api/readings/query?${params}`);
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Parsed data:', data);
+                console.log('Data type:', typeof data);
+                console.log('Data keys:', Object.keys(data));
+                console.log('Data.data exists:', 'data' in data);
+                console.log('Data.data type:', typeof data.data);
+                console.log('Data.data length:', data.data ? data.data.length : 'undefined');
+                
+                currentData = data.data || [];
+                console.log('Current data set to:', currentData);
+                
+                updateChart(data);
+                updateDataTable(data);
+                
+                document.getElementById('dataCount').textContent = `${currentData.length} points`;
+                document.getElementById('lastUpdate').textContent = `Dernière MAJ: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error('Error loading chart data:', error);
+                console.error('Error details:', error.message);
+                console.error('Stack trace:', error.stack);
+                alert(`Erreur lors du chargement des données: ${error.message}`);
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Update chart with new data
+        function updateChart(data) {
+            console.log('updateChart called with data:', data);
+            
+            if (!data || !data.data || data.data.length === 0) {
+                console.log('No data available, clearing chart');
+                measurementsChart.data.datasets = [];
+                measurementsChart.update();
+                return;
+            }
+            
+            // Create dataset with real timestamps on X axis
+            const chartData = data.data.map((point, index) => ({
+                x: new Date(point.timestamp), // Use real timestamp for X axis
+                y: point.value,
+                timestamp: point.timestamp // Keep timestamp for tooltip
+            }));
+            
+            measurementsChart.data.datasets = [{
+                label: data.signal || 'Mesures',
+                data: chartData,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }];
+            
+            measurementsChart.update();
+        }
+
+        // Update data table
+        function updateDataTable(data) {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucune donnée</td></tr>';
+                return;
+            }
+            
+            data.data.forEach(point => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(point.timestamp).toLocaleString('fr-FR', {
+                        timeZone: 'Europe/Paris',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    })}</td>
+                    <td>${data.deviceId || 'N/A'}</td>
+                    <td>${data.signal || 'N/A'}</td>
+                    <td>${point.value.toFixed(3)}</td>
+                    <td>${data.unit || 'N/A'}</td>
+                    <td><span class="badge bg-${point.quality === 1 ? 'success' : 'danger'}">${point.quality === 1 ? 'OK' : 'Erreur'}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('deviceSelect').value = '';
+            document.getElementById('signalSelect').value = '';
+            document.getElementById('downsampleSelect').value = '';
+            setDefaultDateRange();
+        }
+
+        // Start auto refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            autoRefreshInterval = setInterval(loadChartData, 5000); // Refresh every 5 seconds
+            document.querySelector('button[onclick="startAutoRefresh()"]').classList.add('active');
+            document.querySelector('button[onclick="stopAutoRefresh()"]').classList.remove('active');
+        }
+
+        // Stop auto refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            document.querySelector('button[onclick="startAutoRefresh()"]').classList.remove('active');
+            document.querySelector('button[onclick="stopAutoRefresh()"]').classList.add('active');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChart();
+            loadDevices();
+            loadSignals();
+            
+            // Set default date range after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                setDefaultDateRange();
+                // Load data automatically with correct date range
+                setTimeout(() => {
+                    // Force update date range again before loading data
+                    setDefaultDateRange();
+                    loadChartData();
+                }, 500);
+            }, 500);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefresh();
+        });
+    </script>
+</body>
+</html>

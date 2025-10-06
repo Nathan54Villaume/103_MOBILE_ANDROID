@@ -1,0 +1,3 @@
+R:\COMMUN\104_DIRIS\DIRIS_Server\dist\Diris.Core.dll
+R:\COMMUN\104_DIRIS\DIRIS_Server\dist\Diris.Core.deps.json
+R:\COMMUN\104_DIRIS\DIRIS_Server\dist\Diris.Core.pdb

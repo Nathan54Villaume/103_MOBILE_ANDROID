@@ -7,8 +7,22 @@ using System.Text;
 using API_ATF_MOBILE.Data;
 using API_ATF_MOBILE.Services;
 using API_ATF_MOBILE.Middleware;
+using Diris.Providers.WebMI;
+using Diris.Storage.SqlServer;
+using Diris.Core.Interfaces;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog for DIRIS logging
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/app-.log", rollingInterval: Serilog.RollingInterval.Day, retainedFileCountLimit: 30)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // 1) Connexion SQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -32,6 +46,19 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddSingleton<IPlcConnectionService, PlcConnectionService>();
 builder.Services.AddScoped<ICommentsService, CommentsService>();
 builder.Services.AddScoped<ICommentsServiceV2, CommentsServiceV2>();
+
+// 3.2) DIRIS Services - WebMI Provider et Storage
+builder.Services.AddWebMiProvider(builder.Configuration.GetValue<int>("WebMi:RequestTimeoutMs", 1500));
+builder.Services.AddSqlServerStorage(builder.Configuration);
+
+// 3.3) DIRIS Services - Acquisition et Métriques
+builder.Services.Configure<DirisAcquisitionOptions>(builder.Configuration.GetSection(DirisAcquisitionOptions.SectionName));
+builder.Services.AddHostedService<DirisAcquisitionService>();
+builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollector>();
+
+// 3.4) DIRIS Services - Data Retention
+builder.Services.AddSingleton<DirisDataRetentionService>();
+builder.Services.AddHostedService<DirisDataRetentionService>(provider => provider.GetRequiredService<DirisDataRetentionService>());
 
 // 3.2) Configuration JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "VotreCleSecreteTresTresLongueEtComplexePourAPI_ATF_MOBILE_2024!";
@@ -143,5 +170,17 @@ app.UseAuthorization();
 // f) Routes API
 app.MapControllers();
 
-// g) Run
-app.Run();
+// g) Run with Serilog cleanup
+try
+{
+    Log.Information("Starting API_ATF_MOBILE with integrated DIRIS Server on port 8088");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

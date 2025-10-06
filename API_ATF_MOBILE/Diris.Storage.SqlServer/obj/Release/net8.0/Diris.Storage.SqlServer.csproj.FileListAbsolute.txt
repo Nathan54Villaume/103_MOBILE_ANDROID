@@ -1,0 +1,16 @@
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.csproj.AssemblyReference.cache
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.GeneratedMSBuildEditorConfig.editorconfig
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.AssemblyInfoInputs.cache
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.AssemblyInfo.cs
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.csproj.CoreCompileInputs.cache
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\bin\Release\net8.0\Diris.Storage.SqlServer.deps.json
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\bin\Release\net8.0\Diris.Storage.SqlServer.dll
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\bin\Release\net8.0\Diris.Storage.SqlServer.pdb
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\bin\Release\net8.0\Diris.Core.dll
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\bin\Release\net8.0\Diris.Core.pdb
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.St.864F9615.Up2Date
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.dll
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\refint\Diris.Storage.SqlServer.dll
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.pdb
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\ref\Diris.Storage.SqlServer.dll
+R:\COMMUN\104_DIRIS\DIRIS_Server\src\Diris.Storage.SqlServer\obj\Release\net8.0\Diris.Storage.SqlServer.sourcelink.json
