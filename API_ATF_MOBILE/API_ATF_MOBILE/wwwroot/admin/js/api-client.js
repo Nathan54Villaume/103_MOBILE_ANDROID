@@ -424,6 +424,15 @@ class ApiClient {
             body: JSON.stringify({ enabledSignals })
         });
     }
+
+    /**
+     * DIRIS: Mettre à jour les descriptions de tous les signaux
+     */
+    async updateDirisTagMapDescriptions() {
+        return await this.request('/api/diris/devices/tagmaps/update-descriptions', {
+            method: 'POST'
+        });
+    }
 }
 
 // Export singleton

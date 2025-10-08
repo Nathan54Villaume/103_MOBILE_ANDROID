@@ -159,6 +159,168 @@ public class DirisDevicesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Updates descriptions for all tag mappings
+    /// </summary>
+    [HttpPost("tagmaps/update-descriptions")]
+    public async Task<IActionResult> UpdateTagMapDescriptions()
+    {
+        try
+        {
+            var devices = await _deviceRegistry.GetAllDevicesAsync();
+            var totalUpdated = 0;
+
+            foreach (var device in devices)
+            {
+                var tagMappings = await _deviceRegistry.GetTagMappingsAsync(device.DeviceId);
+                var updatedMappings = new List<TagMap>();
+
+                foreach (var mapping in tagMappings)
+                {
+                    // Mettre à jour la description selon le signal
+                    mapping.Description = GetSignalDescription(mapping.Signal);
+                    updatedMappings.Add(mapping);
+                }
+
+                if (updatedMappings.Any())
+                {
+                    await _deviceRegistry.UpdateTagMappingsAsync(device.DeviceId, updatedMappings);
+                    totalUpdated += updatedMappings.Count;
+                }
+            }
+
+            _logger.LogInformation("Updated descriptions for {Count} tag mappings across {DeviceCount} devices", 
+                totalUpdated, devices.Count());
+
+            return Ok(new { 
+                success = true, 
+                message = $"Descriptions updated for {totalUpdated} signals across {devices.Count()} devices",
+                totalUpdated = totalUpdated,
+                deviceCount = devices.Count()
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating tag map descriptions");
+            return StatusCode(500, "Error updating descriptions");
+        }
+    }
+
+    /// <summary>
+    /// Gets the description for a signal
+    /// </summary>
+    private string GetSignalDescription(string signal)
+    {
+        return signal switch
+        {
+            // COURANTS (A)
+            "I_PH1_255" => "Courant phase 1",
+            "I_PH2_255" => "Courant phase 2",
+            "I_PH3_255" => "Courant phase 3",
+            "I_NUL_255" => "Courant neutre",
+            "MAXAVGSUM_I1_255" => "Courant phase 1 - Maximum moyenne",
+            "MAXAVGSUM_I2_255" => "Courant phase 2 - Maximum moyenne",
+            "MAXAVGSUM_I3_255" => "Courant phase 3 - Maximum moyenne",
+            "MAXAVG_IN_255" => "Courant neutre - Maximum moyenne",
+            "AVG_I1_255" => "Courant phase 1 - Moyenne",
+            "AVG_I2_255" => "Courant phase 2 - Moyenne",
+            "AVG_I3_255" => "Courant phase 3 - Moyenne",
+            "AVG_IN_255" => "Courant neutre - Moyenne",
+
+            // THD COURANTS
+            "THD_I1_255" => "THD courant phase 1",
+            "THD_I2_255" => "THD courant phase 2",
+            "THD_I3_255" => "THD courant phase 3",
+            "THD_IN_255" => "THD courant neutre",
+
+            // FRÉQUENCE
+            "F_255" => "Fréquence réseau",
+
+            // THD TENSIONS
+            "THD_U1_255" => "THD tension phase 1",
+            "THD_U2_255" => "THD tension phase 2",
+            "THD_U3_255" => "THD tension phase 3",
+            "THD_U12_255" => "THD tension phase-phase 12",
+            "THD_U23_255" => "THD tension phase-phase 23",
+            "THD_U31_255" => "THD tension phase-phase 31",
+
+            // TENSIONS PHASE-NEUTRE
+            "PV1_255" => "Tension phase 1 - neutre",
+            "PV2_255" => "Tension phase 2 - neutre",
+            "PV3_255" => "Tension phase 3 - neutre",
+            "MAXAVG_V1_255" => "Tension phase 1 - Maximum moyenne",
+            "MAXAVG_V2_255" => "Tension phase 2 - Maximum moyenne",
+            "MAXAVG_V3_255" => "Tension phase 3 - Maximum moyenne",
+            "AVG_V1_255" => "Tension phase 1 - Moyenne",
+            "AVG_V2_255" => "Tension phase 2 - Moyenne",
+            "AVG_V3_255" => "Tension phase 3 - Moyenne",
+
+            // TENSIONS PHASE-PHASE
+            "LV_U12_255" => "Tension phase-phase 12",
+            "LV_U23_255" => "Tension phase-phase 23",
+            "LV_U31_255" => "Tension phase-phase 31",
+            "MAXAVG_U12_255" => "Tension phase-phase 12 - Maximum moyenne",
+            "MAXAVG_U23_255" => "Tension phase-phase 23 - Maximum moyenne",
+            "MAXAVG_U31_255" => "Tension phase-phase 31 - Maximum moyenne",
+            "AVG_U12_255" => "Tension phase-phase 12 - Moyenne",
+            "AVG_U23_255" => "Tension phase-phase 23 - Moyenne",
+            "AVG_U31_255" => "Tension phase-phase 31 - Moyenne",
+
+            // PUISSANCES ACTIVES (kW)
+            "PH1_RP_255" => "Puissance active phase 1",
+            "PH2_RP_255" => "Puissance active phase 2",
+            "PH3_RP_255" => "Puissance active phase 3",
+            "SUM_RP_255" => "Puissance active totale",
+            "MAXAVGSUM_RPPOS_255" => "Puissance active positive - Maximum moyenne",
+            "AVGSUM_RPPOS_255" => "Puissance active positive - Moyenne",
+            "PRED_RP_255" => "Puissance active prédictive",
+            "MAXAVGSUM_RPNEG_255" => "Puissance active négative - Maximum moyenne",
+            "AVGSUM_RPNEG_255" => "Puissance active négative - Moyenne",
+
+            // PUISSANCES RÉACTIVES (kVAR)
+            "PH1_IP_255" => "Puissance réactive phase 1",
+            "PH2_IP_255" => "Puissance réactive phase 2",
+            "PH3_IP_255" => "Puissance réactive phase 3",
+            "SUM_IP_255" => "Puissance réactive totale",
+            "MAXAVGSUM_IPPOS_255" => "Puissance réactive positive - Maximum moyenne",
+            "AVGSUM_IPPOS_255" => "Puissance réactive positive - Moyenne",
+            "PRED_IP_255" => "Puissance réactive prédictive",
+            "MAXAVGSUM_IPNEG_255" => "Puissance réactive négative - Maximum moyenne",
+            "AVGSUM_IPNEG_255" => "Puissance réactive négative - Moyenne",
+
+            // PUISSANCES APPARENTES (kVA)
+            "PH1_AP_255" => "Puissance apparente phase 1",
+            "PH2_AP_255" => "Puissance apparente phase 2",
+            "PH3_AP_255" => "Puissance apparente phase 3",
+            "SUM_AP_255" => "Puissance apparente totale",
+            "MAXAVGSUM_AP_255" => "Puissance apparente - Maximum moyenne",
+            "AVGSUM_AP_255" => "Puissance apparente - Moyenne",
+            "PRED_AP_255" => "Puissance apparente prédictive",
+
+            // FACTEURS DE PUISSANCE (%)
+            "PH1_PF_255" => "Facteur de puissance phase 1",
+            "PH2_PF_255" => "Facteur de puissance phase 2",
+            "PH3_PF_255" => "Facteur de puissance phase 3",
+            "SUM_PF_255" => "Facteur de puissance total",
+
+            // ÉNERGIES (kWh)
+            "E1_255" => "Énergie compteur 1",
+            "E2_255" => "Énergie compteur 2",
+            "E3_255" => "Énergie compteur 3",
+            "E4_255" => "Énergie compteur 4",
+            "E5_255" => "Énergie compteur 5",
+            "E6_255" => "Énergie compteur 6",
+
+            // TOTAUX CUMULATIFS
+            "RP_POS_255" => "Puissance active positive cumulée",
+            "RP_NEG_255" => "Puissance active négative cumulée",
+            "IP_POS_255" => "Puissance réactive positive cumulée",
+            "IP_NEG_255" => "Puissance réactive négative cumulée",
+            "AP_255" => "Puissance apparente cumulée",
+
+            _ => $"Signal {signal}"
+        };
+    }
 
     /// <summary>
     /// Updates tag mappings for a device

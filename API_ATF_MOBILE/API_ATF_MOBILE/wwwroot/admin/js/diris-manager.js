@@ -78,6 +78,7 @@ export class DirisManager {
     
     // Devices
     document.getElementById('btnAddDevice')?.addEventListener('click', () => this.showAddDeviceDialog());
+    document.getElementById('btnUpdateDescriptions')?.addEventListener('click', () => this.updateDescriptions());
     
     // Charts controls
     document.getElementById('btnPauseCharts')?.addEventListener('click', () => this.toggleChartsPause());
@@ -1493,6 +1494,31 @@ export class DirisManager {
       notification.style.opacity = '0';
       setTimeout(() => notification.remove(), 300);
     }, 5000);
+  }
+
+  /**
+   * Met à jour les descriptions de tous les signaux DIRIS
+   */
+  async updateDescriptions() {
+    try {
+      this.showInfo('📝 Mise à jour des descriptions des signaux...');
+      
+      const response = await this.apiClient.updateDirisTagMapDescriptions();
+      
+      if (response.success) {
+        this.showSuccess(`✅ ${response.message}`);
+        this.addHistoryEvent('success', 'Descriptions mises à jour', 
+          `${response.totalUpdated} signaux mis à jour sur ${response.deviceCount} devices`);
+        
+        // Recharger la liste des devices pour voir les nouvelles descriptions
+        await this.loadDevices();
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de mettre à jour les descriptions'}`);
+      }
+    } catch (error) {
+      console.error('Erreur mise à jour descriptions:', error);
+      this.showError('Erreur lors de la mise à jour des descriptions');
+    }
   }
 }
 
