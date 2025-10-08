@@ -18,9 +18,16 @@ $scriptRoot = $PSScriptRoot
 if (-not $scriptRoot) { $scriptRoot = (Get-Location).Path }
 
 # Dossiers
-$projectRoot = Split-Path (Split-Path $scriptRoot -Parent) -Parent
+$projectRoot = Split-Path $scriptRoot -Parent
 $sourcePath = Join-Path $projectRoot "wwwroot"
 $logFile = Join-Path $scriptRoot "deploy-frontend.log"
+
+# Debug paths
+if ($Verbose) {
+    Write-Host "DEBUG: scriptRoot = $scriptRoot" -ForegroundColor Gray
+    Write-Host "DEBUG: projectRoot = $projectRoot" -ForegroundColor Gray
+    Write-Host "DEBUG: sourcePath = $sourcePath" -ForegroundColor Gray
+}
 
 # Fonction de logging
 function Write-Log {
