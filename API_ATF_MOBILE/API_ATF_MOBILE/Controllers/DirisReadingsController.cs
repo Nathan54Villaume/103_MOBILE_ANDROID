@@ -118,6 +118,8 @@ public class DirisReadingsController : ControllerBase
             {
                 return Ok(new { signals = new object[0], message = "Database not configured" });
             }
+            
+            // Optimisation : Limiter aux 5 dernières minutes pour éviter le timeout
             var sql = @"
                 SELECT d.DeviceId, d.Name as DeviceName, m.Signal, m.Value, m.Quality, m.UtcTs, tm.Unit
                 FROM DIRIS.Devices d
@@ -125,6 +127,7 @@ public class DirisReadingsController : ControllerBase
                     SELECT DeviceId, Signal, Value, Quality, UtcTs,
                            ROW_NUMBER() OVER (PARTITION BY DeviceId, Signal ORDER BY UtcTs DESC) as rn
                     FROM DIRIS.Measurements
+                    WHERE UtcTs > DATEADD(MINUTE, -5, GETUTCDATE())
                 ) m ON d.DeviceId = m.DeviceId AND m.rn = 1
                 LEFT JOIN DIRIS.TagMap tm ON d.DeviceId = tm.DeviceId AND m.Signal = tm.Signal
                 WHERE d.Enabled = 1";

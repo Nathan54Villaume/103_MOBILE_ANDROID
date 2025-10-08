@@ -91,6 +91,7 @@ export class DirisManager {
     
     // Coherence stats
     document.getElementById('btnRefreshCoherence')?.addEventListener('click', () => this.loadCoherenceStats());
+    document.getElementById('btnResetCoherence')?.addEventListener('click', () => this.resetCoherence());
     document.getElementById('btnClearGaps')?.addEventListener('click', () => this.clearGaps());
     
     // Alerts
@@ -1705,11 +1706,39 @@ export class DirisManager {
     }
   }
 
+  resetCoherence() {
+    if (confirm('Réinitialiser toutes les statistiques de cohérence ?\n\nCela va vider l\'affichage actuel.')) {
+      // Réinitialiser les KPIs
+      document.getElementById('coherenceQuality').textContent = '-%';
+      document.getElementById('coherenceQuality').className = 'text-2xl font-bold text-slate-400';
+      
+      document.getElementById('coherenceFrequency').textContent = '-';
+      document.getElementById('coherenceFrequency').className = 'text-2xl font-bold text-slate-400';
+      
+      document.getElementById('coherenceRegularity').textContent = '-';
+      document.getElementById('coherenceRegularity').className = 'text-2xl font-bold text-slate-400';
+      
+      document.getElementById('coherenceScore').textContent = '-/100';
+      document.getElementById('coherenceScore').className = 'text-2xl font-bold text-slate-400';
+      
+      // Vider les stats par device
+      const deviceStatsContainer = document.getElementById('coherenceDeviceStats');
+      if (deviceStatsContainer) {
+        deviceStatsContainer.innerHTML = '<p class="text-center text-slate-400 py-4">Statistiques réinitialisées</p>';
+      }
+      
+      // Vider les interruptions
+      this.clearGaps();
+      
+      this.showSuccess('✅ Statistiques de cohérence réinitialisées');
+      this.addHistoryEvent('info', 'Cohérence réinitialisée', 'L\'affichage des statistiques a été vidé');
+    }
+  }
+
   clearGaps() {
     const container = document.getElementById('coherenceGaps');
     if (container) {
       container.innerHTML = '<p class="text-center text-green-400 py-4">✅ Affichage vidé (actualiser pour recharger)</p>';
-      this.showSuccess('Affichage des interruptions vidé');
     }
   }
 
