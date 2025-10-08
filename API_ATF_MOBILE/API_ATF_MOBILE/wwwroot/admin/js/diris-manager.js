@@ -1762,7 +1762,7 @@ export class DirisManager {
                 'Continuer ?')) {
       
       try {
-        const response = await this.apiClient.request('POST', '/api/diris/coherence/clear-data?minutesToKeep=5');
+        const response = await this.apiClient.request('/api/diris/coherence/clear-data?minutesToKeep=5', { method: 'POST' });
         
         if (response.success) {
           this.showSuccess(`✅ Données nettoyées : ${response.deletedRows} mesures supprimées`);
