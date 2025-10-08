@@ -1620,7 +1620,8 @@ export class DirisManager {
       const scoreData = await response.json();
       console.log('✅ [DEBUG] Score reçu:', {
         score: scoreData.score,
-        breakdown: scoreData.breakdown,
+        details: scoreData.details,
+        breakdown: scoreData.breakdown, // Ancien format
         fullData: scoreData
       });
       
