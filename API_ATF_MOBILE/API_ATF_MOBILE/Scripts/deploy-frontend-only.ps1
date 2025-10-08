@@ -95,7 +95,7 @@ function Update-VersionFile {
 
 
 # Fonction pour deployer a distance
-function Deploy-RemoteFrontend {
+function Copy-RemoteFrontend {
     param([string]$Source, [string]$RemotePath, [string]$ServerName)
     
     Write-Log "Deploiement DISTANT..." "INFO"
@@ -165,7 +165,7 @@ try {
     Write-Host "--- DEPLOIEMENT DISTANT ---" -ForegroundColor Yellow
     
     # Deployer sur le serveur distant
-    $success = Deploy-RemoteFrontend -Source $sourcePath -RemotePath $RemoteDeployDir -ServerName $Server
+    $success = Copy-RemoteFrontend -Source $sourcePath -RemotePath $RemoteDeployDir -ServerName $Server
     
     if (-not $success) {
         throw "Echec du deploiement distant"
