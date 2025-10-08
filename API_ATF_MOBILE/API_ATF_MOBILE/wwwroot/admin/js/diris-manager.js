@@ -1654,6 +1654,11 @@ export class DirisManager {
 
     container.innerHTML = gaps.map(gap => {
       const severity = gap.gapSeconds > 60 ? 'danger' : gap.gapSeconds > 30 ? 'warning' : 'good';
+      
+      // Convertir UTC vers heure locale
+      const prevDate = new Date(gap.prevTs + 'Z'); // Ajouter 'Z' pour forcer UTC
+      const currentDate = new Date(gap.utcTs + 'Z'); // Ajouter 'Z' pour forcer UTC
+      
       return `
       <div class="p-3 bg-white/5 rounded-lg border ${
         severity === 'danger' ? 'border-red-500/30' : 
@@ -1663,8 +1668,8 @@ export class DirisManager {
           <div>
             <p class="text-sm font-medium">Device ${gap.deviceId} - ${gap.deviceName || 'Device ' + gap.deviceId}</p>
             <p class="text-xs text-slate-400 font-mono">
-              ${new Date(gap.prevTs).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} → 
-              ${new Date(gap.utcTs).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              ${prevDate.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} → 
+              ${currentDate.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </p>
           </div>
           <span class="px-3 py-1 rounded-lg text-sm font-bold ${
