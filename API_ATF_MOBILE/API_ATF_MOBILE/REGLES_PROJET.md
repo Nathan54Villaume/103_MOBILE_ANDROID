@@ -17,7 +17,7 @@
   - Modifications HTML, JS, CSS
   - Pas de rebuild
   - Durée : 5 secondes
-- **Backend (C#)** : `dotnet build` + script complet
+- **Backend + Frontend (C#)** : `Scripts\Deployment\deploy-fixed.ps1`
   - Modifications Controllers, Services, Models
   - Rebuild nécessaire
   - Durée : 15 secondes
@@ -44,8 +44,8 @@
 ### ✅ Règle #4 : Workflow de développement
 1. Modifier les fichiers
 2. Si `wwwroot/` → `deploy-frontend-only.bat`
-3. Si `.cs` → `dotnet build` + redéploiement complet
-4. Tester
+3. Si `.cs` → Backend + Frontend (C#)** : `Scripts\Deployment\deploy-fixed.ps1`
+4. Tester les nouvelles api en powershell
 5. Commit + Push
 
 ---
