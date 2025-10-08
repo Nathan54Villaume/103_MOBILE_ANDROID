@@ -61,6 +61,9 @@ builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollect
 builder.Services.AddSingleton<DirisDataRetentionService>();
 builder.Services.AddHostedService<DirisDataRetentionService>(provider => provider.GetRequiredService<DirisDataRetentionService>());
 
+// 3.5) DIRIS Services - Database Size Monitor
+builder.Services.AddHostedService<DirisDatabaseSizeMonitorService>();
+
 
 
 // 3.2) Configuration JWT Authentication

@@ -855,7 +855,7 @@
                 <p class="text-xs text-slate-400 mt-1">Ancienneté > rétention</p>
               </div>
               <div class="p-4 bg-white/5 rounded-lg">
-                <p class="text-xs text-slate-400 mb-1">Taille BDD</p>
+                <p class="text-xs text-slate-400 mb-1">Table [AI_ATR].[DIRIS].[Measurements]</p>
                 <p id="dirisDatabaseSize" class="text-2xl font-bold text-blue-400">0 MB / 1 GB</p>
                 <p class="text-xs text-slate-400 mt-1">
                   <span id="dirisDatabasePercentage">0%</span> utilisé
@@ -1005,7 +1005,7 @@
                   <span class="config-info-icon" data-tooltip="Intervalle moyen entre deux mesures consécutives. Une fréquence stable (1-3s) indique une acquisition régulière et performante.">ℹ️</span>
                 </p>
                 <p id="coherenceFrequency" class="text-2xl font-bold value-good">~1.7s</p>
-                <p class="text-xs text-slate-500 mt-1">Millisecondes</p>
+                <p class="text-xs text-slate-500 mt-1">Secondes</p>
               </div>
               <div class="p-3 bg-white/5 rounded-lg">
                 <p class="text-xs text-slate-400 flex items-center gap-1">
@@ -1083,14 +1083,14 @@
                 <div class="space-y-3">
                   <div>
                     <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
-                      Parallélisme (devices simultanés)
+                      Devices simultanés
                       <span class="config-info-icon" data-tooltip="Nombre de devices interrogés simultanément. Plus élevé = plus rapide mais plus de charge réseau. Recommandé: 4-8">ℹ️</span>
                     </label>
                     <input type="number" id="configParallelism" min="1" max="20" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="6">
                   </div>
                   <div>
                     <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
-                      Intervalle de poll (ms)
+                      Fréquence d'acquisition (ms)
                       <span class="config-info-icon" data-tooltip="Fréquence d'interrogation des devices. Plus bas = plus réactif mais plus de charge. Recommandé: 1000-3000ms">ℹ️</span>
                     </label>
                     <input type="number" id="configPollInterval" min="500" max="10000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1500">
@@ -1111,7 +1111,7 @@
                 <div class="space-y-3">
                   <div>
                     <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
-                      Durée de rétention (jours)
+                      Durée (jours)
                       <span class="config-info-icon" data-tooltip="Nombre de jours de conservation des données. Les mesures plus anciennes seront supprimées. Recommandé: 7-30 jours selon l'usage">ℹ️</span>
                     </label>
                     <input type="number" id="configRetentionDays" min="1" max="365" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="10">
@@ -1126,8 +1126,8 @@
                   </div>
                   <div>
                     <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
-                      Taille max BDD (MB)
-                      <span class="config-info-icon" data-tooltip="Taille maximale allouée à la table DIRIS.Measurements. Recommandé: 1024 MB (1 GB). Min: 100 MB, Max: 10240 MB (10 GB)">ℹ️</span>
+                      Table [AI_ATR].[DIRIS].[Measurements] (MB)
+                      <span class="config-info-icon" data-tooltip="Taille maximale allouée à la table [AI_ATR].[DIRIS].[Measurements]. Recommandé: 1024 MB (1 GB). Min: 100 MB, Max: 10240 MB (10 GB)">ℹ️</span>
                     </label>
                     <input type="number" id="configMaxDatabaseSize" min="100" max="10240" step="128" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1024">
                     <p class="text-xs text-slate-500 mt-1">1024 MB = 1 GB</p>

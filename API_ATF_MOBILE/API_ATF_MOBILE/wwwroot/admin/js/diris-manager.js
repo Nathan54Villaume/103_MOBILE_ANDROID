@@ -294,21 +294,38 @@ export class DirisManager {
         document.getElementById('dirisDatabaseSize').textContent = 
           `${currentSizeMB.toFixed(2)} MB / ${maxSizeDisplay}`;
         
-        // Update percentage with color coding
+        // Update percentage with color coding and status badge
         const percentage = data.percentageUsed || 0;
         const percentageElement = document.getElementById('dirisDatabasePercentage');
-        percentageElement.textContent = `${percentage.toFixed(1)}%`;
         
-        // Color code based on usage
-        if (percentage >= 90) {
-          percentageElement.className = 'text-red-400 font-semibold';
+        let statusBadge = '';
+        let statusClass = '';
+        
+        if (percentage >= 98) {
+          statusClass = 'text-red-400 font-semibold';
+          statusBadge = ' 🛑 CRITIQUE';
+          percentageElement.textContent = `${percentage.toFixed(1)}%${statusBadge}`;
+        } else if (percentage >= 95) {
+          statusClass = 'text-red-400 font-semibold';
+          statusBadge = ' 🧹 Auto-nettoyage';
+          percentageElement.textContent = `${percentage.toFixed(1)}%${statusBadge}`;
+        } else if (percentage >= 90) {
+          statusClass = 'text-orange-400 font-semibold';
+          statusBadge = ' ⚠️ Alerte';
+          percentageElement.textContent = `${percentage.toFixed(1)}%${statusBadge}`;
         } else if (percentage >= 75) {
-          percentageElement.className = 'text-orange-400 font-semibold';
+          statusClass = 'text-orange-400 font-semibold';
+          statusBadge = ' ⚠️';
+          percentageElement.textContent = `${percentage.toFixed(1)}%${statusBadge}`;
         } else if (percentage >= 50) {
-          percentageElement.className = 'text-yellow-400';
+          statusClass = 'text-yellow-400';
+          percentageElement.textContent = `${percentage.toFixed(1)}%`;
         } else {
-          percentageElement.className = 'text-green-400';
+          statusClass = 'text-green-400';
+          percentageElement.textContent = `${percentage.toFixed(1)}%`;
         }
+        
+        percentageElement.className = statusClass;
         
         // Convertir les timestamps UTC en heure locale
         document.getElementById('dirisOldestMeasurement').textContent = 
