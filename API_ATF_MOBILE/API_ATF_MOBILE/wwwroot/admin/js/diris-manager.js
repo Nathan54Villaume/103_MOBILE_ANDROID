@@ -1625,6 +1625,16 @@ export class DirisManager {
         fullData: scoreData
       });
       
+      // Log détaillé du breakdown
+      if (scoreData.details) {
+        console.log('📊 [DEBUG] Breakdown détaillé:', {
+          qualityScore: scoreData.details.qualityScore,
+          regularityScore: scoreData.details.regularityScore,
+          gapsScore: scoreData.details.gapsScore,
+          total: scoreData.details.qualityScore + scoreData.details.regularityScore + scoreData.details.gapsScore
+        });
+      }
+      
       document.getElementById('coherenceScore').textContent = `${scoreData.score}/100`;
       document.getElementById('coherenceScore').className = scoreData.score >= 90 ? 
         'text-2xl font-bold value-excellent' : 
