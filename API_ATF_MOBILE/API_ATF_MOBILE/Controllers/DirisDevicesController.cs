@@ -91,6 +91,19 @@ public class DirisDevicesController : ControllerBase
             device.DeviceId = 0; // Will be set by the database
 
             var createdDevice = await _deviceRegistry.AddDeviceAsync(device);
+            
+            // Auto-discover and create default tag mappings
+            try
+            {
+                await DiscoverAndCreateTagMappingsAsync(createdDevice.DeviceId);
+                _logger.LogInformation("Auto-discovery of tag mappings completed for device {DeviceId}", createdDevice.DeviceId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to auto-discover tag mappings for device {DeviceId}. Tags can be configured manually.", createdDevice.DeviceId);
+                // Don't fail the device creation if tag discovery fails
+            }
+            
             return CreatedAtAction(nameof(GetDevice), new { id = createdDevice.DeviceId }, createdDevice);
         }
         catch (Exception ex)
@@ -275,6 +288,167 @@ public class DirisDevicesController : ControllerBase
                 error = ex.Message
             });
         }
+    }
+
+    /// <summary>
+    /// Discover and create tag mappings for a device (manual trigger)
+    /// </summary>
+    [HttpPost("{id}/discover-tags")]
+    public async Task<IActionResult> DiscoverTags(int id)
+    {
+        try
+        {
+            var device = await _deviceRegistry.GetDeviceAsync(id);
+            if (device == null)
+            {
+                return NotFound(new { success = false, message = "Device not found" });
+            }
+
+            var tagMaps = await DiscoverAndCreateTagMappingsAsync(id);
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Successfully discovered and created {tagMaps.Count()} tag mappings for device {id}",
+                tagMappings = tagMaps
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error discovering tags for device {DeviceId}", id);
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error discovering tags",
+                error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Auto-discovers and creates default tag mappings for a DIRIS device
+    /// Based on complete DIRIS A40/A41 signal set (81 signals)
+    /// Includes: Currents, Voltages, Powers, THD, Energies, Power Factors, and Cumulative Totals
+    /// </summary>
+    private async Task<IEnumerable<TagMap>> DiscoverAndCreateTagMappingsAsync(int deviceId)
+    {
+        _logger.LogInformation("Starting auto-discovery of tag mappings for device {DeviceId}", deviceId);
+
+        // Complete DIRIS A40/A41 signal mappings
+        var defaultTagMappings = new List<TagMap>
+        {
+            // ========== COURANTS (A) - Scale 1000 (WebMI returns mA) ==========
+            new TagMap { DeviceId = deviceId, Signal = "I_PH1_255", WebMiKey = "I_PH1_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "I_PH2_255", WebMiKey = "I_PH2_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "I_PH3_255", WebMiKey = "I_PH3_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "I_NUL_255", WebMiKey = "I_NUL_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I1_255", WebMiKey = "MAXAVGSUM_I1_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I2_255", WebMiKey = "MAXAVGSUM_I2_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I3_255", WebMiKey = "MAXAVGSUM_I3_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_IN_255", WebMiKey = "MAXAVG_IN_255", Unit = "", Scale = 1, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_I1_255", WebMiKey = "AVG_I1_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_I2_255", WebMiKey = "AVG_I2_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_I3_255", WebMiKey = "AVG_I3_255", Unit = "A", Scale = 1000, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_IN_255", WebMiKey = "AVG_IN_255", Unit = "", Scale = 1, Enabled = true },
+            
+            // ========== THD COURANTS (%) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "THD_I1_255", WebMiKey = "THD_I1_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_I2_255", WebMiKey = "THD_I2_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_I3_255", WebMiKey = "THD_I3_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_IN_255", WebMiKey = "THD_IN_255", Unit = "", Scale = 1, Enabled = true },
+            
+            // ========== FRÉQUENCE (Hz) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "F_255", WebMiKey = "F_255", Unit = "Hz", Scale = 100, Enabled = true },
+            
+            // ========== THD TENSIONS - Scale 1 ou 100 selon le signal ==========
+            new TagMap { DeviceId = deviceId, Signal = "THD_U1_255", WebMiKey = "THD_U1_255", Unit = "", Scale = 1, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_U2_255", WebMiKey = "THD_U2_255", Unit = "", Scale = 1, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_U3_255", WebMiKey = "THD_U3_255", Unit = "", Scale = 1, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_U12_255", WebMiKey = "THD_U12_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_U23_255", WebMiKey = "THD_U23_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "THD_U31_255", WebMiKey = "THD_U31_255", Unit = "%", Scale = 100, Enabled = true },
+            
+            // ========== TENSIONS PHASE-NEUTRE (V) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "PV1_255", WebMiKey = "PV1_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PV2_255", WebMiKey = "PV2_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PV3_255", WebMiKey = "PV3_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_V1_255", WebMiKey = "MAXAVG_V1_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_V2_255", WebMiKey = "MAXAVG_V2_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_V3_255", WebMiKey = "MAXAVG_V3_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_V1_255", WebMiKey = "AVG_V1_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_V2_255", WebMiKey = "AVG_V2_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_V3_255", WebMiKey = "AVG_V3_255", Unit = "V", Scale = 100, Enabled = true },
+            
+            // ========== TENSIONS PHASE-PHASE (V) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "LV_U12_255", WebMiKey = "LV_U12_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "LV_U23_255", WebMiKey = "LV_U23_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "LV_U31_255", WebMiKey = "LV_U31_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_U12_255", WebMiKey = "MAXAVG_U12_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_U23_255", WebMiKey = "MAXAVG_U23_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_U31_255", WebMiKey = "MAXAVG_U31_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_U12_255", WebMiKey = "AVG_U12_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_U23_255", WebMiKey = "AVG_U23_255", Unit = "V", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_U31_255", WebMiKey = "AVG_U31_255", Unit = "V", Scale = 100, Enabled = true },
+            
+            // ========== PUISSANCES ACTIVES (kW) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "PH1_RP_255", WebMiKey = "PH1_RP_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH2_RP_255", WebMiKey = "PH2_RP_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH3_RP_255", WebMiKey = "PH3_RP_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "SUM_RP_255", WebMiKey = "SUM_RP_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_RPPOS_255", WebMiKey = "MAXAVGSUM_RPPOS_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVGSUM_RPPOS_255", WebMiKey = "AVGSUM_RPPOS_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PRED_RP_255", WebMiKey = "PRED_RP_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_RPNEG_255", WebMiKey = "MAXAVGSUM_RPNEG_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVGSUM_RPNEG_255", WebMiKey = "AVGSUM_RPNEG_255", Unit = "kW", Scale = 100, Enabled = true },
+            
+            // ========== PUISSANCES RÉACTIVES (kVAR) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "PH1_IP_255", WebMiKey = "PH1_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH2_IP_255", WebMiKey = "PH2_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH3_IP_255", WebMiKey = "PH3_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "SUM_IP_255", WebMiKey = "SUM_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_IPPOS_255", WebMiKey = "MAXAVGSUM_IPPOS_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVGSUM_IPPOS_255", WebMiKey = "AVGSUM_IPPOS_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PRED_IP_255", WebMiKey = "PRED_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_IPNEG_255", WebMiKey = "MAXAVGSUM_IPNEG_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVGSUM_IPNEG_255", WebMiKey = "AVGSUM_IPNEG_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            
+            // ========== PUISSANCES APPARENTES (kVA) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "PH1_AP_255", WebMiKey = "PH1_AP_255", Unit = "kVA", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH2_AP_255", WebMiKey = "PH2_AP_255", Unit = "kVA", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH3_AP_255", WebMiKey = "PH3_AP_255", Unit = "kVA", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "SUM_AP_255", WebMiKey = "SUM_AP_255", Unit = "kVA", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_AP_255", WebMiKey = "MAXAVGSUM_AP_255", Unit = "kVA", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AVGSUM_AP_255", WebMiKey = "AVGSUM_AP_255", Unit = "kVA", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PRED_AP_255", WebMiKey = "PRED_AP_255", Unit = "kVA", Scale = 100, Enabled = true },
+            
+            // ========== FACTEURS DE PUISSANCE (%) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "PH1_PF_255", WebMiKey = "PH1_PF_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH2_PF_255", WebMiKey = "PH2_PF_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "PH3_PF_255", WebMiKey = "PH3_PF_255", Unit = "%", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "SUM_PF_255", WebMiKey = "SUM_PF_255", Unit = "%", Scale = 100, Enabled = true },
+            
+            // ========== ÉNERGIES (kWh) - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "E1_255", WebMiKey = "E1_255", Unit = "kWh", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "E2_255", WebMiKey = "E2_255", Unit = "kWh", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "E3_255", WebMiKey = "E3_255", Unit = "kWh", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "E4_255", WebMiKey = "E4_255", Unit = "kWh", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "E5_255", WebMiKey = "E5_255", Unit = "kWh", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "E6_255", WebMiKey = "E6_255", Unit = "kWh", Scale = 100, Enabled = true },
+            
+            // ========== TOTAUX CUMULATIFS - Scale 100 ==========
+            new TagMap { DeviceId = deviceId, Signal = "RP_POS_255", WebMiKey = "RP_POS_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "RP_NEG_255", WebMiKey = "RP_NEG_255", Unit = "kW", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "IP_POS_255", WebMiKey = "IP_POS_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "IP_NEG_255", WebMiKey = "IP_NEG_255", Unit = "kVAR", Scale = 100, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "AP_255", WebMiKey = "AP_255", Unit = "kVA", Scale = 100, Enabled = true }
+        };
+
+        // Save to database
+        await _deviceRegistry.UpdateTagMappingsAsync(deviceId, defaultTagMappings);
+
+        _logger.LogInformation("Created {Count} complete tag mappings for device {DeviceId}", defaultTagMappings.Count, deviceId);
+
+        return defaultTagMappings;
     }
 }
 

@@ -466,23 +466,29 @@ export class DirisManager {
       }
       
       container.innerHTML = devices.map(device => `
-        <div class="p-3 bg-white/5 rounded-lg border border-white/10 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="status-dot ${device.enabled ? 'online' : 'offline'}"></div>
-            <div>
-              <p class="font-medium text-sm">${this.escapeHtml(device.name || `Device ${device.deviceId}`)}</p>
-              <p class="text-xs text-slate-400">${this.escapeHtml(device.ipAddress || 'N/A')} • Poll: ${device.pollIntervalMs || 1500}ms</p>
+        <div class="p-3 bg-white/5 rounded-lg border border-white/10">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3">
+              <div class="status-dot ${device.enabled ? 'online' : 'offline'}"></div>
+              <div>
+                <p class="font-medium text-sm">${this.escapeHtml(device.name || `Device ${device.deviceId}`)}</p>
+                <p class="text-xs text-slate-400">${this.escapeHtml(device.ipAddress || 'N/A')} • Poll: ${device.pollIntervalMs || 1500}ms</p>
+              </div>
             </div>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="window.dirisManager.testDevice(${device.deviceId})" 
-                    class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors">
-              🔍 Test
-            </button>
-            <button onclick="window.dirisManager.toggleDevice(${device.deviceId}, ${!device.enabled})" 
-                    class="px-2 py-1 text-xs rounded ${device.enabled ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'} hover:opacity-80 transition-colors">
-              ${device.enabled ? '⏸️ Désactiver' : '▶️ Activer'}
-            </button>
+            <div class="flex gap-2">
+              <button onclick="window.dirisManager.testDevice(${device.deviceId})" 
+                      class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors" title="Tester la connexion">
+                🔍 Test
+              </button>
+              <button onclick="window.dirisManager.discoverTags(${device.deviceId})" 
+                      class="px-2 py-1 text-xs rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors" title="Découvrir et créer les tagmaps automatiquement">
+                🏷️ Tags
+              </button>
+              <button onclick="window.dirisManager.toggleDevice(${device.deviceId}, ${!device.enabled})" 
+                      class="px-2 py-1 text-xs rounded ${device.enabled ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'} hover:opacity-80 transition-colors">
+                ${device.enabled ? '⏸️ Désactiver' : '▶️ Activer'}
+              </button>
+            </div>
           </div>
         </div>
       `).join('');
@@ -534,6 +540,29 @@ export class DirisManager {
       console.error('Erreur toggle device:', error);
       this.showError(`Erreur lors de la ${enable ? 'activation' : 'désactivation'} du device ${deviceId}`);
       this.addHistoryEvent('error', 'Erreur modification device', error.message);
+    }
+  }
+
+  async discoverTags(deviceId) {
+    try {
+      this.showInfo(`🔍 Découverte et création automatique de tous les signaux DIRIS pour device ${deviceId}...`);
+      
+      const response = await this.apiClient.request(`/api/diris/devices/${deviceId}/discover-tags`, {
+        method: 'POST'
+      });
+      
+      if (response.success) {
+        const tagCount = response.tagMappings?.length || 0;
+        this.showSuccess(`✅ ${tagCount} signaux DIRIS créés automatiquement pour device ${deviceId} (courants, tensions, puissances, THD, énergies)`);
+        this.addHistoryEvent('success', 'TagMaps créés', `${tagCount} signaux DIRIS configurés pour device ${deviceId}`);
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de découvrir les tags'}`);
+        this.addHistoryEvent('error', 'Échec découverte tags', response.message || 'Erreur inconnue');
+      }
+    } catch (error) {
+      console.error('Erreur découverte tags:', error);
+      this.showError(`Erreur lors de la découverte des tags pour device ${deviceId}`);
+      this.addHistoryEvent('error', 'Erreur découverte tags', error.message);
     }
   }
 
@@ -612,8 +641,8 @@ export class DirisManager {
       });
       
       if (response && response.deviceId) {
-        this.showSuccess(`✅ Device ajouté avec succès (ID: ${response.deviceId})`);
-        this.addHistoryEvent('success', 'Device ajouté', `Device ${deviceData.name} ajouté avec succès`);
+        this.showSuccess(`✅ Device ajouté avec succès (ID: ${response.deviceId}). 81 signaux DIRIS créés automatiquement !`);
+        this.addHistoryEvent('success', 'Device ajouté', `Device ${deviceData.name} ajouté avec auto-création de 81 signaux complets (courants, tensions, puissances, THD, énergies)`);
       } else {
         this.showError('❌ Erreur lors de l\'ajout du device');
         this.addHistoryEvent('error', 'Échec ajout device', 'Erreur lors de l\'ajout du device');

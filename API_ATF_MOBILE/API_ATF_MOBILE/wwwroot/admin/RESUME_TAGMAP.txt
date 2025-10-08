@@ -1,0 +1,81 @@
+========================================
+  PROBLÈME RÉSOLU : TagMap Automatique
+========================================
+
+AVANT :
+❌ Ajout d'un device DIRIS → Aucun tagmap dans la BDD
+❌ Configuration manuelle requise via SQL
+
+MAINTENANT :
+✅ Ajout d'un device DIRIS → 12 tagmaps créés automatiquement !
+✅ Device prêt à l'emploi immédiatement
+
+========================================
+  UTILISATION
+========================================
+
+1. Interface admin → Onglet DIRIS
+2. Cliquer "➕ Ajouter" 
+3. Remplir : Nom + IP
+4. Cliquer "Ajouter"
+5. ✅ TERMINÉ ! (12 tagmaps créés auto)
+
+========================================
+  BOUTON MANUEL (si nécessaire)
+========================================
+
+Bouton "🏷️ Tags" sur chaque device :
+→ Recrée les 12 tagmaps si besoin
+
+========================================
+  VÉRIFICATION
+========================================
+
+SQL :
+  SELECT COUNT(*) 
+  FROM DIRIS.TagMap 
+  WHERE DeviceId = X
+  -- Résultat : 12 ✅
+
+Interface :
+  Onglet DIRIS → "Dernières mesures"
+  → Votre device apparaît avec ses signaux
+
+========================================
+  FICHIERS MODIFIÉS
+========================================
+
+Backend :
+- DirisDevicesController.cs (+82 lignes)
+
+Frontend :
+- diris-manager.js (+23 lignes)
+
+Documentation :
+- AUTO_TAGMAP_GUIDE.md (guide complet)
+- TEST_AUTO_TAGMAP.md (tests)
+- CHANGELOG_AUTO_TAGMAP.md (historique)
+- SOLUTION_TAGMAP_AUTOMATIQUE.md (résumé)
+
+========================================
+  REDÉMARRAGE REQUIS
+========================================
+
+cd API_ATF_MOBILE\API_ATF_MOBILE
+dotnet build --configuration Release
+dotnet run --configuration Release
+
+Interface : http://localhost:8088/admin/
+
+========================================
+  SUPPORT
+========================================
+
+Voir : AUTO_TAGMAP_GUIDE.md (guide complet)
+Test : TEST_AUTO_TAGMAP.md (procédures)
+
+Version : 1.1.0
+Date : 8 octobre 2025
+
+✅ SOLUTION IMPLÉMENTÉE AVEC SUCCÈS !
+
