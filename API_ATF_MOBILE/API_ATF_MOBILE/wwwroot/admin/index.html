@@ -201,6 +201,24 @@
       visibility: visible;
     }
     
+    /* Tooltips for buttons - display below instead of above */
+    button[data-tooltip]::after {
+      bottom: auto;
+      top: 125%;
+      transform: translateX(-50%);
+    }
+    
+    button[data-tooltip]:hover::after {
+      transform: translateX(-50%) translateY(2px);
+    }
+    
+    button[data-tooltip]::before {
+      bottom: auto;
+      top: 118%;
+      border-top-color: transparent;
+      border-bottom-color: rgba(0, 0, 0, 0.95);
+    }
+    
     .config-info-icon::before {
       content: '';
       position: absolute;
