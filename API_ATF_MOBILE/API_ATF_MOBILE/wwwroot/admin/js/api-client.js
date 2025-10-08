@@ -398,6 +398,32 @@ class ApiClient {
     async getControllers() {
         return await this.request('/api/admin/controllers');
     }
+
+    /**
+     * DIRIS: Découvrir et créer les tagmaps pour un device
+     */
+    async discoverDirisTags(deviceId) {
+        return await this.request(`/api/diris/devices/${deviceId}/discover-tags`, {
+            method: 'POST'
+        });
+    }
+
+    /**
+     * DIRIS: Récupérer les tagmaps d'un device
+     */
+    async getDirisTagMappings(deviceId) {
+        return await this.request(`/api/diris/devices/${deviceId}/tagmaps`);
+    }
+
+    /**
+     * DIRIS: Mettre à jour le statut activé des tagmaps
+     */
+    async updateDirisTagMappingsEnabled(deviceId, enabledSignals) {
+        return await this.request(`/api/diris/devices/${deviceId}/tagmaps/enabled`, {
+            method: 'PUT',
+            body: JSON.stringify({ enabledSignals })
+        });
+    }
 }
 
 // Export singleton

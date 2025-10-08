@@ -480,9 +480,9 @@ export class DirisManager {
                       class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors" title="Tester la connexion">
                 🔍 Test
               </button>
-              <button onclick="window.dirisManager.discoverTags(${device.deviceId})" 
-                      class="px-2 py-1 text-xs rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors" title="Découvrir et créer les tagmaps automatiquement">
-                🏷️ Tags
+              <button onclick="window.dirisManager.manageSignals(${device.deviceId})" 
+                      class="px-2 py-1 text-xs rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors" title="Gérer les signaux (activer/désactiver)">
+                🏷️ Signaux
               </button>
               <button onclick="window.dirisManager.toggleDevice(${device.deviceId}, ${!device.enabled})" 
                       class="px-2 py-1 text-xs rounded ${device.enabled ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'} hover:opacity-80 transition-colors">
@@ -506,7 +506,9 @@ export class DirisManager {
       const result = await this.apiClient.request(`/api/diris/devices/${deviceId}/poll`, { method: 'POST' });
       
       if (result.isSuccess) {
-        this.showSuccess(`✅ Device ${deviceId}: ${result.measurements?.length || 0} mesures lues en ${Math.round(result.pollDuration * 1000)}ms`);
+        const durationMs = result.pollDuration ? Math.round(result.pollDuration * 1000) : 
+                          result.PollDuration ? Math.round(result.PollDuration.TotalMilliseconds) : 0;
+        this.showSuccess(`✅ Device ${deviceId}: ${result.measurements?.length || 0} mesures lues en ${durationMs}ms`);
       } else {
         this.showError(`❌ Erreur device ${deviceId}: ${result.errorMessage || 'Inconnu'}`);
       }
@@ -563,6 +565,158 @@ export class DirisManager {
       console.error('Erreur découverte tags:', error);
       this.showError(`Erreur lors de la découverte des tags pour device ${deviceId}`);
       this.addHistoryEvent('error', 'Erreur découverte tags', error.message);
+    }
+  }
+
+  async manageSignals(deviceId) {
+    try {
+      // Récupérer les informations du device
+      const device = await this.apiClient.request(`/api/diris/devices/${deviceId}`);
+      if (!device) {
+        this.showError(`Device ${deviceId} introuvable`);
+        return;
+      }
+
+      // Récupérer les tagmaps existants
+      const tagMappings = await this.apiClient.getDirisTagMappings(deviceId);
+      
+      this.showSignalManagementModal(device, tagMappings || []);
+    } catch (error) {
+      console.error('Erreur gestion signaux:', error);
+      this.showError(`Erreur lors de la récupération des signaux pour device ${deviceId}`);
+    }
+  }
+
+  showSignalManagementModal(device, tagMappings) {
+    // Créer la modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+      <div class="bg-slate-800 rounded-xl p-6 w-full max-w-6xl max-h-[90vh] border border-white/10 overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold">Gestion des signaux - ${this.escapeHtml(device.name)}</h3>
+            <p class="text-sm text-slate-400">${this.escapeHtml(device.ipAddress)} • ${tagMappings.length} signaux configurés</p>
+          </div>
+          <button class="close-modal text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+        
+        <div class="flex gap-4 mb-4">
+          <button id="btnSelectAll" class="px-3 py-2 text-sm rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 transition-colors">
+            ✅ Tout sélectionner
+          </button>
+          <button id="btnDeselectAll" class="px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
+            ❌ Tout désélectionner
+          </button>
+          <button id="btnSaveSignals" class="px-3 py-2 text-sm rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors">
+            💾 Sauvegarder
+          </button>
+          <button id="btnCreateAllSignals" class="px-3 py-2 text-sm rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors">
+            🔄 Recréer tous les signaux
+          </button>
+        </div>
+        
+        <div class="overflow-y-auto max-h-[60vh] border border-white/10 rounded-lg">
+          <table class="w-full text-sm">
+            <thead class="bg-white/5 sticky top-0">
+              <tr>
+                <th class="px-3 py-2 text-left">Signal</th>
+                <th class="px-3 py-2 text-left">Description</th>
+                <th class="px-3 py-2 text-left">Unité</th>
+                <th class="px-3 py-2 text-left">Échelle</th>
+                <th class="px-3 py-2 text-center">Activé</th>
+              </tr>
+            </thead>
+            <tbody id="signalsTableBody">
+              ${tagMappings.map(tag => `
+                <tr class="border-b border-white/5 hover:bg-white/5">
+                  <td class="px-3 py-2 font-mono text-xs">${this.escapeHtml(tag.signal)}</td>
+                  <td class="px-3 py-2">${this.escapeHtml(tag.description || 'N/A')}</td>
+                  <td class="px-3 py-2">${this.escapeHtml(tag.unit || '')}</td>
+                  <td class="px-3 py-2">${tag.scale}</td>
+                  <td class="px-3 py-2 text-center">
+                    <input type="checkbox" class="signal-enabled" data-signal="${this.escapeHtml(tag.signal)}" ${tag.enabled ? 'checked' : ''}>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="flex justify-between items-center mt-4 pt-4 border-t border-white/10">
+          <div class="text-sm text-slate-400">
+            <span id="enabledCount">${tagMappings.filter(t => t.enabled).length}</span> / ${tagMappings.length} signaux activés
+          </div>
+          <div class="flex gap-2">
+            <button class="close-modal px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Event listeners
+    modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+    
+    // Gestion des boutons
+    modal.querySelector('#btnSelectAll').addEventListener('click', () => {
+      modal.querySelectorAll('.signal-enabled').forEach(cb => cb.checked = true);
+      this.updateEnabledCount(modal);
+    });
+    
+    modal.querySelector('#btnDeselectAll').addEventListener('click', () => {
+      modal.querySelectorAll('.signal-enabled').forEach(cb => cb.checked = false);
+      this.updateEnabledCount(modal);
+    });
+    
+    modal.querySelector('#btnSaveSignals').addEventListener('click', () => {
+      this.saveSignalSettings(device.deviceId, modal);
+    });
+    
+    modal.querySelector('#btnCreateAllSignals').addEventListener('click', () => {
+      this.discoverTags(device.deviceId);
+      modal.remove();
+    });
+    
+    // Mise à jour du compteur
+    modal.querySelectorAll('.signal-enabled').forEach(cb => {
+      cb.addEventListener('change', () => this.updateEnabledCount(modal));
+    });
+    
+    this.updateEnabledCount(modal);
+  }
+
+  updateEnabledCount(modal) {
+    const enabledCount = modal.querySelectorAll('.signal-enabled:checked').length;
+    const totalCount = modal.querySelectorAll('.signal-enabled').length;
+    modal.querySelector('#enabledCount').textContent = enabledCount;
+  }
+
+  async saveSignalSettings(deviceId, modal) {
+    try {
+      const enabledSignals = Array.from(modal.querySelectorAll('.signal-enabled:checked'))
+        .map(cb => cb.dataset.signal);
+      
+      this.showInfo('💾 Sauvegarde des paramètres des signaux...');
+      
+      const response = await this.apiClient.updateDirisTagMappingsEnabled(deviceId, enabledSignals);
+      
+      if (response.success) {
+        this.showSuccess(`✅ Paramètres des signaux sauvegardés pour device ${deviceId}`);
+        this.addHistoryEvent('success', 'Signaux mis à jour', `${enabledSignals.length} signaux activés pour device ${deviceId}`);
+        modal.remove();
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de sauvegarder les paramètres'}`);
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde signaux:', error);
+      this.showError('Erreur lors de la sauvegarde des paramètres des signaux');
     }
   }
 

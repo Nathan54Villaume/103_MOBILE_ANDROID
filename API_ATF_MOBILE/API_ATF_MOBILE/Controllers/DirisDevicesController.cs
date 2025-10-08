@@ -1,4 +1,4 @@
-using Diris.Core.Interfaces;
+﻿using Diris.Core.Interfaces;
 using Diris.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -246,6 +246,67 @@ public class DirisDevicesController : ControllerBase
     }
 
     /// <summary>
+    /// Gets all tag mappings for a device
+    /// </summary>
+    [HttpGet("{id}/tagmaps")]
+    public async Task<IActionResult> GetTagMappings(int id)
+    {
+        try
+        {
+            var device = await _deviceRegistry.GetDeviceAsync(id);
+            if (device == null)
+            {
+                return NotFound();
+            }
+
+            var tagMappings = await _deviceRegistry.GetTagMappingsAsync(id);
+            return Ok(tagMappings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting tag mappings for device {DeviceId}", id);
+            return StatusCode(500, "Error getting tag mappings");
+        }
+    }
+
+    /// <summary>
+    /// Updates the enabled status of tag mappings for a device
+    /// </summary>
+    [HttpPut("{id}/tagmaps/enabled")]
+    public async Task<IActionResult> UpdateTagMappingsEnabled(int id, [FromBody] UpdateTagMappingsEnabledRequest request)
+    {
+        try
+        {
+            var device = await _deviceRegistry.GetDeviceAsync(id);
+            if (device == null)
+            {
+                return NotFound();
+            }
+
+            var tagMappings = await _deviceRegistry.GetTagMappingsAsync(id);
+            var updatedMappings = new List<TagMap>();
+
+            foreach (var mapping in tagMappings)
+            {
+                mapping.Enabled = request.EnabledSignals.Contains(mapping.Signal);
+                updatedMappings.Add(mapping);
+            }
+
+            await _deviceRegistry.UpdateTagMappingsAsync(id, updatedMappings);
+
+            _logger.LogInformation("Updated enabled status for {Count} tag mappings for device {DeviceId}", 
+                updatedMappings.Count, id);
+
+            return Ok(new { success = true, message = "Tag mappings updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating tag mappings enabled status for device {DeviceId}", id);
+            return StatusCode(500, "Error updating tag mappings");
+        }
+    }
+
+    /// <summary>
     /// Toggle device enabled/disabled status
     /// </summary>
     [HttpPut("{id}/toggle")]
@@ -338,18 +399,18 @@ public class DirisDevicesController : ControllerBase
         var defaultTagMappings = new List<TagMap>
         {
             // ========== COURANTS (A) - Scale 1000 (WebMI returns mA) ==========
-            new TagMap { DeviceId = deviceId, Signal = "I_PH1_255", WebMiKey = "I_PH1_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "I_PH2_255", WebMiKey = "I_PH2_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "I_PH3_255", WebMiKey = "I_PH3_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "I_NUL_255", WebMiKey = "I_NUL_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I1_255", WebMiKey = "MAXAVGSUM_I1_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I2_255", WebMiKey = "MAXAVGSUM_I2_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I3_255", WebMiKey = "MAXAVGSUM_I3_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_IN_255", WebMiKey = "MAXAVG_IN_255", Unit = "", Scale = 1, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "AVG_I1_255", WebMiKey = "AVG_I1_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "AVG_I2_255", WebMiKey = "AVG_I2_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "AVG_I3_255", WebMiKey = "AVG_I3_255", Unit = "A", Scale = 1000, Enabled = true },
-            new TagMap { DeviceId = deviceId, Signal = "AVG_IN_255", WebMiKey = "AVG_IN_255", Unit = "", Scale = 1, Enabled = true },
+            new TagMap { DeviceId = deviceId, Signal = "I_PH1_255", WebMiKey = "I_PH1_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 1" },
+            new TagMap { DeviceId = deviceId, Signal = "I_PH2_255", WebMiKey = "I_PH2_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 2" },
+            new TagMap { DeviceId = deviceId, Signal = "I_PH3_255", WebMiKey = "I_PH3_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 3" },
+            new TagMap { DeviceId = deviceId, Signal = "I_NUL_255", WebMiKey = "I_NUL_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant neutre" },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I1_255", WebMiKey = "MAXAVGSUM_I1_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 1 - Maximum moyenne" },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I2_255", WebMiKey = "MAXAVGSUM_I2_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 2 - Maximum moyenne" },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_I3_255", WebMiKey = "MAXAVGSUM_I3_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 3 - Maximum moyenne" },
+            new TagMap { DeviceId = deviceId, Signal = "MAXAVG_IN_255", WebMiKey = "MAXAVG_IN_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant neutre - Maximum moyenne" },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_I1_255", WebMiKey = "AVG_I1_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 1 - Moyenne" },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_I2_255", WebMiKey = "AVG_I2_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 2 - Moyenne" },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_I3_255", WebMiKey = "AVG_I3_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant phase 3 - Moyenne" },
+            new TagMap { DeviceId = deviceId, Signal = "AVG_IN_255", WebMiKey = "AVG_IN_255", Unit = "A", Scale = 1000, Enabled = true, Description = "Courant neutre - Moyenne" },
             
             // ========== THD COURANTS (%) - Scale 100 ==========
             new TagMap { DeviceId = deviceId, Signal = "THD_I1_255", WebMiKey = "THD_I1_255", Unit = "%", Scale = 100, Enabled = true },
@@ -357,7 +418,7 @@ public class DirisDevicesController : ControllerBase
             new TagMap { DeviceId = deviceId, Signal = "THD_I3_255", WebMiKey = "THD_I3_255", Unit = "%", Scale = 100, Enabled = true },
             new TagMap { DeviceId = deviceId, Signal = "THD_IN_255", WebMiKey = "THD_IN_255", Unit = "", Scale = 1, Enabled = true },
             
-            // ========== FRÉQUENCE (Hz) - Scale 100 ==========
+            // ========== FRÃ‰QUENCE (Hz) - Scale 100 ==========
             new TagMap { DeviceId = deviceId, Signal = "F_255", WebMiKey = "F_255", Unit = "Hz", Scale = 100, Enabled = true },
             
             // ========== THD TENSIONS - Scale 1 ou 100 selon le signal ==========
@@ -401,7 +462,7 @@ public class DirisDevicesController : ControllerBase
             new TagMap { DeviceId = deviceId, Signal = "MAXAVGSUM_RPNEG_255", WebMiKey = "MAXAVGSUM_RPNEG_255", Unit = "kW", Scale = 100, Enabled = true },
             new TagMap { DeviceId = deviceId, Signal = "AVGSUM_RPNEG_255", WebMiKey = "AVGSUM_RPNEG_255", Unit = "kW", Scale = 100, Enabled = true },
             
-            // ========== PUISSANCES RÉACTIVES (kVAR) - Scale 100 ==========
+            // ========== PUISSANCES RÃ‰ACTIVES (kVAR) - Scale 100 ==========
             new TagMap { DeviceId = deviceId, Signal = "PH1_IP_255", WebMiKey = "PH1_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
             new TagMap { DeviceId = deviceId, Signal = "PH2_IP_255", WebMiKey = "PH2_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
             new TagMap { DeviceId = deviceId, Signal = "PH3_IP_255", WebMiKey = "PH3_IP_255", Unit = "kVAR", Scale = 100, Enabled = true },
@@ -427,7 +488,7 @@ public class DirisDevicesController : ControllerBase
             new TagMap { DeviceId = deviceId, Signal = "PH3_PF_255", WebMiKey = "PH3_PF_255", Unit = "%", Scale = 100, Enabled = true },
             new TagMap { DeviceId = deviceId, Signal = "SUM_PF_255", WebMiKey = "SUM_PF_255", Unit = "%", Scale = 100, Enabled = true },
             
-            // ========== ÉNERGIES (kWh) - Scale 100 ==========
+            // ========== Ã‰NERGIES (kWh) - Scale 100 ==========
             new TagMap { DeviceId = deviceId, Signal = "E1_255", WebMiKey = "E1_255", Unit = "kWh", Scale = 100, Enabled = true },
             new TagMap { DeviceId = deviceId, Signal = "E2_255", WebMiKey = "E2_255", Unit = "kWh", Scale = 100, Enabled = true },
             new TagMap { DeviceId = deviceId, Signal = "E3_255", WebMiKey = "E3_255", Unit = "kWh", Scale = 100, Enabled = true },
@@ -459,4 +520,13 @@ public class ToggleDeviceRequest
 {
     public bool Enabled { get; set; }
 }
+
+/// <summary>
+/// Request model for updating tag mappings enabled status
+/// </summary>
+public class UpdateTagMappingsEnabledRequest
+{
+    public List<string> EnabledSignals { get; set; } = new();
+}
+
 
