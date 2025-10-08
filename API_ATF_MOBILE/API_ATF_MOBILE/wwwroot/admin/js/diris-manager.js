@@ -1600,15 +1600,25 @@ export class DirisManager {
         ? `/api/diris/coherence/score?since=${encodeURIComponent(this.coherenceStartTime)}`
         : '/api/diris/coherence/score';
         
+      console.log('🎯 [DEBUG] Calcul score cohérence:', {
+        coherenceStartTime: this.coherenceStartTime,
+        url: url
+      });
+        
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${this.apiClient.token}`
         }
       });
       
-      if (!response.ok) throw new Error('Erreur réseau');
+      if (!response.ok) {
+        console.error('❌ [DEBUG] Erreur score cohérence:', response.status, response.statusText);
+        throw new Error(`Erreur réseau: ${response.status}`);
+      }
       
       const scoreData = await response.json();
+      console.log('✅ [DEBUG] Score reçu:', scoreData);
+      
       document.getElementById('coherenceScore').textContent = `${scoreData.score}/100`;
       document.getElementById('coherenceScore').className = scoreData.score >= 90 ? 
         'text-2xl font-bold value-excellent' : 
