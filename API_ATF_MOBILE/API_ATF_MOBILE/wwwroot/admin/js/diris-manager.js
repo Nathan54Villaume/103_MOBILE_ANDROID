@@ -1596,7 +1596,11 @@ export class DirisManager {
 
   async calculateAndDisplayCoherenceScore(data) {
     try {
-      const response = await fetch('/api/diris/coherence/score', {
+      const url = this.coherenceStartTime 
+        ? `/api/diris/coherence/score?since=${encodeURIComponent(this.coherenceStartTime)}`
+        : '/api/diris/coherence/score';
+        
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${this.apiClient.token}`
         }

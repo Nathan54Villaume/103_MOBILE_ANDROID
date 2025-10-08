@@ -26,18 +26,18 @@ public class DirisCoherenceController : ControllerBase
     /// Obtient les statistiques de cohérence complètes
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetCoherenceStats()
+    public async Task<IActionResult> GetCoherenceStats([FromQuery] string? since = null)
     {
         try
         {
             var connectionString = _configuration.GetConnectionString("SqlAiAtr");
             
-            // Charger chaque stat avec sa propre connexion
-            var general = await GetGeneralStatsWithConnection(connectionString);
-            var frequency = await GetFrequencyStatsWithConnection(connectionString);
-            var quality = await GetQualityStatsWithConnection(connectionString);
-            var gaps = await GetGapsWithConnection(connectionString);
-            var deviceStats = await GetDeviceStatsWithConnection(connectionString);
+            // Charger chaque stat avec sa propre connexion et le filtre de date
+            var general = await GetGeneralStatsWithConnection(connectionString, since);
+            var frequency = await GetFrequencyStatsWithConnection(connectionString, since);
+            var quality = await GetQualityStatsWithConnection(connectionString, since);
+            var gaps = await GetGapsWithConnection(connectionString, since);
+            var deviceStats = await GetDeviceStatsWithConnection(connectionString, since);
 
             var result = new
             {
@@ -45,7 +45,8 @@ public class DirisCoherenceController : ControllerBase
                 frequency = frequency,
                 quality = quality,
                 gaps = gaps,
-                deviceStats = deviceStats
+                deviceStats = deviceStats,
+                since = since // Inclure l'info pour debug
             };
 
             return Ok(result);
@@ -57,44 +58,44 @@ public class DirisCoherenceController : ControllerBase
         }
     }
 
-    private async Task<object> GetGeneralStatsWithConnection(string connectionString)
+    private async Task<object> GetGeneralStatsWithConnection(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        return await GetGeneralStats(connection);
+        return await GetGeneralStats(connection, since);
     }
 
-    private async Task<IEnumerable<object>> GetFrequencyStatsWithConnection(string connectionString)
+    private async Task<IEnumerable<object>> GetFrequencyStatsWithConnection(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        return await GetFrequencyStats(connection);
+        return await GetFrequencyStats(connection, since);
     }
 
-    private async Task<object> GetQualityStatsWithConnection(string connectionString)
+    private async Task<object> GetQualityStatsWithConnection(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        return await GetQualityStats(connection);
+        return await GetQualityStats(connection, since);
     }
 
-    private async Task<IEnumerable<object>> GetGapsWithConnection(string connectionString)
+    private async Task<IEnumerable<object>> GetGapsWithConnection(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        return await GetGaps(connection);
+        return await GetGaps(connection, since);
     }
 
-    private async Task<IEnumerable<object>> GetDeviceStatsWithConnection(string connectionString)
+    private async Task<IEnumerable<object>> GetDeviceStatsWithConnection(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        return await GetDeviceStats(connection);
+        return await GetDeviceStats(connection, since);
     }
 
-    private async Task<object> GetGeneralStats(SqlConnection connection)
+    private async Task<object> GetGeneralStats(SqlConnection connection, string? since = null)
     {
-        const string sql = @"
+        string sql = @"
             SELECT 
                 COUNT(*) as TotalMeasures,
                 COUNT(DISTINCT DeviceId) as NbDevices,
@@ -103,9 +104,13 @@ public class DirisCoherenceController : ControllerBase
                 MAX(UtcTs) as LastMeasure,
                 DATEDIFF(SECOND, MAX(UtcTs), GETUTCDATE()) as SecondsSinceLast
             FROM [DIRIS].[Measurements]
-            WHERE UtcTs > DATEADD(HOUR, -1, GETUTCDATE())";
+            WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(HOUR, -1, GETUTCDATE())");
 
         using var command = new SqlCommand(sql, connection);
+        if (since != null && DateTime.TryParse(since, out var sinceDate))
+        {
+            command.Parameters.AddWithValue("@SinceDate", sinceDate);
+        }
         using var reader = await command.ExecuteReaderAsync();
         
         if (await reader.ReadAsync())
@@ -124,9 +129,9 @@ public class DirisCoherenceController : ControllerBase
         return new { totalMeasures = 0, nbDevices = 0, nbSignals = 0 };
     }
 
-    private async Task<IEnumerable<object>> GetFrequencyStats(SqlConnection connection)
+    private async Task<IEnumerable<object>> GetFrequencyStats(SqlConnection connection, string? since = null)
     {
-        const string sql = @"
+        string sql = @"
             WITH Intervals AS (
                 SELECT 
                     DeviceId,
@@ -134,7 +139,7 @@ public class DirisCoherenceController : ControllerBase
                     LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs) as PrevTs,
                     DATEDIFF(MILLISECOND, LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs), UtcTs) as IntervalMs
                 FROM [DIRIS].[Measurements]
-                WHERE UtcTs > DATEADD(MINUTE, -10, GETUTCDATE())
+                WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -10, GETUTCDATE())");
             )
             SELECT 
                 DeviceId,
@@ -150,6 +155,10 @@ public class DirisCoherenceController : ControllerBase
 
         var results = new List<object>();
         using var command = new SqlCommand(sql, connection);
+        if (since != null && DateTime.TryParse(since, out var sinceDate))
+        {
+            command.Parameters.AddWithValue("@SinceDate", sinceDate);
+        }
         using var reader = await command.ExecuteReaderAsync();
         
         while (await reader.ReadAsync())
@@ -168,15 +177,16 @@ public class DirisCoherenceController : ControllerBase
         return results;
     }
 
-    private async Task<object> GetQualityStats(SqlConnection connection)
+    private async Task<object> GetQualityStats(SqlConnection connection, string? since = null)
     {
-        const string sql = @"
+        string whereClause = since != null ? "@SinceDate" : "DATEADD(HOUR, -1, GETUTCDATE())";
+        string sql = @"
             SELECT 
                 Quality,
                 COUNT(*) as NbMeasures,
-                CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM [DIRIS].[Measurements] WHERE UtcTs > DATEADD(HOUR, -1, GETUTCDATE())) as DECIMAL(5,2)) as PercentTotal
+                CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM [DIRIS].[Measurements] WHERE UtcTs > " + whereClause + @") as DECIMAL(5,2)) as PercentTotal
             FROM [DIRIS].[Measurements]
-            WHERE UtcTs > DATEADD(HOUR, -1, GETUTCDATE())
+            WHERE UtcTs > " + whereClause;
             GROUP BY Quality
             ORDER BY Quality";
 
@@ -184,6 +194,10 @@ public class DirisCoherenceController : ControllerBase
         bool perfectQuality = false;
         
         using var command = new SqlCommand(sql, connection);
+        if (since != null && DateTime.TryParse(since, out var sinceDate))
+        {
+            command.Parameters.AddWithValue("@SinceDate", sinceDate);
+        }
         using var reader = await command.ExecuteReaderAsync();
         
         while (await reader.ReadAsync())
@@ -212,9 +226,9 @@ public class DirisCoherenceController : ControllerBase
         };
     }
 
-    private async Task<IEnumerable<object>> GetGaps(SqlConnection connection)
+    private async Task<IEnumerable<object>> GetGaps(SqlConnection connection, string? since = null)
     {
-        const string sql = @"
+        string sql = @"
             WITH Gaps AS (
                 SELECT 
                     DeviceId,
@@ -222,7 +236,7 @@ public class DirisCoherenceController : ControllerBase
                     LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs) as PrevTs,
                     DATEDIFF(SECOND, LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs), UtcTs) as GapSeconds
                 FROM [DIRIS].[Measurements]
-                WHERE UtcTs > DATEADD(MINUTE, -30, GETUTCDATE())
+                WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -30, GETUTCDATE())");
             )
             SELECT TOP 10
                 g.DeviceId,
@@ -237,6 +251,10 @@ public class DirisCoherenceController : ControllerBase
 
         var results = new List<object>();
         using var command = new SqlCommand(sql, connection);
+        if (since != null && DateTime.TryParse(since, out var sinceDate))
+        {
+            command.Parameters.AddWithValue("@SinceDate", sinceDate);
+        }
         using var reader = await command.ExecuteReaderAsync();
         
         while (await reader.ReadAsync())
@@ -254,9 +272,9 @@ public class DirisCoherenceController : ControllerBase
         return results;
     }
 
-    private async Task<IEnumerable<object>> GetDeviceStats(SqlConnection connection)
+    private async Task<IEnumerable<object>> GetDeviceStats(SqlConnection connection, string? since = null)
     {
-        const string sql = @"
+        string sql = @"
             SELECT 
                 m.DeviceId,
                 d.Name as DeviceName,
@@ -268,12 +286,16 @@ public class DirisCoherenceController : ControllerBase
                 CAST(COUNT(*) * 1.0 / NULLIF(DATEDIFF(SECOND, MIN(m.UtcTs), MAX(m.UtcTs)), 0) as DECIMAL(10,2)) as MeasuresPerSecond
             FROM [DIRIS].[Measurements] m
             LEFT JOIN [DIRIS].[Devices] d ON m.DeviceId = d.DeviceId
-            WHERE m.UtcTs > DATEADD(MINUTE, -30, GETUTCDATE())
+            WHERE m.UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -30, GETUTCDATE())");
             GROUP BY m.DeviceId, d.Name
             ORDER BY m.DeviceId";
 
         var results = new List<object>();
         using var command = new SqlCommand(sql, connection);
+        if (since != null && DateTime.TryParse(since, out var sinceDate))
+        {
+            command.Parameters.AddWithValue("@SinceDate", sinceDate);
+        }
         using var reader = await command.ExecuteReaderAsync();
         
         while (await reader.ReadAsync())
@@ -298,16 +320,16 @@ public class DirisCoherenceController : ControllerBase
     /// Calcule un score de cohérence global
     /// </summary>
     [HttpGet("score")]
-    public async Task<IActionResult> GetCoherenceScore()
+    public async Task<IActionResult> GetCoherenceScore([FromQuery] string? since = null)
     {
         try
         {
             var connectionString = _configuration.GetConnectionString("SqlAiAtr");
             
             // Calculer chaque composante du score de manière isolée
-            int qualityScore = await CalculateQualityScore(connectionString);
-            int regularityScore = await CalculateRegularityScore(connectionString);
-            int gapsScore = await CalculateGapsScore(connectionString);
+            int qualityScore = await CalculateQualityScore(connectionString, since);
+            int regularityScore = await CalculateRegularityScore(connectionString, since);
+            int gapsScore = await CalculateGapsScore(connectionString, since);
             
             int totalScore = qualityScore + regularityScore + gapsScore;
 
@@ -330,27 +352,27 @@ public class DirisCoherenceController : ControllerBase
         }
     }
 
-    private async Task<int> CalculateQualityScore(string connectionString)
+    private async Task<int> CalculateQualityScore(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         
-        var quality = await GetQualityStats(connection);
+        var quality = await GetQualityStats(connection, since);
         var qualityObj = (dynamic)quality;
         
         return qualityObj.perfectQuality ? 40 : 0;
     }
 
-    private async Task<int> CalculateRegularityScore(string connectionString)
+    private async Task<int> CalculateRegularityScore(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         
-        const string sql = @"
+        string sql = @"
             WITH Intervals AS (
                 SELECT DATEDIFF(MILLISECOND, LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs), UtcTs) as IntervalMs
                 FROM [DIRIS].[Measurements]
-                WHERE UtcTs > DATEADD(MINUTE, -10, GETUTCDATE())
+                WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -10, GETUTCDATE())");
             )
             SELECT AVG(CAST(IntervalMs AS FLOAT)) as AvgStdDev
             FROM (
@@ -360,6 +382,10 @@ public class DirisCoherenceController : ControllerBase
             ) t";
         
         using var command = new SqlCommand(sql, connection);
+        if (since != null && DateTime.TryParse(since, out var sinceDate))
+        {
+            command.Parameters.AddWithValue("@SinceDate", sinceDate);
+        }
         var result = await command.ExecuteScalarAsync();
         
         if (result == null || result == DBNull.Value)
@@ -377,12 +403,12 @@ public class DirisCoherenceController : ControllerBase
         return 0;
     }
 
-    private async Task<int> CalculateGapsScore(string connectionString)
+    private async Task<int> CalculateGapsScore(string connectionString, string? since = null)
     {
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         
-        var gaps = await GetGaps(connection);
+        var gaps = await GetGaps(connection, since);
         var gapCount = gaps.Count();
         
         if (gapCount == 0)
@@ -393,5 +419,45 @@ public class DirisCoherenceController : ControllerBase
             return 10;
         
         return 0;
+    }
+
+    /// <summary>
+    /// Supprime les données de cohérence récentes pour repartir sur de bonnes bases
+    /// </summary>
+    [HttpPost("clear-data")]
+    public async Task<IActionResult> ClearCoherenceData([FromQuery] int minutesToKeep = 5)
+    {
+        try
+        {
+            var connectionString = _configuration.GetConnectionString("SqlAiAtr");
+            using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            // Supprimer les mesures anciennes (garder seulement les X dernières minutes)
+            var sql = @"
+                DELETE FROM [DIRIS].[Measurements] 
+                WHERE UtcTs < DATEADD(MINUTE, -@minutesToKeep, GETUTCDATE())";
+
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@minutesToKeep", minutesToKeep);
+            
+            var deletedRows = await command.ExecuteNonQueryAsync();
+
+            _logger.LogInformation("Nettoyage des données de cohérence: {DeletedRows} lignes supprimées (gardé {MinutesToKeep} dernières minutes)", 
+                deletedRows, minutesToKeep);
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Données de cohérence nettoyées: {deletedRows} mesures supprimées",
+                deletedRows = deletedRows,
+                keptMinutes = minutesToKeep
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erreur lors du nettoyage des données de cohérence");
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 }
