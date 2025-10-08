@@ -95,7 +95,8 @@ public class DirisCoherenceController : ControllerBase
 
     private async Task<object> GetGeneralStats(SqlConnection connection, string? since = null)
     {
-        string sql = @"
+        string whereClause = since != null ? "@SinceDate" : "DATEADD(HOUR, -1, GETUTCDATE())";
+        string sql = $@"
             SELECT 
                 COUNT(*) as TotalMeasures,
                 COUNT(DISTINCT DeviceId) as NbDevices,
@@ -104,7 +105,7 @@ public class DirisCoherenceController : ControllerBase
                 MAX(UtcTs) as LastMeasure,
                 DATEDIFF(SECOND, MAX(UtcTs), GETUTCDATE()) as SecondsSinceLast
             FROM [DIRIS].[Measurements]
-            WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(HOUR, -1, GETUTCDATE())");
+            WHERE UtcTs > {whereClause}";
 
         using var command = new SqlCommand(sql, connection);
         if (since != null && DateTime.TryParse(since, out var sinceDate))
@@ -131,7 +132,8 @@ public class DirisCoherenceController : ControllerBase
 
     private async Task<IEnumerable<object>> GetFrequencyStats(SqlConnection connection, string? since = null)
     {
-        string sql = @"
+        string whereClause = since != null ? "@SinceDate" : "DATEADD(MINUTE, -10, GETUTCDATE())";
+        string sql = $@"
             WITH Intervals AS (
                 SELECT 
                     DeviceId,
@@ -139,7 +141,7 @@ public class DirisCoherenceController : ControllerBase
                     LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs) as PrevTs,
                     DATEDIFF(MILLISECOND, LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs), UtcTs) as IntervalMs
                 FROM [DIRIS].[Measurements]
-                WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -10, GETUTCDATE())");
+                WHERE UtcTs > {whereClause}
             )
             SELECT 
                 DeviceId,
@@ -180,13 +182,13 @@ public class DirisCoherenceController : ControllerBase
     private async Task<object> GetQualityStats(SqlConnection connection, string? since = null)
     {
         string whereClause = since != null ? "@SinceDate" : "DATEADD(HOUR, -1, GETUTCDATE())";
-        string sql = @"
+        string sql = $@"
             SELECT 
                 Quality,
                 COUNT(*) as NbMeasures,
-                CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM [DIRIS].[Measurements] WHERE UtcTs > " + whereClause + @") as DECIMAL(5,2)) as PercentTotal
+                CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM [DIRIS].[Measurements] WHERE UtcTs > {whereClause}) as DECIMAL(5,2)) as PercentTotal
             FROM [DIRIS].[Measurements]
-            WHERE UtcTs > " + whereClause;
+            WHERE UtcTs > {whereClause}
             GROUP BY Quality
             ORDER BY Quality";
 
@@ -228,7 +230,8 @@ public class DirisCoherenceController : ControllerBase
 
     private async Task<IEnumerable<object>> GetGaps(SqlConnection connection, string? since = null)
     {
-        string sql = @"
+        string whereClause = since != null ? "@SinceDate" : "DATEADD(MINUTE, -30, GETUTCDATE())";
+        string sql = $@"
             WITH Gaps AS (
                 SELECT 
                     DeviceId,
@@ -236,7 +239,7 @@ public class DirisCoherenceController : ControllerBase
                     LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs) as PrevTs,
                     DATEDIFF(SECOND, LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs), UtcTs) as GapSeconds
                 FROM [DIRIS].[Measurements]
-                WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -30, GETUTCDATE())");
+                WHERE UtcTs > {whereClause}
             )
             SELECT TOP 10
                 g.DeviceId,
@@ -274,7 +277,8 @@ public class DirisCoherenceController : ControllerBase
 
     private async Task<IEnumerable<object>> GetDeviceStats(SqlConnection connection, string? since = null)
     {
-        string sql = @"
+        string whereClause = since != null ? "@SinceDate" : "DATEADD(MINUTE, -30, GETUTCDATE())";
+        string sql = $@"
             SELECT 
                 m.DeviceId,
                 d.Name as DeviceName,
@@ -286,7 +290,7 @@ public class DirisCoherenceController : ControllerBase
                 CAST(COUNT(*) * 1.0 / NULLIF(DATEDIFF(SECOND, MIN(m.UtcTs), MAX(m.UtcTs)), 0) as DECIMAL(10,2)) as MeasuresPerSecond
             FROM [DIRIS].[Measurements] m
             LEFT JOIN [DIRIS].[Devices] d ON m.DeviceId = d.DeviceId
-            WHERE m.UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -30, GETUTCDATE())");
+            WHERE m.UtcTs > {whereClause}
             GROUP BY m.DeviceId, d.Name
             ORDER BY m.DeviceId";
 
@@ -368,11 +372,12 @@ public class DirisCoherenceController : ControllerBase
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         
-        string sql = @"
+        string whereClause = since != null ? "@SinceDate" : "DATEADD(MINUTE, -10, GETUTCDATE())";
+        string sql = $@"
             WITH Intervals AS (
                 SELECT DATEDIFF(MILLISECOND, LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs), UtcTs) as IntervalMs
                 FROM [DIRIS].[Measurements]
-                WHERE UtcTs > " + (since != null ? "@SinceDate" : "DATEADD(MINUTE, -10, GETUTCDATE())");
+                WHERE UtcTs > {whereClause}
             )
             SELECT AVG(CAST(IntervalMs AS FLOAT)) as AvgStdDev
             FROM (
