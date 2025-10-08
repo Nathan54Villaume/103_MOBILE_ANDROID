@@ -196,12 +196,22 @@ public class DirisCleanupController : ControllerBase
     {
         using var cmd = new SqlCommand(@"
             SELECT 
-                CAST(SUM(CAST(FILEPROPERTY(name, 'SpaceUsed') AS bigint) * 8.0 / 1024 / 1024) AS DECIMAL(15,2)) AS SizeMB
-            FROM sys.database_files 
-            WHERE type = 0", connection);
+                CAST(SUM(
+                    CASE 
+                        WHEN a.type = 1 THEN a.used_pages 
+                        WHEN a.type = 0 THEN a.total_pages 
+                        ELSE 0 
+                    END
+                ) * 8.0 / 1024 AS DECIMAL(15,2)) AS SizeMB
+            FROM sys.tables t
+            INNER JOIN sys.indexes i ON t.object_id = i.object_id
+            INNER JOIN sys.partitions p ON i.object_id = p.object_id AND i.index_id = p.index_id
+            INNER JOIN sys.allocation_units a ON p.partition_id = a.container_id
+            WHERE t.schema_id = SCHEMA_ID('DIRIS') 
+            AND t.name = 'Measurements'", connection);
         
         var result = await cmd.ExecuteScalarAsync();
-        return result == DBNull.Value ? "Unknown" : $"{result} MB";
+        return result == DBNull.Value || result == null ? "0.00 MB" : $"{result} MB";
     }
 }
 
