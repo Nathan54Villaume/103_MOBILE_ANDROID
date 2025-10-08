@@ -335,6 +335,8 @@ async function refreshCurrentSection() {
                 break;
             case 'diris':
                 if (window.dirisManager) {
+                    // Réinitialiser les graphiques au cas où ils n'étaient pas visibles lors de l'init
+                    window.dirisManager.initCharts();
                     await window.dirisManager.loadAllData();
                 }
                 break;

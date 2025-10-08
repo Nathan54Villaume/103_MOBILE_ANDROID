@@ -1007,9 +1007,20 @@ export class DirisManager {
   // ========================================
   initCharts() {
     try {
+      console.log('📊 Initialisation des graphiques DIRIS...');
+      
+      // Détruire les anciens graphiques s'ils existent
+      Object.values(this.charts).forEach(chart => {
+        if (chart) {
+          chart.destroy();
+        }
+      });
+      this.charts = {};
+      
       // Throughput Chart
       const throughputCtx = document.getElementById('dirisThroughputChart');
       if (throughputCtx) {
+        console.log('✅ Canvas dirisThroughputChart trouvé');
         this.charts.throughput = new Chart(throughputCtx, {
           type: 'line',
           data: {
@@ -1045,11 +1056,14 @@ export class DirisManager {
             }
           }
         });
+      } else {
+        console.warn('❌ Canvas dirisThroughputChart non trouvé');
       }
 
       // Latency Chart
       const latencyCtx = document.getElementById('dirisLatencyChart');
       if (latencyCtx) {
+        console.log('✅ Canvas dirisLatencyChart trouvé');
         this.charts.latency = new Chart(latencyCtx, {
           type: 'line',
           data: {
@@ -1085,11 +1099,14 @@ export class DirisManager {
             }
           }
         });
+      } else {
+        console.warn('❌ Canvas dirisLatencyChart non trouvé');
       }
 
       // Devices Chart
       const devicesCtx = document.getElementById('dirisDevicesChart');
       if (devicesCtx) {
+        console.log('✅ Canvas dirisDevicesChart trouvé');
         this.charts.devices = new Chart(devicesCtx, {
           type: 'line',
           data: {
@@ -1125,9 +1142,13 @@ export class DirisManager {
             }
           }
         });
+      } else {
+        console.warn('❌ Canvas dirisDevicesChart non trouvé');
       }
+      
+      console.log('📊 Graphiques initialisés:', Object.keys(this.charts));
     } catch (error) {
-      console.error('Erreur initialisation graphiques:', error);
+      console.error('❌ Erreur initialisation graphiques:', error);
     }
   }
 
