@@ -78,7 +78,6 @@ export class DirisManager {
     
     // Devices
     document.getElementById('btnAddDevice')?.addEventListener('click', () => this.showAddDeviceDialog());
-    document.getElementById('btnUpdateDescriptions')?.addEventListener('click', () => this.updateDescriptions());
     
     // Charts controls
     document.getElementById('btnPauseCharts')?.addEventListener('click', () => this.toggleChartsPause());
@@ -89,6 +88,9 @@ export class DirisManager {
     document.getElementById('alertMaxLatency')?.addEventListener('input', (e) => this.updateAlertThreshold('maxLatency', e.target.value));
     document.getElementById('alertMinThroughput')?.addEventListener('input', (e) => this.updateAlertThreshold('minThroughput', e.target.value));
     document.getElementById('alertMinDevices')?.addEventListener('input', (e) => this.updateAlertThreshold('minDevices', e.target.value));
+    
+    // Coherence stats
+    document.getElementById('btnRefreshCoherence')?.addEventListener('click', () => this.loadCoherenceStats());
   }
 
   // ========================================
@@ -101,7 +103,8 @@ export class DirisManager {
         this.loadDatabaseStats(),
         this.loadConfiguration(),
         this.loadDevices(),
-        this.loadLatestReadings()
+        this.loadLatestReadings(),
+        this.loadCoherenceStats()
       ]);
     } catch (error) {
       console.error('❌ Erreur chargement données DIRIS:', error);
@@ -1518,6 +1521,178 @@ export class DirisManager {
     } catch (error) {
       console.error('Erreur mise à jour descriptions:', error);
       this.showError('Erreur lors de la mise à jour des descriptions');
+    }
+  }
+
+  // ========================================
+  // Statistiques de Cohérence
+  // ========================================
+  async loadCoherenceStats() {
+    try {
+      const response = await fetch('/api/diris/coherence', {
+        headers: {
+          'Authorization': `Bearer ${this.apiClient.token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur réseau');
+      
+      const data = await response.json();
+      this.displayCoherenceStats(data);
+      
+    } catch (error) {
+      console.error('Erreur chargement statistiques cohérence:', error);
+      this.showError('Erreur lors du chargement des statistiques de cohérence');
+    }
+  }
+
+  displayCoherenceStats(data) {
+    // Qualité des données
+    if (data.quality && data.quality.perfectQuality) {
+      document.getElementById('coherenceQuality').textContent = '100%';
+      document.getElementById('coherenceQuality').className = 'text-2xl font-bold value-excellent';
+    }
+
+    // Fréquence d'acquisition
+    if (data.frequency && data.frequency.length > 0) {
+      const avgInterval = data.frequency.reduce((sum, d) => sum + d.avgMs, 0) / data.frequency.length;
+      document.getElementById('coherenceFrequency').textContent = `~${(avgInterval / 1000).toFixed(1)}s`;
+      document.getElementById('coherenceFrequency').className = avgInterval >= 1400 && avgInterval <= 2000 ? 
+        'text-2xl font-bold value-excellent' : 
+        'text-2xl font-bold value-good';
+    }
+
+    // Régularité
+    if (data.frequency && data.frequency.length > 0) {
+      const avgStdDev = data.frequency.reduce((sum, d) => sum + (d.stdDevMs || 0), 0) / data.frequency.length;
+      document.getElementById('coherenceRegularity').textContent = `±${Math.round(avgStdDev)}ms`;
+      document.getElementById('coherenceRegularity').className = avgStdDev < 100 ? 
+        'text-2xl font-bold value-excellent' : 
+        avgStdDev < 200 ? 'text-2xl font-bold value-good' : 'text-2xl font-bold value-warning';
+    }
+
+    // Score de cohérence
+    this.calculateAndDisplayCoherenceScore(data);
+
+    // Statistiques par device
+    this.displayDeviceStats(data.deviceStats);
+
+    // Trous détectés
+    this.displayGaps(data.gaps);
+  }
+
+  async calculateAndDisplayCoherenceScore(data) {
+    try {
+      const response = await fetch('/api/diris/coherence/score', {
+        headers: {
+          'Authorization': `Bearer ${this.apiClient.token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Erreur réseau');
+      
+      const scoreData = await response.json();
+      document.getElementById('coherenceScore').textContent = `${scoreData.score}/100`;
+      document.getElementById('coherenceScore').className = scoreData.score >= 90 ? 
+        'text-2xl font-bold value-excellent' : 
+        scoreData.score >= 75 ? 'text-2xl font-bold value-good' : 
+        scoreData.score >= 50 ? 'text-2xl font-bold value-warning' : 'text-2xl font-bold value-danger';
+      
+    } catch (error) {
+      console.error('Erreur calcul score:', error);
+    }
+  }
+
+  displayDeviceStats(deviceStats) {
+    const container = document.getElementById('coherenceDeviceStats');
+    if (!container || !deviceStats) return;
+
+    if (deviceStats.length === 0) {
+      container.innerHTML = '<p class="text-center text-slate-400 py-4">Aucune donnée disponible</p>';
+      return;
+    }
+
+    container.innerHTML = deviceStats.map(device => `
+      <div class="p-3 bg-white/5 rounded-lg border border-white/10">
+        <div class="flex items-center justify-between">
+          <div class="flex-1 grid grid-cols-5 gap-4">
+            <div>
+              <p class="text-xs text-slate-400">Device</p>
+              <p class="font-bold text-brand-400">${device.deviceId}</p>
+              <p class="text-xs text-slate-500">${device.deviceName || 'Device ' + device.deviceId}</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Mesures</p>
+              <p class="font-mono text-sm">${this.formatNumber(device.nbMeasures)}</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Signaux</p>
+              <p class="font-mono text-sm">${device.nbSignals}</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Débit</p>
+              <p class="font-mono text-sm">${device.measuresPerSecond?.toFixed(2) || '0'} pts/s</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Durée</p>
+              <p class="font-mono text-sm">${Math.round(device.durationSeconds / 60)}min</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  displayGaps(gaps) {
+    const container = document.getElementById('coherenceGaps');
+    if (!container || !gaps) return;
+
+    if (gaps.length === 0) {
+      container.innerHTML = '<p class="text-center text-green-400 py-4">✅ Aucune interruption détectée</p>';
+      return;
+    }
+
+    container.innerHTML = gaps.map(gap => {
+      const severity = gap.gapSeconds > 60 ? 'danger' : gap.gapSeconds > 30 ? 'warning' : 'good';
+      return `
+      <div class="p-3 bg-white/5 rounded-lg border ${
+        severity === 'danger' ? 'border-red-500/30' : 
+        severity === 'warning' ? 'border-orange-500/30' : 'border-yellow-500/30'
+      }">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium">Device ${gap.deviceId} - ${gap.deviceName || 'Device ' + gap.deviceId}</p>
+            <p class="text-xs text-slate-400 font-mono">
+              ${new Date(gap.prevTs).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} → 
+              ${new Date(gap.utcTs).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </p>
+          </div>
+          <span class="px-3 py-1 rounded-lg text-sm font-bold ${
+            severity === 'danger' ? 'bg-red-500/20 text-red-400' : 
+            severity === 'warning' ? 'bg-orange-500/20 text-orange-400' : 'bg-yellow-500/20 text-yellow-400'
+          }">
+            ${gap.gapSeconds}s
+          </span>
+        </div>
+      </div>
+    `}).join('');
+  }
+
+  startCoherenceAutoRefresh() {
+    // Refresh toutes les 10 secondes
+    if (this.coherenceRefreshInterval) {
+      clearInterval(this.coherenceRefreshInterval);
+    }
+    
+    this.coherenceRefreshInterval = setInterval(() => {
+      this.loadCoherenceStats();
+    }, 10000);
+  }
+
+  stopCoherenceAutoRefresh() {
+    if (this.coherenceRefreshInterval) {
+      clearInterval(this.coherenceRefreshInterval);
+      this.coherenceRefreshInterval = null;
     }
   }
 }
