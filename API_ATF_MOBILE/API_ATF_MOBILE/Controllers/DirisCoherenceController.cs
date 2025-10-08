@@ -453,17 +453,36 @@ public class DirisCoherenceController : ControllerBase
             }
         }
         
+        // Vérifier d'abord la régularité - si elle est excellente, ignorer les gaps mineurs
+        var regularityScore = await CalculateRegularityScore(connectionString, since);
+        
         var gaps = await GetGaps(connection, since);
         var gapCount = gaps.Count();
         
-        if (gapCount == 0)
-            return 30;
-        else if (gapCount <= 2)
-            return 20;
-        else if (gapCount <= 5)
-            return 10;
-        
-        return 0;
+        // Si la régularité est excellente (30/30), être plus tolérant avec les gaps
+        if (regularityScore == 30)
+        {
+            if (gapCount == 0)
+                return 30;
+            else if (gapCount <= 5)  // Plus tolérant
+                return 25;
+            else if (gapCount <= 10)
+                return 15;
+            else
+                return 5;
+        }
+        else
+        {
+            // Régularité moyenne ou mauvaise, être strict avec les gaps
+            if (gapCount == 0)
+                return 30;
+            else if (gapCount <= 2)
+                return 20;
+            else if (gapCount <= 5)
+                return 10;
+            else
+                return 0;
+        }
     }
 
     /// <summary>
