@@ -1,10 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "ukG185zoHUI=",
+  "dgSpecHash": "0yDktk+p98g=",
   "success": true,
   "projectFilePath": "R:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\Diris.Core\\Diris.Core.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\nathan.villaume\\.nuget\\packages\\system.text.json\\8.0.5\\system.text.json.8.0.5.nupkg.sha512"
+    "C:\\Users\\nathan.villaume\\.nuget\\packages\\system.text.json\\8.0.5\\system.text.json.8.0.5.nupkg.sha512",
+    "C:\\Users\\nathan.villaume\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.20\\microsoft.netcore.app.runtime.win-x64.8.0.20.nupkg.sha512",
+    "C:\\Users\\nathan.villaume\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.20\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.20.nupkg.sha512",
+    "C:\\Users\\nathan.villaume\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.20\\microsoft.aspnetcore.app.runtime.win-x64.8.0.20.nupkg.sha512"
   ],
   "logs": []
 }
