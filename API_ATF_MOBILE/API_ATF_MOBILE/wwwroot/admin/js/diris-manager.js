@@ -310,10 +310,11 @@ export class DirisManager {
           percentageElement.className = 'text-green-400';
         }
         
+        // Convertir les timestamps UTC en heure locale
         document.getElementById('dirisOldestMeasurement').textContent = 
-          data.oldestMeasurement ? new Date(data.oldestMeasurement).toLocaleString('fr-FR') : '-';
+          data.oldestMeasurement ? new Date(data.oldestMeasurement + 'Z').toLocaleString('fr-FR') : '-';
         document.getElementById('dirisNewestMeasurement').textContent = 
-          data.newestMeasurement ? new Date(data.newestMeasurement).toLocaleString('fr-FR') : '-';
+          data.newestMeasurement ? new Date(data.newestMeasurement + 'Z').toLocaleString('fr-FR') : '-';
       }
     } catch (error) {
       console.error('Erreur chargement stats BDD:', error);
