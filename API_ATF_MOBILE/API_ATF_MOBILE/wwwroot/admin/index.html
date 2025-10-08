@@ -119,21 +119,22 @@
       bottom: 125%;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.9);
+      background: rgba(0, 0, 0, 0.95);
       color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 11px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
       white-space: nowrap;
-      max-width: 300px;
+      max-width: 420px;
       white-space: normal;
-      text-align: center;
+      text-align: left;
+      line-height: 1.4;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s ease, visibility 0.3s ease;
       z-index: 1000;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
     }
     
     .config-info-icon:hover::after {
@@ -158,7 +159,7 @@
       padding: 10px 14px;
       border-radius: 8px;
       font-size: 12px;
-      max-width: 320px;
+      max-width: 420px;
       white-space: normal;
       text-align: left;
       line-height: 1.4;
@@ -166,7 +167,7 @@
       visibility: hidden;
       transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease;
       z-index: 1000;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
       pointer-events: none;
     }
@@ -194,18 +195,6 @@
     }
     
     [data-tooltip]:hover::before {
-      opacity: 1;
-      visibility: visible;
-    }
-    
-    /* Special styling for group hover tooltips */
-    .group:hover [data-tooltip]::after {
-      opacity: 1;
-      visibility: visible;
-      transform: translateX(-50%) translateY(-2px);
-    }
-    
-    .group:hover [data-tooltip]::before {
       opacity: 1;
       visibility: visible;
     }
@@ -980,34 +969,34 @@
             
             <!-- Métriques principales -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div class="p-3 bg-white/5 rounded-lg relative group" data-tooltip="Pourcentage de mesures avec une qualité parfaite (Quality = 1). Un score de 100% indique que toutes les mesures sont fiables et sans erreur.">
+              <div class="p-3 bg-white/5 rounded-lg">
                 <p class="text-xs text-slate-400 flex items-center gap-1">
                   Qualité données
-                  <span class="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">ℹ️</span>
+                  <span class="config-info-icon" data-tooltip="Pourcentage de mesures avec une qualité parfaite (Quality = 1). Un score de 100% indique que toutes les mesures sont fiables et sans erreur.">ℹ️</span>
                 </p>
                 <p id="coherenceQuality" class="text-2xl font-bold value-excellent">100%</p>
                 <p class="text-xs text-slate-500 mt-1">Quality = 1</p>
               </div>
-              <div class="p-3 bg-white/5 rounded-lg relative group" data-tooltip="Intervalle moyen entre deux mesures consécutives. Une fréquence stable (1-3s) indique une acquisition régulière et performante.">
+              <div class="p-3 bg-white/5 rounded-lg">
                 <p class="text-xs text-slate-400 flex items-center gap-1">
                   Fréquence acquisition
-                  <span class="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">ℹ️</span>
+                  <span class="config-info-icon" data-tooltip="Intervalle moyen entre deux mesures consécutives. Une fréquence stable (1-3s) indique une acquisition régulière et performante.">ℹ️</span>
                 </p>
                 <p id="coherenceFrequency" class="text-2xl font-bold value-good">~1.7s</p>
                 <p class="text-xs text-slate-500 mt-1">Millisecondes</p>
               </div>
-              <div class="p-3 bg-white/5 rounded-lg relative group" data-tooltip="Écart-type des intervalles de mesure. Plus la valeur est faible (±50ms), plus l'acquisition est régulière et stable.">
+              <div class="p-3 bg-white/5 rounded-lg">
                 <p class="text-xs text-slate-400 flex items-center gap-1">
                   Régularité
-                  <span class="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">ℹ️</span>
+                  <span class="config-info-icon" data-tooltip="Écart-type des intervalles de mesure. Plus la valeur est faible (±50ms), plus l'acquisition est régulière et stable.">ℹ️</span>
                 </p>
                 <p id="coherenceRegularity" class="text-2xl font-bold value-excellent">±50ms</p>
                 <p class="text-xs text-slate-500 mt-1">Écart-type</p>
               </div>
-              <div class="p-3 bg-white/5 rounded-lg relative group" data-tooltip="Score global de cohérence (0-100). Combine qualité, régularité et absence de gaps. 90-100: Excellent, 75-89: Bon, 50-74: Moyen, 0-49: Faible.">
+              <div class="p-3 bg-white/5 rounded-lg">
                 <p class="text-xs text-slate-400 flex items-center gap-1">
                   Score cohérence
-                  <span class="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">ℹ️</span>
+                  <span class="config-info-icon" data-tooltip="Score global de cohérence (0-100). Combine qualité, régularité et absence de gaps. 90-100: Excellent, 75-89: Bon, 50-74: Moyen, 0-49: Faible.">ℹ️</span>
                 </p>
                 <p id="coherenceScore" class="text-2xl font-bold value-excellent">95/100</p>
                 <p class="text-xs text-slate-500 mt-1">Global</p>
@@ -1018,7 +1007,7 @@
             <div class="mb-4">
               <h4 class="text-sm font-medium mb-3 flex items-center gap-2">
                 Statistiques par Device (dernière heure)
-                <span class="text-blue-400 cursor-help" data-tooltip="Détails par équipement: nombre de mesures, fréquence moyenne, et stabilité. Permet d'identifier les devices problématiques.">ℹ️</span>
+                <span class="config-info-icon" data-tooltip="Détails par équipement: nombre de mesures, fréquence moyenne, et stabilité. Permet d'identifier les devices problématiques.">ℹ️</span>
               </h4>
               <div id="coherenceDeviceStats" class="space-y-2">
                 <p class="text-center text-slate-400 py-4">Chargement...</p>
@@ -1030,7 +1019,7 @@
               <div class="flex items-center justify-between mb-3">
                 <h4 class="text-sm font-medium flex items-center gap-2">
                   Interruptions détectées (30 dernières minutes)
-                  <span class="text-blue-400 cursor-help" data-tooltip="Liste des interruptions d'acquisition détectées. Une interruption > 30s indique un problème de communication ou de réseau.">ℹ️</span>
+                  <span class="config-info-icon" data-tooltip="Liste des interruptions d'acquisition détectées. Une interruption > 30s indique un problème de communication ou de réseau.">ℹ️</span>
                 </h4>
                 <button id="btnClearGaps" class="px-3 py-1 text-xs rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors" data-tooltip="Efface l'affichage des interruptions. Ne supprime pas les données de la base, seulement l'affichage.">
                   🗑️ Vider l'affichage
