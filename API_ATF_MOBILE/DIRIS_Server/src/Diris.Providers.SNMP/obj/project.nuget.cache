@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "dgSpecHash": "TQ+1yd7TAbI=",
+  "success": false,
+  "projectFilePath": "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Providers.SNMP\\Diris.Providers.SNMP.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\nathan.villaume\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\nathan.villaume\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.0\\microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\nathan.villaume\\.nuget\\packages\\system.text.json\\8.0.5\\system.text.json.8.0.5.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1102",
+      "level": "Error",
+      "message": "Unable to find package Lextm.SharpSnmpLib with version (>= 12.6.0)\r\n  - Found 71 version(s) in nuget.org [ Nearest version: 12.5.6 ]\r\n  - Found 0 version(s) in Microsoft Visual Studio Offline Packages\r\n  - Found 0 version(s) in C:\\Program Files\\dotnet\\library-packs",
+      "projectPath": "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Providers.SNMP\\Diris.Providers.SNMP.csproj",
+      "filePath": "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Providers.SNMP\\Diris.Providers.SNMP.csproj",
+      "libraryId": "Lextm.SharpSnmpLib",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
+}

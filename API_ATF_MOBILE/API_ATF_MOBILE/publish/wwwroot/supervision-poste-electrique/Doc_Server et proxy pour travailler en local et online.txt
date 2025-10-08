@@ -1,0 +1,11 @@
+PS C:\Users\natha\OneDrive - Gruppo Riva S.P.A\Documents\999_REPO_GIT\103_MOBILE_ANDROID-1\API_ATF_MOBILE\API_ATF_MOBILE\wwwroot\supervision-poste-electrique> python -m http.server 8088
+Serving HTTP on :: port 8088 (http://[::]:8088/) ...
+
+
+
+C:\Users\natha\OneDrive - Gruppo Riva S.P.A\Documents\999_REPO_GIT\103_MOBILE_ANDROID-1\API_ATF_MOBILE\API_ATF_MOBILE\wwwroot\supervision-poste-electrique>python cors-proxy.py
+🚀 Proxy CORS démarré sur http://localhost:8088
+📡 Pour accéder à l'API: http://localhost:8088/proxy/http://10.250.13.4:8088/api/energy
+
+
+

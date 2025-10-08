@@ -124,7 +124,7 @@ public class DeviceRepository : IDeviceRegistry
     public async Task<IEnumerable<TagMap>> GetTagMappingsAsync(int deviceId)
     {
         const string sql = @"
-            SELECT DeviceId, Signal, WebMiKey, Unit, Scale, Enabled
+            SELECT DeviceId, Signal, WebMiKey, Unit, Scale, Enabled, Description
             FROM DIRIS.TagMap 
             WHERE DeviceId = @DeviceId
             ORDER BY Signal";
@@ -149,8 +149,8 @@ public class DeviceRepository : IDeviceRegistry
 
             // Insert new mappings
             const string insertSql = @"
-                INSERT INTO DIRIS.TagMap (DeviceId, Signal, WebMiKey, Unit, Scale, Enabled)
-                VALUES (@DeviceId, @Signal, @WebMiKey, @Unit, @Scale, @Enabled)";
+                INSERT INTO DIRIS.TagMap (DeviceId, Signal, WebMiKey, Unit, Scale, Enabled, Description)
+                VALUES (@DeviceId, @Signal, @WebMiKey, @Unit, @Scale, @Enabled, @Description)";
 
             foreach (var mapping in mappings)
             {
@@ -161,6 +161,7 @@ public class DeviceRepository : IDeviceRegistry
                 insertCmd.Parameters.AddWithValue("@Unit", (object?)mapping.Unit ?? DBNull.Value);
                 insertCmd.Parameters.AddWithValue("@Scale", mapping.Scale);
                 insertCmd.Parameters.AddWithValue("@Enabled", mapping.Enabled);
+                insertCmd.Parameters.AddWithValue("@Description", (object?)mapping.Description ?? DBNull.Value);
                 await insertCmd.ExecuteNonQueryAsync();
             }
 
@@ -239,7 +240,8 @@ public class DeviceRepository : IDeviceRegistry
             WebMiKey = reader.GetString("WebMiKey"),
             Unit = reader.IsDBNull("Unit") ? null : reader.GetString("Unit"),
             Scale = reader.GetDouble("Scale"),
-            Enabled = reader.GetBoolean("Enabled")
+            Enabled = reader.GetBoolean("Enabled"),
+            Description = reader.IsDBNull("Description") ? null : reader.GetString("Description")
         };
     }
 }

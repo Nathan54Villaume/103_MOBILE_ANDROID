@@ -1,0 +1,210 @@
+╔═══════════════════════════════════════════════════════════════╗
+║  🎉 TAGMAP AUTOMATIQUE - 81 SIGNAUX DIRIS - DÉMARRAGE RAPIDE  ║
+╚═══════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────┐
+│ ÉTAPE 1 : RECOMPILER ET REDÉMARRER LE SERVEUR                │
+└───────────────────────────────────────────────────────────────┘
+
+cd API_ATF_MOBILE\API_ATF_MOBILE
+dotnet build --configuration Release
+dotnet run --configuration Release
+
+✅ Serveur démarré sur : http://localhost:8088
+
+
+┌───────────────────────────────────────────────────────────────┐
+│ ÉTAPE 2 : TESTER AVEC UN NOUVEAU DEVICE                      │
+└───────────────────────────────────────────────────────────────┘
+
+1. Ouvrir : http://localhost:8088/admin/
+2. Login : admin / admin123
+3. Onglet : ⚡ DIRIS
+4. Cliquer : ➕ Ajouter
+5. Remplir :
+   - Nom : DIRIS_Test_Complet
+   - IP : 192.168.2.xxx
+6. Cliquer : Ajouter
+
+✅ RÉSULTAT ATTENDU :
+   "Device ajouté avec succès. 81 signaux DIRIS créés automatiquement !"
+
+
+┌───────────────────────────────────────────────────────────────┐
+│ ÉTAPE 3 : VÉRIFIER EN BASE DE DONNÉES                        │
+└───────────────────────────────────────────────────────────────┘
+
+SQL Server Management Studio → Nouvelle requête :
+
+SELECT COUNT(*) 
+FROM DIRIS.TagMap 
+WHERE DeviceId = (
+    SELECT DeviceId FROM DIRIS.Devices 
+    WHERE Name = 'DIRIS_Test_Complet'
+)
+
+✅ RÉSULTAT ATTENDU : 81
+
+
+┌───────────────────────────────────────────────────────────────┐
+│ ÉTAPE 4 : VOIR TOUS LES SIGNAUX CRÉÉS                        │
+└───────────────────────────────────────────────────────────────┘
+
+SELECT Signal, Unit, Scale 
+FROM DIRIS.TagMap 
+WHERE DeviceId = (
+    SELECT DeviceId FROM DIRIS.Devices 
+    WHERE Name = 'DIRIS_Test_Complet'
+)
+ORDER BY Signal
+
+✅ VOUS DEVRIEZ VOIR :
+   - AVG_I1_255, AVG_I2_255, AVG_I3_255, ...
+   - AVG_U12_255, AVG_U23_255, AVG_U31_255, ...
+   - AVG_V1_255, AVG_V2_255, AVG_V3_255, ...
+   - E1_255, E2_255, E3_255, ...
+   - F_255
+   - I_PH1_255, I_PH2_255, I_PH3_255, I_NUL_255
+   - IP_NEG_255, IP_POS_255
+   - LV_U12_255, LV_U23_255, LV_U31_255
+   - MAXAVG_U12_255, MAXAVG_U23_255, MAXAVG_U31_255
+   - MAXAVG_V1_255, MAXAVG_V2_255, MAXAVG_V3_255
+   - MAXAVGSUM_I1_255, MAXAVGSUM_I2_255, MAXAVGSUM_I3_255
+   - ... et 50 autres signaux !
+   
+   TOTAL : 81 signaux ✅
+
+
+┌───────────────────────────────────────────────────────────────┐
+│ MIGRATION DES ANCIENS DEVICES (si nécessaire)                │
+└───────────────────────────────────────────────────────────────┘
+
+Si vous avez des devices DIRIS existants SANS les 81 signaux :
+
+1. Interface admin → Onglet DIRIS
+2. Pour chaque ancien device :
+   - Cliquer sur le bouton 🏷️ Tags
+   - ✅ 81 signaux créés !
+
+OU via SQL pour voir quels devices ont besoin de migration :
+
+SELECT 
+    d.Name, 
+    d.IpAddress, 
+    COUNT(tm.Signal) AS Signaux
+FROM DIRIS.Devices d
+LEFT JOIN DIRIS.TagMap tm ON d.DeviceId = tm.DeviceId
+GROUP BY d.DeviceId, d.Name, d.IpAddress
+HAVING COUNT(tm.Signal) < 81
+
+
+┌───────────────────────────────────────────────────────────────┐
+│ LES 81 SIGNAUX EN DÉTAIL                                     │
+└───────────────────────────────────────────────────────────────┘
+
+COURANTS (12) :
+  I_PH1_255, I_PH2_255, I_PH3_255, I_NUL_255
+  MAXAVGSUM_I1/2/3_255, MAXAVG_IN_255
+  AVG_I1/2/3_255, AVG_IN_255
+
+THD COURANTS (4) :
+  THD_I1/2/3_255, THD_IN_255
+
+FRÉQUENCE (1) :
+  F_255
+
+THD TENSIONS (6) :
+  THD_U1/2/3_255, THD_U12/23/31_255
+
+TENSIONS PHASE-NEUTRE (9) :
+  PV1/2/3_255
+  MAXAVG_V1/2/3_255
+  AVG_V1/2/3_255
+
+TENSIONS PHASE-PHASE (9) :
+  LV_U12/23/31_255
+  MAXAVG_U12/23/31_255
+  AVG_U12/23/31_255
+
+PUISSANCES ACTIVES (9) :
+  PH1/2/3_RP_255, SUM_RP_255
+  MAXAVGSUM_RPPOS_255, AVGSUM_RPPOS_255, PRED_RP_255
+  MAXAVGSUM_RPNEG_255, AVGSUM_RPNEG_255
+
+PUISSANCES RÉACTIVES (9) :
+  PH1/2/3_IP_255, SUM_IP_255
+  MAXAVGSUM_IPPOS_255, AVGSUM_IPPOS_255, PRED_IP_255
+  MAXAVGSUM_IPNEG_255, AVGSUM_IPNEG_255
+
+PUISSANCES APPARENTES (7) :
+  PH1/2/3_AP_255, SUM_AP_255
+  MAXAVGSUM_AP_255, AVGSUM_AP_255, PRED_AP_255
+
+FACTEURS DE PUISSANCE (4) :
+  PH1/2/3_PF_255, SUM_PF_255
+
+ÉNERGIES (6) :
+  E1/2/3/4/5/6_255
+
+TOTAUX CUMULATIFS (5) :
+  RP_POS_255, RP_NEG_255
+  IP_POS_255, IP_NEG_255
+  AP_255
+
+════════════════════════════════════════════════════════════════
+
+TOTAL : 12+4+1+6+9+9+9+9+7+4+6+5 = 81 SIGNAUX ✅
+
+════════════════════════════════════════════════════════════════
+
+
+┌───────────────────────────────────────────────────────────────┐
+│ ÉCHELLES CONFIGURÉES AUTOMATIQUEMENT                         │
+└───────────────────────────────────────────────────────────────┘
+
+Courants (I_*, AVG_I*, MAXAVGSUM_I*) → Échelle 1000 (mA → A)
+Tensions (PV*, LV_U*, AVG_*, MAXAVG_*) → Échelle 100 (cV → V)
+Fréquence (F_255) → Échelle 100 (cHz → Hz)
+Puissances (RP_, IP_, AP_) → Échelle 100
+THD avec % → Échelle 100
+THD sans unité → Échelle 1
+Facteurs de puissance (PF_*) → Échelle 100
+Énergies (E*) → Échelle 100
+
+
+┌───────────────────────────────────────────────────────────────┐
+│ EXEMPLE DE VALEURS APRÈS CONVERSION                          │
+└───────────────────────────────────────────────────────────────┘
+
+WebMI retourne : I_PH1_255 = 147760
+Échelle : 1000
+Résultat : 147760 / 1000 = 147.76 A ✅
+
+WebMI retourne : PV1_255 = 24262
+Échelle : 100
+Résultat : 24262 / 100 = 242.62 V ✅
+
+WebMI retourne : SUM_RP_255 = 8441
+Échelle : 100
+Résultat : 8441 / 100 = 84.41 kW ✅
+
+
+╔═══════════════════════════════════════════════════════════════╗
+║                      ✅ C'EST PRÊT !                          ║
+╚═══════════════════════════════════════════════════════════════╝
+
+→ Ajoutez vos devices DIRIS via l'interface admin
+→ Les 81 signaux sont créés automatiquement
+→ Toutes vos données sont récupérées !
+
+═══════════════════════════════════════════════════════════════
+
+Documentation complète : README_TAGMAP_AUTO.md
+Tests : TEST_AUTO_TAGMAP.md
+Guide : AUTO_TAGMAP_GUIDE.md
+
+Version : 1.1.0
+Date : 8 octobre 2025
+
+🎉 SOLUTION COMPLÈTE IMPLÉMENTÉE ! 🎉
+

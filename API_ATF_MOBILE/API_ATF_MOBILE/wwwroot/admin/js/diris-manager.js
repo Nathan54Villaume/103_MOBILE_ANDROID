@@ -75,6 +75,7 @@ export class DirisManager {
     document.getElementById('configMaxBatch')?.addEventListener('input', (e) => this.validateConfigField('maxBatch', e.target.value));
     document.getElementById('configRetentionDays')?.addEventListener('input', (e) => this.validateConfigField('retentionDays', e.target.value));
     document.getElementById('configCleanupHour')?.addEventListener('input', (e) => this.validateConfigField('cleanupHour', e.target.value));
+    document.getElementById('configMaxDatabaseSize')?.addEventListener('input', (e) => this.validateConfigField('maxDatabaseSize', e.target.value));
     
     // Devices
     document.getElementById('btnAddDevice')?.addEventListener('click', () => this.showAddDeviceDialog());
@@ -283,8 +284,31 @@ export class DirisManager {
           this.formatNumber(data.totalMeasurements || 0);
         document.getElementById('dirisMeasurementsToDelete').textContent = 
           this.formatNumber(data.measurementsToDelete || 0);
+        
+        // Format database size with ratio
+        const currentSizeMB = data.currentSizeMB || 0;
+        const maxSizeMB = data.maxDatabaseSizeMB || 1024;
+        const maxSizeGB = (maxSizeMB / 1024).toFixed(maxSizeMB >= 1024 ? 1 : 0);
+        const maxSizeDisplay = maxSizeMB >= 1024 ? `${maxSizeGB} GB` : `${maxSizeMB} MB`;
+        
         document.getElementById('dirisDatabaseSize').textContent = 
-          data.databaseSize || '0 MB';
+          `${currentSizeMB.toFixed(2)} MB / ${maxSizeDisplay}`;
+        
+        // Update percentage with color coding
+        const percentage = data.percentageUsed || 0;
+        const percentageElement = document.getElementById('dirisDatabasePercentage');
+        percentageElement.textContent = `${percentage.toFixed(1)}%`;
+        
+        // Color code based on usage
+        if (percentage >= 90) {
+          percentageElement.className = 'text-red-400 font-semibold';
+        } else if (percentage >= 75) {
+          percentageElement.className = 'text-orange-400 font-semibold';
+        } else if (percentage >= 50) {
+          percentageElement.className = 'text-yellow-400';
+        } else {
+          percentageElement.className = 'text-green-400';
+        }
         
         document.getElementById('dirisOldestMeasurement').textContent = 
           data.oldestMeasurement ? new Date(data.oldestMeasurement).toLocaleString('fr-FR') : '-';
@@ -316,6 +340,7 @@ export class DirisManager {
         if (config.dataRetention) {
           document.getElementById('configRetentionDays').value = config.dataRetention.retentionDays || 10;
           document.getElementById('configCleanupHour').value = config.dataRetention.cleanupHour || 2;
+          document.getElementById('configMaxDatabaseSize').value = config.dataRetention.maxDatabaseSizeMB || 1024;
           document.getElementById('configRetentionEnabled').checked = config.dataRetention.enabled !== false;
         }
       }
@@ -327,6 +352,7 @@ export class DirisManager {
       document.getElementById('configMaxBatch').value = 1000;
       document.getElementById('configRetentionDays').value = 10;
       document.getElementById('configCleanupHour').value = 2;
+      document.getElementById('configMaxDatabaseSize').value = 1024;
       document.getElementById('configRetentionEnabled').checked = true;
     }
   }
@@ -367,6 +393,12 @@ export class DirisManager {
           message = 'Heure de nettoyage doit être entre 0 et 23';
         }
         break;
+      case 'maxDatabaseSize':
+        if (numValue < 100 || numValue > 10240) {
+          isValid = false;
+          message = 'Taille max BDD doit être entre 100 MB et 10240 MB (10 GB)';
+        }
+        break;
     }
     
     const input = document.getElementById(`config${field.charAt(0).toUpperCase() + field.slice(1)}`);
@@ -386,7 +418,7 @@ export class DirisManager {
   async saveConfiguration() {
     try {
       // Validate all fields before saving
-      const fields = ['parallelism', 'pollInterval', 'maxBatch', 'retentionDays', 'cleanupHour'];
+      const fields = ['parallelism', 'pollInterval', 'maxBatch', 'retentionDays', 'cleanupHour', 'maxDatabaseSize'];
       const allValid = fields.every(field => {
         const value = document.getElementById(`config${field.charAt(0).toUpperCase() + field.slice(1)}`).value;
         return this.validateConfigField(field, value);
@@ -406,7 +438,8 @@ export class DirisManager {
         dataRetention: {
           enabled: document.getElementById('configRetentionEnabled').checked,
           retentionDays: parseInt(document.getElementById('configRetentionDays').value),
-          cleanupHour: parseInt(document.getElementById('configCleanupHour').value)
+          cleanupHour: parseInt(document.getElementById('configCleanupHour').value),
+          maxDatabaseSizeMB: parseInt(document.getElementById('configMaxDatabaseSize').value)
         }
       };
       

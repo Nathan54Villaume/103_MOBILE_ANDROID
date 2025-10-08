@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "gPXbwoJVExs=",
+  "dgSpecHash": "wZdI0/BEbNY=",
   "success": true,
-  "projectFilePath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
+  "projectFilePath": "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\nathan.villaume\\.nuget\\packages\\system.text.json\\8.0.5\\system.text.json.8.0.5.nupkg.sha512"
   ],

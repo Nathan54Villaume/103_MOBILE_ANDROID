@@ -22,6 +22,11 @@ public class Device
     public string GetWebMiEndpoint() => $"http://{IpAddress}/webMI/?read";
     
     /// <summary>
+    /// Gets the SNMP endpoint information for this device
+    /// </summary>
+    public (string host, int port) GetSnmpEndpoint() => (IpAddress, 161);
+    
+    /// <summary>
     /// Gets the device display name
     /// </summary>
     public string DisplayName => $"{Name} ({IpAddress})";

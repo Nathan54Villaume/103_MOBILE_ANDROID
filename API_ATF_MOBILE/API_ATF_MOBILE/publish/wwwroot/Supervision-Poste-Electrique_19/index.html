@@ -1,0 +1,1174 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ATR - Poste Electrique n°19</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M13 2L4 13.5h6L9 22l9-11.5h-6L13 2z'/%3E%3C/svg%3E">
+  
+  <!-- Tesla-inspired CSS Variables -->
+  <style>
+    :root {
+      /* Tesla Color Palette */
+      --tesla-black: #000000;
+      --tesla-dark: #0a0a0a;
+      --tesla-gray-900: #111111;
+      --tesla-gray-800: #1a1a1a;
+      --tesla-gray-700: #2a2a2a;
+      --tesla-gray-600: #3a3a3a;
+      --tesla-gray-500: #5a5a5a;
+      --tesla-gray-400: #8a8a8a;
+      --tesla-gray-300: #b0b0b0;
+      --tesla-gray-200: #d0d0d0;
+      --tesla-gray-100: #e8e8e8;
+      --tesla-white: #ffffff;
+      
+      /* Tesla Accent Colors */
+      --tesla-red: #d50000;
+      --tesla-blue: #0066cc;
+      --tesla-green: #00aa44;
+      --tesla-amber: #ffaa00;
+      --tesla-purple: #6a0dad;
+      
+      /* Tesla UI Elements */
+      --tesla-glass: rgba(255, 255, 255, 0.05);
+      --tesla-glass-hover: rgba(255, 255, 255, 0.08);
+      --tesla-border: rgba(255, 255, 255, 0.1);
+      --tesla-border-hover: rgba(255, 255, 255, 0.2);
+      --tesla-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --tesla-shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.4);
+      
+      /* Tesla Typography */
+      --tesla-font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --tesla-font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      
+      /* Tesla Spacing */
+      --tesla-space-xs: 4px;
+      --tesla-space-sm: 8px;
+      --tesla-space-md: 16px;
+      --tesla-space-lg: 24px;
+      --tesla-space-xl: 32px;
+      --tesla-space-2xl: 48px;
+      
+      /* Tesla Border Radius */
+      --tesla-radius-sm: 6px;
+      --tesla-radius-md: 12px;
+      --tesla-radius-lg: 16px;
+      --tesla-radius-xl: 24px;
+      --tesla-radius-full: 9999px;
+      
+      /* Tesla Animations */
+      --tesla-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --tesla-transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Tesla Base Styles */
+    * {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: var(--tesla-font-primary);
+      background: var(--tesla-black);
+      color: var(--tesla-white);
+      overflow-x: hidden;
+    }
+    
+    /* Tesla Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--tesla-gray-900);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--tesla-gray-600);
+      border-radius: var(--tesla-radius-full);
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--tesla-gray-500);
+    }
+    
+    /* Tesla Glass Morphism */
+    .tesla-glass {
+      background: var(--tesla-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--tesla-border);
+      border-radius: var(--tesla-radius-lg);
+      box-shadow: var(--tesla-shadow);
+      transition: var(--tesla-transition);
+    }
+    
+    .tesla-glass:hover {
+      background: var(--tesla-glass-hover);
+      border-color: var(--tesla-border-hover);
+      box-shadow: var(--tesla-shadow-hover);
+      transform: translateY(-2px);
+    }
+    
+    /* Tesla Cards */
+    .tesla-card {
+      background: var(--tesla-glass);
+      border: 1px solid var(--tesla-border);
+      border-radius: var(--tesla-radius-lg);
+      padding: var(--tesla-space-lg);
+      box-shadow: var(--tesla-shadow);
+      transition: var(--tesla-transition);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tesla-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--tesla-white), transparent);
+      opacity: 0.1;
+    }
+    
+    .tesla-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--tesla-shadow-hover);
+      border-color: var(--tesla-border-hover);
+    }
+    
+    /* Tesla Buttons */
+    .tesla-btn {
+      background: var(--tesla-glass);
+      border: 1px solid var(--tesla-border);
+      border-radius: var(--tesla-radius-md);
+      color: var(--tesla-white);
+      padding: var(--tesla-space-sm) var(--tesla-space-md);
+      font-family: var(--tesla-font-primary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--tesla-transition);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--tesla-space-sm);
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tesla-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s;
+    }
+    
+    .tesla-btn:hover::before {
+      left: 100%;
+    }
+    
+    .tesla-btn:hover {
+      background: var(--tesla-glass-hover);
+      border-color: var(--tesla-border-hover);
+      transform: translateY(-1px);
+    }
+    
+    .tesla-btn:active {
+      transform: translateY(0);
+    }
+    
+    .tesla-btn-primary {
+      background: linear-gradient(135deg, var(--tesla-blue), var(--tesla-purple));
+      border-color: var(--tesla-blue);
+    }
+    
+    .tesla-btn-primary:hover {
+      background: linear-gradient(135deg, #0077dd, #7b1fa2);
+    }
+    
+    /* Tesla Typography */
+    .tesla-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--tesla-white), var(--tesla-gray-300));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+    
+    .tesla-subtitle {
+      font-size: 1.125rem;
+      color: var(--tesla-gray-300);
+      margin: var(--tesla-space-sm) 0 0 0;
+      font-weight: 400;
+    }
+    
+    .tesla-section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--tesla-white);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--tesla-space-sm);
+    }
+    
+    /* Tesla Status Indicators */
+    .tesla-status {
+      display: flex;
+      align-items: center;
+      gap: var(--tesla-space-sm);
+      padding: var(--tesla-space-sm) var(--tesla-space-md);
+      background: var(--tesla-glass);
+      border: 1px solid var(--tesla-border);
+      border-radius: var(--tesla-radius-full);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .tesla-led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--tesla-gray-600);
+      transition: var(--tesla-transition);
+    }
+    
+    .tesla-led.on {
+      background: var(--tesla-green);
+      box-shadow: 0 0 12px var(--tesla-green);
+    }
+    
+    .tesla-led.off {
+      background: var(--tesla-red);
+      box-shadow: 0 0 8px var(--tesla-red);
+    }
+    
+    /* Tesla Grid System */
+    .tesla-grid {
+      display: grid;
+      gap: var(--tesla-space-lg);
+    }
+    
+    .tesla-grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    
+    .tesla-grid-3 {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .tesla-grid-4 {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    
+    /* Tesla Animations */
+    @keyframes tesla-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    @keyframes tesla-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 102, 204, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(0, 102, 204, 0.6); }
+    }
+    
+    .tesla-pulse {
+      animation: tesla-pulse 2s infinite;
+    }
+    
+    .tesla-glow {
+      animation: tesla-glow 3s infinite;
+    }
+    
+    /* Tesla Responsive */
+    @media (max-width: 768px) {
+      .tesla-title {
+        font-size: 2rem;
+      }
+      
+      .tesla-grid-2,
+      .tesla-grid-3,
+      .tesla-grid-4 {
+        grid-template-columns: 1fr;
+      }
+      
+      /* KPIs responsive - 2 lignes de 5 devient 1 colonne sur mobile */
+      .tesla-grid[style*="grid-template-columns: repeat(5, 1fr)"] {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Charts responsive */
+      .tesla-charts-container {
+        gap: var(--tesla-space-lg) !important;
+      }
+      
+      .chart-wrapper {
+        height: 300px !important;
+      }
+      
+      /* Largeur complète sur mobile */
+      div[style*="max-width: 70%"] {
+        max-width: 100% !important;
+      }
+    }
+    
+    @media (max-width: 1200px) {
+      /* KPIs responsive - 2 lignes de 5 devient 2 lignes de 3 sur tablette */
+      .tesla-grid[style*="grid-template-columns: repeat(5, 1fr)"] {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+      
+      /* Largeur élargie sur tablette */
+      div[style*="max-width: 70%"] {
+        max-width: 90% !important;
+      }
+    }
+    
+    @media (max-width: 900px) {
+      /* KPIs responsive - 2 lignes de 5 devient 2 lignes de 2 sur petit écran */
+      .tesla-grid[style*="grid-template-columns: repeat(5, 1fr)"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+  </style>
+  
+  <!-- Tailwind CSS local -->
+  <script>
+    // Suppression de l'avertissement Tailwind en développement
+    window.tailwind = {
+      config: {
+        content: ['./*.html', './js/*.js'],
+        theme: { extend: {} },
+        plugins: []
+      }
+    }
+    // Supprimer l'avertissement de production
+    const originalWarn = console.warn;
+    console.warn = function(...args) {
+      if (args[0] && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+        return; // Ignorer cet avertissement spécifique
+      }
+      originalWarn.apply(console, args);
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <script>
+    // Chart.js et plugins chargés
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body style="background: var(--tesla-black); color: var(--tesla-white); min-height: 100vh; font-family: var(--tesla-font-primary);">
+  <script>
+    window.__SPE_MODE__ = 'prod';
+    window.__SPE_DEMO__ = false;
+    // Configuration API via proxy CORS local
+    window.API_CONFIG = {
+      baseUrl: 'http://10.250.13.4/api/energy_Poste_19'
+    };
+  </script>
+
+  <!-- Tesla-inspired SVG Icons -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-cog" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3.25" />
+      <path d="M19.4 15a7.9 7.9 0 0 0 .09-1l1.86-1.07-1.2-2.08-2.12.5a7.9 7.9 0 0 0-.7-.7l.5-2.12-2.08-1.2L15 4.51a7.9 7.9 0 0 0-1-.09l-1.07-1.86h-1.86L9.94 4.42a7.9 7.9 0 0 0-1 .09L7.86 2.65 5.78 3.86l.5 2.12c-.24.22-.47.45-.7.7l-2.12-.5-1.2 2.08L3.12 10c-.03.33-.03.67 0 1l-1.86 1.07 1.2 2.08 2.12-.5c.22.25.45.48.7.7l-.5 2.12 2.08 1.2L9 19.49c.33.03.67.03 1 0l1.07 1.86h1.86L14 19.58c.33-.03.67-.07 1-.17l1.13 1.79 2.08-1.21-.5-2.12c.25-.22.48-.45.7-.7l2.12.5 1.2-2.08L19.4 15Z" />
+    </symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 7h10v4a5 5 0 1 1-10 0V7Z" />
+      <path d="M9 3v4M15 3v4M12 16v5" />
+    </symbol>
+    <symbol id="i-transformer" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Symbole électrique de transformateur -->
+      <circle cx="6" cy="8" r="3" />
+      <circle cx="18" cy="8" r="3" />
+      <circle cx="6" cy="16" r="3" />
+      <circle cx="18" cy="16" r="3" />
+      <path d="M9 8h6M9 16h6" />
+      <path d="M6 5v6M18 5v6M6 13v6M18 13v6" />
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24">
+      <polygon points="13 2 4 13.5 10 13.5 9 22 20 9 14 9 13 2" fill="currentColor" />
+    </symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12c3-6 5-6 8 0s5 6 8 0 3-6 4-6" />
+    </symbol>
+    <symbol id="i-pf" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12a7 7 0 1 1 14 0 7 7 0 0 1-14 0Z" />
+      <path d="M9 9h6l-6 6h6" />
+    </symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20a8 8 0 1 1 8-8h-3" />
+      <path d="M12 12l4-4" />
+    </symbol>
+    <symbol id="i-battery" viewBox="0 0 26 14" stroke="currentColor" fill="none" stroke-width="1.5">
+      <rect x="1" y="2" width="20" height="10" rx="2" ry="2" />
+      <rect x="22" y="5" width="3" height="4" rx="1" />
+      <!-- Barre verte pour le niveau d'énergie -->
+      <rect x="3" y="4" width="16" height="6" rx="1" fill="#00aa44" opacity="0.8" />
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M20 11a8 8 0 1 0-3 5.9L20 18" />
+      <path d="M20 14v4h-4" />
+    </symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
+      <circle cx="4" cy="13" r="2" />
+      <circle cx="12" cy="10" r="2" />
+      <circle cx="20" cy="7" r="2" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M12 3v14" />
+      <path d="m7 12 5 5 5-5" />
+      <path d="M5 20h14" />
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M15 6l-6 6 6 6" />
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <path d="M9 6l6 6-6 6" />
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <polygon points="5,3 19,12 5,21"/>
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </symbol>
+  </svg>
+
+  <!-- Tesla Loading Overlay -->
+  <div id="loader" class="loader-overlay active" role="status" aria-live="polite" aria-label="Chargement en cours">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <p id="loader-text" class="loader-text">Initialisation...</p>
+  </div>
+
+  <!-- Tesla Toast Layer -->
+  <div id="toast-layer" class="toast-layer" aria-live="polite" aria-atomic="false"></div>
+  
+  <!-- Tesla Context Menu - Ancien système supprimé, nouveau système géré par ChartHost.js -->
+
+  <!-- Tesla Main Container -->
+  <div class="tesla-container" style="min-height: 100vh; padding: var(--tesla-space-lg); background: linear-gradient(135deg, var(--tesla-black) 0%, var(--tesla-gray-900) 100%);">
+    
+    <!-- Inner Container avec largeur limitée -->
+    <div style="max-width: 70%; margin: 0 auto;">
+    
+    <!-- Tesla Header -->
+    <header class="tesla-header" style="margin-bottom: var(--tesla-space-2xl);">
+      <div class="tesla-glass" style="padding: var(--tesla-space-xl); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--tesla-space-lg);">
+        <div>
+          <h1 class="tesla-title">ATR - Poste Electrique n°19</h1>
+          <p id="welcome-message" class="tesla-subtitle">Interface de monitoring en temps réel</p>
+        </div>
+        <div style="display: flex; gap: var(--tesla-space-md); align-items: center; flex-wrap: wrap;">
+          <div class="tesla-status">
+            <span id="conn-led" class="tesla-led off" aria-hidden="true"></span>
+            <span id="conn-text" class="text-sm font-medium">Déconnecté</span>
+          </div>
+          <div class="tesla-status">
+            <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-calendar" /></svg>
+            <div class="text-sm" id="top-clock">-</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tesla Main Content -->
+    <main class="tesla-main" style="display: flex; flex-direction: column; gap: var(--tesla-space-2xl);">
+      
+      <!-- Tesla Transformateur 1 Section -->
+      <section class="tesla-section" data-collapsible-id="transformer-1" data-collapsible-type="section">
+        <div class="tesla-glass" style="padding: var(--tesla-space-lg);">
+          <div class="tesla-section-title" data-collapsible-trigger style="cursor: pointer; margin-bottom: var(--tesla-space-lg);">
+            <svg class="icon stroke" style="width: 24px; height: 24px; color: var(--tesla-blue);" aria-hidden="true"><use href="#i-transformer" /></svg>
+            <span>ATR - TR1</span>
+            <div style="margin-left: auto; font-size: 12px; color: var(--tesla-gray-400);">TR1</div>
+          </div>
+          
+          <div class="tesla-section-content" data-collapsible-content>
+            <!-- Tesla KPIs Grid - 2 lignes de 5 KPIs -->
+            <div id="tr1-kpis" class="tesla-grid" style="grid-template-columns: repeat(5, 1fr); gap: var(--tesla-space-md); margin-bottom: var(--tesla-space-xl);"></div>
+            
+            <!-- Tesla Charts - Toutes en format large -->
+            <div class="tesla-charts-container" style="display: flex; flex-direction: column; gap: var(--tesla-space-xl);">
+              
+              <!-- Tesla Puissance Active Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartP1" data-collapsible-type="chart" data-chart="tr1-power">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon fill" style="width: 20px; height: 20px; color: var(--tesla-amber);" aria-hidden="true"><use href="#i-bolt" /></svg>
+                    <span>Puissance Active - TR1</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-p1" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartP1" width="800" height="400" aria-label="Graphique puissance active TR1" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartP1"></div>
+                  <div class="chart-stats" data-chart-stats="chartP1"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Tensions Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartU1" data-collapsible-type="chart" data-chart="tr1-tension">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-green);" aria-hidden="true"><use href="#i-wave" /></svg>
+                    <span>Tensions de Phase - TR1</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-u1" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartU1" width="800" height="400" aria-label="Graphique tensions TR1" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartU1"></div>
+                  <div class="chart-stats" data-chart-stats="chartU1"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Facteur de Puissance Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartPF1" data-collapsible-type="chart" data-chart="tr1-pf">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-purple);" aria-hidden="true"><use href="#i-pf" /></svg>
+                    <span>Facteur de Puissance - TR1</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-pf1" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartPF1" width="800" height="400" aria-label="Graphique facteur de puissance TR1" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartPF1"></div>
+                  <div class="chart-stats" data-chart-stats="chartPF1"></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tesla Transformateur 2 Section -->
+      <section class="tesla-section" data-collapsible-id="transformer-2" data-collapsible-type="section">
+        <div class="tesla-glass" style="padding: var(--tesla-space-lg);">
+          <div class="tesla-section-title" data-collapsible-trigger style="cursor: pointer; margin-bottom: var(--tesla-space-lg);">
+            <svg class="icon stroke" style="width: 24px; height: 24px; color: var(--tesla-red);" aria-hidden="true"><use href="#i-transformer" /></svg>
+            <span>ATR - TR2</span>
+            <div style="margin-left: auto; font-size: 12px; color: var(--tesla-gray-400);">TR2</div>
+          </div>
+          
+          <div class="tesla-section-content" data-collapsible-content>
+            <!-- Tesla KPIs Grid - 2 lignes de 5 KPIs -->
+            <div id="tr2-kpis" class="tesla-grid" style="grid-template-columns: repeat(5, 1fr); gap: var(--tesla-space-md); margin-bottom: var(--tesla-space-xl);"></div>
+            
+            <!-- Tesla Charts - Toutes en format large -->
+            <div class="tesla-charts-container" style="display: flex; flex-direction: column; gap: var(--tesla-space-xl);">
+              
+              <!-- Tesla Puissance Active Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartP2" data-collapsible-type="chart" data-chart="tr2-power">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon fill" style="width: 20px; height: 20px; color: var(--tesla-amber);" aria-hidden="true"><use href="#i-bolt" /></svg>
+                    <span>Puissance Active - TR2</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-p2" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartP2" width="800" height="400" aria-label="Graphique puissance active TR2" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartP2"></div>
+                  <div class="chart-stats" data-chart-stats="chartP2"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Tensions Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartU2" data-collapsible-type="chart" data-chart="tr2-tension">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-green);" aria-hidden="true"><use href="#i-wave" /></svg>
+                    <span>Tensions de Phase - TR2</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-u2" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartU2" width="800" height="400" aria-label="Graphique tensions TR2" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartU2"></div>
+                  <div class="chart-stats" data-chart-stats="chartU2"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Facteur de Puissance Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartPF2" data-collapsible-type="chart" data-chart="tr2-pf">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-purple);" aria-hidden="true"><use href="#i-pf" /></svg>
+                    <span>Facteur de Puissance - TR2</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-pf2" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartPF2" width="800" height="400" aria-label="Graphique facteur de puissance TR2" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartPF2"></div>
+                  <div class="chart-stats" data-chart-stats="chartPF2"></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tesla Transformateur 3 Section -->
+      <section class="tesla-section" data-collapsible-id="transformer-3" data-collapsible-type="section">
+        <div class="tesla-glass" style="padding: var(--tesla-space-lg);">
+          <div class="tesla-section-title" data-collapsible-trigger style="cursor: pointer; margin-bottom: var(--tesla-space-lg);">
+            <svg class="icon stroke" style="width: 24px; height: 24px; color: var(--tesla-green);" aria-hidden="true"><use href="#i-transformer" /></svg>
+            <span>ATR - TR3</span>
+            <div style="margin-left: auto; font-size: 12px; color: var(--tesla-gray-400);">TR3</div>
+          </div>
+          
+          <div class="tesla-section-content" data-collapsible-content>
+            <!-- Tesla KPIs Grid - 2 lignes de 5 KPIs -->
+            <div id="tr3-kpis" class="tesla-grid" style="grid-template-columns: repeat(5, 1fr); gap: var(--tesla-space-md); margin-bottom: var(--tesla-space-xl);"></div>
+            
+            <!-- Tesla Charts - Toutes en format large -->
+            <div class="tesla-charts-container" style="display: flex; flex-direction: column; gap: var(--tesla-space-xl);">
+              
+              <!-- Tesla Puissance Active Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartP3" data-collapsible-type="chart" data-chart="tr3-power">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon fill" style="width: 20px; height: 20px; color: var(--tesla-amber);" aria-hidden="true"><use href="#i-bolt" /></svg>
+                    <span>Puissance Active - TR3</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-p3" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartP3" width="800" height="400" aria-label="Graphique puissance active TR3" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartP3"></div>
+                  <div class="chart-stats" data-chart-stats="chartP3"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Tensions Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartU3" data-collapsible-type="chart" data-chart="tr3-tension">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-green);" aria-hidden="true"><use href="#i-wave" /></svg>
+                    <span>Tensions de Phase - TR3</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-u3" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartU3" width="800" height="400" aria-label="Graphique tensions TR3" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartU3"></div>
+                  <div class="chart-stats" data-chart-stats="chartU3"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Facteur de Puissance Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartPF3" data-collapsible-type="chart" data-chart="tr3-pf">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-purple);" aria-hidden="true"><use href="#i-pf" /></svg>
+                    <span>Facteur de Puissance - TR3</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-pf3" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartPF3" width="800" height="400" aria-label="Graphique facteur de puissance TR3" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartPF3"></div>
+                  <div class="chart-stats" data-chart-stats="chartPF3"></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tesla Transformateur 4 Section -->
+      <section class="tesla-section" data-collapsible-id="transformer-4" data-collapsible-type="section">
+        <div class="tesla-glass" style="padding: var(--tesla-space-lg);">
+          <div class="tesla-section-title" data-collapsible-trigger style="cursor: pointer; margin-bottom: var(--tesla-space-lg);">
+            <svg class="icon stroke" style="width: 24px; height: 24px; color: var(--tesla-amber);" aria-hidden="true"><use href="#i-transformer" /></svg>
+            <span>ATR - TR4</span>
+            <div style="margin-left: auto; font-size: 12px; color: var(--tesla-gray-400);">TR4</div>
+          </div>
+          
+          <div class="tesla-section-content" data-collapsible-content>
+            <!-- Tesla KPIs Grid - 2 lignes de 5 KPIs -->
+            <div id="tr4-kpis" class="tesla-grid" style="grid-template-columns: repeat(5, 1fr); gap: var(--tesla-space-md); margin-bottom: var(--tesla-space-xl);"></div>
+            
+            <!-- Tesla Charts - Toutes en format large -->
+            <div class="tesla-charts-container" style="display: flex; flex-direction: column; gap: var(--tesla-space-xl);">
+              
+              <!-- Tesla Puissance Active Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartP4" data-collapsible-type="chart" data-chart="tr4-power">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon fill" style="width: 20px; height: 20px; color: var(--tesla-amber);" aria-hidden="true"><use href="#i-bolt" /></svg>
+                    <span>Puissance Active - TR4</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-p4" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartP4" width="800" height="400" aria-label="Graphique puissance active TR4" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartP4"></div>
+                  <div class="chart-stats" data-chart-stats="chartP4"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Tensions Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartU4" data-collapsible-type="chart" data-chart="tr4-tension">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-green);" aria-hidden="true"><use href="#i-wave" /></svg>
+                    <span>Tensions de Phase - TR4</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-u4" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartU4" width="800" height="400" aria-label="Graphique tensions TR4" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartU4"></div>
+                  <div class="chart-stats" data-chart-stats="chartU4"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Facteur de Puissance Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartPF4" data-collapsible-type="chart" data-chart="tr4-pf">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-purple);" aria-hidden="true"><use href="#i-pf" /></svg>
+                    <span>Facteur de Puissance - TR4</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-pf4" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartPF4" width="800" height="400" aria-label="Graphique facteur de puissance TR4" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartPF4"></div>
+                  <div class="chart-stats" data-chart-stats="chartPF4"></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tesla Transformateur 5 Section -->
+      <section class="tesla-section" data-collapsible-id="transformer-5" data-collapsible-type="section">
+        <div class="tesla-glass" style="padding: var(--tesla-space-lg);">
+          <div class="tesla-section-title" data-collapsible-trigger style="cursor: pointer; margin-bottom: var(--tesla-space-lg);">
+            <svg class="icon stroke" style="width: 24px; height: 24px; color: var(--tesla-purple);" aria-hidden="true"><use href="#i-transformer" /></svg>
+            <span>ATR - TR5</span>
+            <div style="margin-left: auto; font-size: 12px; color: var(--tesla-gray-400);">TR5</div>
+          </div>
+          
+          <div class="tesla-section-content" data-collapsible-content>
+            <!-- Tesla KPIs Grid - 2 lignes de 5 KPIs -->
+            <div id="tr5-kpis" class="tesla-grid" style="grid-template-columns: repeat(5, 1fr); gap: var(--tesla-space-md); margin-bottom: var(--tesla-space-xl);"></div>
+            
+            <!-- Tesla Charts - Toutes en format large -->
+            <div class="tesla-charts-container" style="display: flex; flex-direction: column; gap: var(--tesla-space-xl);">
+              
+              <!-- Tesla Puissance Active Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartP5" data-collapsible-type="chart" data-chart="tr5-power">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon fill" style="width: 20px; height: 20px; color: var(--tesla-amber);" aria-hidden="true"><use href="#i-bolt" /></svg>
+                    <span>Puissance Active - TR5</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-p5" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartP5" width="800" height="400" aria-label="Graphique puissance active TR5" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartP5"></div>
+                  <div class="chart-stats" data-chart-stats="chartP5"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Tensions Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartU5" data-collapsible-type="chart" data-chart="tr5-tension">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-green);" aria-hidden="true"><use href="#i-wave" /></svg>
+                    <span>Tensions de Phase - TR5</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-u5" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartU5" width="800" height="400" aria-label="Graphique tensions TR5" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartU5"></div>
+                  <div class="chart-stats" data-chart-stats="chartU5"></div>
+                </div>
+              </article>
+
+              <!-- Tesla Facteur de Puissance Chart -->
+              <article class="tesla-card chart-card" data-collapsible-id="chartPF5" data-collapsible-type="chart" data-chart="tr5-pf">
+                <header class="tesla-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--tesla-space-lg);">
+                  <button type="button" class="tesla-section-title" data-collapsible-trigger style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
+                    <svg class="icon stroke" style="width: 20px; height: 20px; color: var(--tesla-purple);" aria-hidden="true"><use href="#i-pf" /></svg>
+                    <span>Facteur de Puissance - TR5</span>
+                  </button>
+                  <div style="display: flex; gap: var(--tesla-space-sm); align-items: center;">
+                    <select id="win-pf5" class="tesla-btn" style="background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600); padding: 4px 8px; font-size: 12px;" autocomplete="off">
+                      <option value="15">15 min</option>
+                      <option value="60">1 h</option>
+                      <option value="240">4 h</option>
+                      <option value="1440">24 h</option>
+                    </select>
+                    <div style="display: flex; gap: var(--tesla-space-xs);">
+                      <button type="button" class="tesla-btn" data-action="reset" aria-label="Réinitialiser la vue" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-refresh" /></svg>
+                      </button>
+                      <button type="button" class="tesla-btn" data-action="settings" aria-label="Ouvrir les réglages" style="padding: 8px;">
+                        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-sliders" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="tesla-card-body" data-collapsible-content>
+                  <div class="chart-wrapper" style="height: 400px; position: relative;">
+                    <canvas id="chartPF5" width="800" height="400" aria-label="Graphique facteur de puissance TR5" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                  <div class="chart-accessories" data-chart-controls="chartPF5"></div>
+                  <div class="chart-stats" data-chart-stats="chartPF5"></div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Tesla Footer -->
+    <footer class="tesla-footer" style="margin-top: var(--tesla-space-2xl); padding: var(--tesla-space-lg); border-top: 1px solid var(--tesla-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--tesla-space-md);">
+      <div class="tesla-status">
+        <svg class="icon stroke" style="width: 16px; height: 16px;" aria-hidden="true"><use href="#i-info" /></svg>
+        <span>Dernière mise à jour : <time id="last-update" datetime="">-</time></span>
+      </div>
+      <div class="tesla-status">
+        <span>N.Villaume</span>
+      </div>
+    </footer>
+    
+    </div><!-- Fin Inner Container 70% -->
+  </div>
+
+  <!-- Tesla Settings Button -->
+  <button id="btn-settings" type="button" class="tesla-btn tesla-btn-primary" style="position: fixed; bottom: var(--tesla-space-lg); right: var(--tesla-space-lg); z-index: 1000; border-radius: var(--tesla-radius-full); padding: var(--tesla-space-md); box-shadow: var(--tesla-shadow-hover);" aria-label="Ouvrir les paramètres">
+    <svg class="icon stroke" style="width: 24px; height: 24px;" aria-hidden="true"><use href="#i-cog" /></svg>
+  </button>
+
+  <!-- Tesla Settings Dialog -->
+  <dialog id="settings-dialog" class="app-dialog">
+    <form method="dialog" class="dialog-content" style="background: var(--tesla-glass); border: 1px solid var(--tesla-border); border-radius: var(--tesla-radius-lg); backdrop-filter: blur(20px);">
+      <header class="dialog-head" style="padding: var(--tesla-space-lg); border-bottom: 1px solid var(--tesla-border);">
+        <div>
+          <h2 class="tesla-section-title">Paramètres API</h2>
+          <p class="tesla-subtitle" style="font-size: 14px; margin-top: var(--tesla-space-xs);">Configurer l'adresse de base utilisée pour les appels.</p>
+        </div>
+        <button type="button" class="tesla-btn" data-dialog-close aria-label="Fermer">Fermer</button>
+      </header>
+      <div class="dialog-body" style="padding: var(--tesla-space-lg);">
+        <label class="tesla-status" style="flex-direction: column; align-items: flex-start; gap: var(--tesla-space-sm);">
+          <span>Adresse API (baseURL)</span>
+          <input id="settings-api-base" name="api-base" type="url" required placeholder="https://serveur/api" class="tesla-btn" style="width: 100%; background: var(--tesla-gray-800); border: 1px solid var(--tesla-gray-600);" />
+        </label>
+        <div id="settings-feedback" class="tesla-subtitle" style="font-size: 12px; margin-top: var(--tesla-space-sm);" role="status" aria-live="polite"></div>
+      </div>
+      <footer class="dialog-actions" style="padding: var(--tesla-space-lg); border-top: 1px solid var(--tesla-border); display: flex; justify-content: flex-end; gap: var(--tesla-space-sm);">
+        <button type="button" id="settings-test" class="tesla-btn">Tester</button>
+        <button type="button" id="settings-reset" class="tesla-btn">Réinitialiser</button>
+        <button type="submit" id="settings-save" class="tesla-btn tesla-btn-primary">Enregistrer</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Tesla Chart Settings Dialog -->
+  <dialog id="chart-settings-dialog" class="app-dialog">
+    <form method="dialog" class="dialog-content" style="background: var(--tesla-glass); border: 1px solid var(--tesla-border); border-radius: var(--tesla-radius-lg); backdrop-filter: blur(20px);">
+      <header class="dialog-head" style="padding: var(--tesla-space-lg); border-bottom: 1px solid var(--tesla-border);">
+        <div>
+          <h2 class="tesla-section-title" id="chart-settings-title">Réglages du graphique</h2>
+          <p class="tesla-subtitle" style="font-size: 14px; margin-top: var(--tesla-space-xs);" id="chart-settings-sub">-</p>
+        </div>
+        <button type="button" class="tesla-btn" data-dialog-close aria-label="Fermer">Fermer</button>
+      </header>
+      <div class="dialog-body" style="padding: 16px;" id="chart-settings-body">
+        <!-- Le contenu est injecté côté JS -->
+      </div>
+      <footer class="dialog-actions" style="padding: 16px; border-top: 1px solid var(--tesla-border); display: flex; justify-content: flex-end; gap: 12px; background: var(--tesla-gray-800);">
+        <button type="button" class="tesla-btn" id="chart-settings-reset" style="background: var(--tesla-gray-700); border: 1px solid var(--tesla-gray-500); color: var(--tesla-gray-100); padding: 8px 16px; font-size: 13px;">Réinitialiser</button>
+        <button type="submit" class="tesla-btn" id="chart-settings-save" style="background: var(--tesla-gray-600); border: 1px solid var(--tesla-gray-400); color: var(--tesla-white); padding: 8px 16px; font-size: 13px; font-weight: 500;">Valider</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Tesla Context Menu Template - Ancien système supprimé, nouveau système géré par ChartHost.js -->
+
+  <!-- Tesla Toast Template -->
+  <template id="toast-template">
+    <div class="toast" role="status" aria-live="polite" style="background: var(--tesla-glass); border: 1px solid var(--tesla-border); border-radius: var(--tesla-radius-md); backdrop-filter: blur(20px); padding: var(--tesla-space-md); display: flex; justify-content: space-between; align-items: center; gap: var(--tesla-space-sm); box-shadow: var(--tesla-shadow);">
+      <span data-role="message"></span>
+      <button type="button" class="tesla-btn" style="padding: 4px 8px; font-size: 18px; line-height: 1;" aria-label="Fermer">×</button>
+    </div>
+  </template>
+
+  <!-- Tesla Scripts -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

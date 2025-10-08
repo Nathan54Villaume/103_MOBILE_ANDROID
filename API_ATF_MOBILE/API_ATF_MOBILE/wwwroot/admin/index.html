@@ -836,8 +836,10 @@
               </div>
               <div class="p-4 bg-white/5 rounded-lg">
                 <p class="text-xs text-slate-400 mb-1">Taille BDD</p>
-                <p id="dirisDatabaseSize" class="text-2xl font-bold text-blue-400">0 MB</p>
-                <p class="text-xs text-slate-400 mt-1">Table DIRIS</p>
+                <p id="dirisDatabaseSize" class="text-2xl font-bold text-blue-400">0 MB / 1 GB</p>
+                <p class="text-xs text-slate-400 mt-1">
+                  <span id="dirisDatabasePercentage">0%</span> utilisé
+                </p>
               </div>
             </div>
             
@@ -1101,6 +1103,14 @@
                     </label>
                     <input type="number" id="configCleanupHour" min="0" max="23" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="2">
                     <p class="text-xs text-slate-500 mt-1">Format 24h (0-23)</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Taille max BDD (MB)
+                      <span class="config-info-icon" data-tooltip="Taille maximale allouée à la table DIRIS.Measurements. Recommandé: 1024 MB (1 GB). Min: 100 MB, Max: 10240 MB (10 GB)">ℹ️</span>
+                    </label>
+                    <input type="number" id="configMaxDatabaseSize" min="100" max="10240" step="128" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1024">
+                    <p class="text-xs text-slate-500 mt-1">1024 MB = 1 GB</p>
                   </div>
                   <div class="flex items-center gap-2">
                     <input type="checkbox" id="configRetentionEnabled" class="w-4 h-4 rounded bg-white/5 border-white/10">

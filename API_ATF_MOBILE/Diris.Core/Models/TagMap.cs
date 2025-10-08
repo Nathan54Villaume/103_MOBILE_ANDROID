@@ -11,6 +11,7 @@ public class TagMap
     public string? Unit { get; set; }
     public double Scale { get; set; } = 1.0;
     public bool Enabled { get; set; } = true;
+    public string? Description { get; set; }
     
     /// <summary>
     /// Applies the scale factor to a raw value

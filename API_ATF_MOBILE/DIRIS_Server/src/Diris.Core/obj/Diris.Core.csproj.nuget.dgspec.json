@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj": {}
+    "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj": {}
   },
   "projects": {
-    "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj": {
+    "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
+        "projectUniqueName": "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
         "projectName": "Diris.Core",
-        "projectPath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
+        "projectPath": "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Core\\Diris.Core.csproj",
         "packagesPath": "C:\\Users\\nathan.villaume\\.nuget\\packages\\",
-        "outputPath": "R:\\COMMUN\\104_DIRIS\\DIRIS_Server\\src\\Diris.Core\\obj\\",
+        "outputPath": "r:\\COMMUN\\103_MOBILE_ANDROID\\API_ATF_MOBILE\\DIRIS_Server\\src\\Diris.Core\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

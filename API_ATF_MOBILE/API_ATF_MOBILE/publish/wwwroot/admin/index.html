@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Administration Serveur — API_AI_ATF</title>
+  <!-- Tailwind CSS CDN - Pour développement uniquement -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+          colors: {
+            ink: { 900: "#0b0f14", 800: "#0f141b", 700: "#131924", 600: "#1a2332" },
+            brand: { 400: "#34d399", 500: "#10b981", 600: "#059669" }
+          },
+          boxShadow: { glass: "0 10px 30px -12px rgba(0,0,0,.5)" }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    html, body { background: #0b0f14; min-height: 100vh; }
+    .card { 
+      backdrop-filter: blur(6px); 
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); 
+      border: 1px solid rgba(255,255,255,0.08); 
+    }
+    .card-hover { transition: all 0.2s; }
+    .card-hover:hover { background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05)); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.online { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    .status-dot.offline { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+    .status-dot.warning { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    .sidebar { transition: transform 0.3s; }
+    .sidebar.hidden-mobile { transform: translateX(-100%); }
+    @media (min-width: 768px) { .sidebar.hidden-mobile { transform: translateX(0); } }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    #loginScreen { backdrop-filter: blur(10px); }
+    
+    /* Styles pour les dropdowns/select */
+    select {
+      background: rgba(255,255,255,0.05) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      color: #f1f5f9 !important;
+    }
+    select option {
+      background: #1a2332 !important;
+      color: #f1f5f9 !important;
+    }
+    
+    /* Animation pour les cartes collapsibles */
+    .collapsible-content {
+      transition: all 0.3s ease-in-out;
+      overflow: hidden;
+    }
+    .collapsible-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+    .collapsible-content.expanded {
+      max-height: 1000px;
+      opacity: 1;
+    }
+    .collapsible-header {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .collapsible-header:hover {
+      background: rgba(255,255,255,0.05);
+    }
+    
+    /* Couleurs dynamiques pour les valeurs */
+    .value-excellent { color: #10b981; } /* Vert - Excellent */
+    .value-good { color: #34d399; } /* Vert clair - Bon */
+    .value-warning { color: #f59e0b; } /* Orange - Attention */
+    .value-danger { color: #ef4444; } /* Rouge - Danger */
+    .value-critical { color: #dc2626; } /* Rouge foncé - Critique */
+    
+    /* DIRIS Tabs */
+    .diris-tab-btn {
+      color: #94a3b8;
+    }
+    .diris-tab-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      font-weight: 600;
+    }
+    .diris-tab-content {
+      display: none;
+    }
+    .diris-tab-content:not(.hidden) {
+      display: block;
+    }
+    
+    /* Configuration info icons and tooltips */
+    .config-info-icon {
+      cursor: help;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+      position: relative;
+    }
+    
+    .config-info-icon:hover {
+      opacity: 1;
+    }
+    
+    .config-info-icon::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      max-width: 300px;
+      white-space: normal;
+      text-align: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .config-info-icon:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .config-info-icon::before {
+      content: '';
+      position: absolute;
+      bottom: 115%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(0, 0, 0, 0.9);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .config-info-icon:hover::before {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-100 font-sans">
+  
+  <!-- Écran de connexion -->
+  <div id="loginScreen" class="fixed inset-0 z-50 bg-ink-900/95 flex items-center justify-center p-4">
+    <div class="card rounded-2xl p-8 shadow-glass max-w-md w-full">
+      <div class="text-center mb-6">
+        <div class="h-16 w-16 mx-auto rounded-2xl bg-brand-500/20 grid place-items-center text-4xl mb-4">🔐</div>
+        <h2 class="text-2xl font-bold">API_AI_ATF</h2>
+        <p class="text-slate-400 text-sm mt-2">Authentification requise</p>
+      </div>
+      
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm text-slate-300 mb-2">Nom d'utilisateur</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            autocomplete="username"
+            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label for="password" class="block text-sm text-slate-300 mb-2">Mot de passe</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            autocomplete="current-password"
+            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            required
+          />
+        </div>
+        
+        <div id="loginError" class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"></div>
+        
+        <button 
+          type="submit" 
+          class="w-full px-4 py-3 bg-brand-500 hover:bg-brand-600 rounded-lg font-semibold transition-colors"
+        >
+          Se connecter
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Application principale -->
+  <div id="app" class="hidden h-full flex">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 bg-ink-800 border-r border-white/10 flex flex-col">
+      <div class="p-5 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-xl bg-brand-500/20 grid place-items-center text-2xl">⚙️</div>
+          <div class="flex-1">
+            <h1 class="font-bold text-sm">Administration</h1>
+            <p class="text-xs text-slate-400">API_AI_ATF</p>
+          </div>
+        </div>
+      </div>
+      
+      <nav class="flex-1 p-4 space-y-1">
+        <a href="#dashboard" class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>📊</span>
+          <span class="text-sm font-medium">Dashboard</span>
+        </a>
+        <a href="#server" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>💻</span>
+          <span class="text-sm font-medium">Serveur</span>
+        </a>
+        <a href="#system" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>🖥️</span>
+          <span class="text-sm font-medium">Système</span>
+        </a>
+        <a href="#database" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>💾</span>
+          <span class="text-sm font-medium">Bases de données</span>
+        </a>
+        <a href="#s7" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>🔌</span>
+          <span class="text-sm font-medium">PLC S7</span>
+        </a>
+        <a href="#diris" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>⚡</span>
+          <span class="text-sm font-medium">DIRIS</span>
+        </a>
+        <a href="#logs" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>📝</span>
+          <span class="text-sm font-medium">Logs</span>
+        </a>
+        <a href="#config" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>⚙️</span>
+          <span class="text-sm font-medium">Configuration</span>
+        </a>
+        <a href="#api" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>🌐</span>
+          <span class="text-sm font-medium">API</span>
+        </a>
+        <a href="#requests" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <span>📡</span>
+          <span class="text-sm font-medium">Requêtes</span>
+        </a>
+      </nav>
+      
+      <div class="p-4 border-t border-white/10">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-8 w-8 rounded-full bg-brand-500/20 grid place-items-center text-sm">👤</div>
+          <div class="flex-1 min-w-0">
+            <p id="userDisplay" class="text-sm font-medium truncate">admin</p>
+            <p class="text-xs text-slate-400">Administrateur</p>
+          </div>
+        </div>
+        <button id="btnLogout" class="w-full px-3 py-2 text-sm rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors">
+          Déconnexion
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar">
+      
+      <!-- Header -->
+      <header class="sticky top-0 z-40 border-b border-white/10 bg-ink-900/80 backdrop-blur">
+        <div class="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
+          <div class="flex-1">
+            <h2 id="pageTitle" class="text-xl font-semibold">Dashboard</h2>
+            <p id="pageSubtitle" class="text-sm text-slate-400">Vue d'ensemble du système</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+              <div id="globalStatusDot" class="status-dot online"></div>
+              <span id="globalStatus" class="text-sm">En ligne</span>
+            </div>
+            <button id="btnRefresh" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+              🔄
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="p-6">
+        <div class="max-w-7xl mx-auto">
+        
+        <!-- Dashboard Section -->
+        <section id="section-dashboard" class="space-y-6">
+          
+          <!-- KPIs -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">CPU</p>
+                <span class="text-xl">💻</span>
+              </div>
+              <p id="kpiCpu" class="text-2xl font-bold">—%</p>
+              <p class="text-xs text-slate-500 mt-1">Utilisation processeur</p>
+            </div>
+            
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">Mémoire</p>
+                <span class="text-xl">🧠</span>
+              </div>
+              <p id="kpiMemory" class="text-2xl font-bold">— MB</p>
+              <p class="text-xs text-slate-500 mt-1"><span id="kpiMemoryPercent">—</span>% utilisée</p>
+            </div>
+            
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">Uptime</p>
+                <span class="text-xl">⏱️</span>
+              </div>
+              <p id="kpiUptime" class="text-2xl font-bold">—</p>
+              <p class="text-xs text-slate-500 mt-1">Temps de fonctionnement</p>
+            </div>
+            
+            <div class="card rounded-xl p-4 shadow-glass">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs">Connexions</p>
+                <span class="text-xl">🔌</span>
+              </div>
+              <p id="kpiConnections" class="text-2xl font-bold">—</p>
+              <p class="text-xs text-slate-500 mt-1">BDD + PLC</p>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">Mémoire Serveur vs Machine</h3>
+              <div style="height: 250px; max-height: 250px; position: relative;">
+                <canvas id="chartMemoryUsage"></canvas>
+              </div>
+            </div>
+            
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">CPU Serveur vs Machine</h3>
+              <div style="height: 250px; max-height: 250px; position: relative;">
+                <canvas id="chartCpuUsage"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Health Status -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">État des services</h3>
+            <div id="servicesStatus" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Logs Chart moved below services -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Statistiques Logs</h3>
+            <div style="height: 250px; max-height: 250px; position: relative;">
+              <canvas id="chartLogs"></canvas>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Server Section (hidden by default) -->
+        <section id="section-server" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Informations Serveur</h3>
+            <div id="serverInfo" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- System Section (hidden by default) -->
+        <section id="section-system" class="hidden space-y-6">
+          <!-- Machine Metrics -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">🖥️ Métriques Machine</h3>
+            <div id="systemMetrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Process Metrics -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">⚙️ Métriques Processus</h3>
+            <div id="processMetrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- System Charts -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">CPU Système vs Processus</h3>
+              <div style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="chartSystemCpu"></canvas>
+              </div>
+            </div>
+            <div class="card rounded-xl p-5 shadow-glass">
+              <h3 class="font-semibold mb-4">Mémoire Système vs Processus</h3>
+              <div style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="chartSystemMemory"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Database Section (hidden by default) -->
+        <section id="section-database" class="hidden space-y-6">
+          <div id="databaseList" class="space-y-4">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- S7 Section (hidden by default) -->
+        <section id="section-s7" class="hidden space-y-6">
+          
+          <!-- Formulaire d'ajout -->
+          <div class="card rounded-xl shadow-glass">
+            <div class="collapsible-header p-5 pb-3 flex items-center justify-between" onclick="toggleCollapsible('addPlcCard')">
+              <h3 class="font-semibold">➕ Ajouter un PLC</h3>
+              <svg id="addPlcCardIcon" class="w-5 h-5 transform transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <div id="addPlcCard" class="collapsible-content collapsed px-5 pb-5">
+              <form id="addPlcForm" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="plcName" class="block text-sm text-slate-300 mb-2">Nom *</label>
+                  <input 
+                    type="text" 
+                    id="plcName" 
+                    name="name"
+                    placeholder="Nom du PLC"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcIp" class="block text-sm text-slate-300 mb-2">Adresse IP *</label>
+                  <input 
+                    type="text" 
+                    id="plcIp" 
+                    name="ipAddress"
+                    placeholder="IP"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcRack" class="block text-sm text-slate-300 mb-2">Rack</label>
+                  <input 
+                    type="number" 
+                    id="plcRack" 
+                    name="rack"
+                    value="0"
+                    min="0"
+                    max="7"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcSlot" class="block text-sm text-slate-300 mb-2">Slot</label>
+                  <input 
+                    type="number" 
+                    id="plcSlot" 
+                    name="slot"
+                    value="1"
+                    min="0"
+                    max="31"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcPort" class="block text-sm text-slate-300 mb-2">Port</label>
+                  <input 
+                    type="number" 
+                    id="plcPort" 
+                    name="port"
+                    value="102"
+                    min="1"
+                    max="65535"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                
+                <div>
+                  <label for="plcCpuType" class="block text-sm text-slate-300 mb-2">Type CPU</label>
+                  <select 
+                    id="plcCpuType" 
+                    name="cpuType"
+                    class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="S7-1500">S7-1500</option>
+                    <option value="S7-1200">S7-1200</option>
+                    <option value="S7-400">S7-400</option>
+                    <option value="S7-300">S7-300</option>
+                  </select>
+                </div>
+              </div>
+              
+                <div class="flex justify-end">
+                  <button 
+                    type="submit" 
+                    class="px-6 py-2 bg-brand-500 hover:bg-brand-600 rounded-lg font-semibold transition-colors"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Liste des connexions -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Connexions S7 </h3>
+            <div id="plcConnectionsList" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          
+        </section>
+
+        <!-- EXTENSION: Logs Section - Event Viewer (hidden by default) -->
+        <section id="section-logs" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <!-- Barre d'actions (sticky) -->
+            <div class="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10 pb-4 mb-4 border-b border-white/10">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <h3 class="font-semibold">Event Viewer - Logs système</h3>
+                  <span id="logCounter" class="px-2 py-1 text-xs bg-white/10 rounded">0 / 0</span>
+                </div>
+                
+                <!-- Contrôles Play/Stop/Clear/Export -->
+                <div class="flex gap-2">
+                  <button id="btnLogPlay" class="px-3 py-2 text-sm rounded-lg bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 transition-colors flex items-center gap-2 focus:outline-none focus:ring-0">
+                    ▶️ Play
+                  </button>
+                  <button id="btnLogStop" class="px-3 py-2 text-sm rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 transition-colors flex items-center gap-2 opacity-50 cursor-not-allowed focus:outline-none focus:ring-0" disabled>
+                    ⏸️ Stop
+                  </button>
+                  <button id="btnLogClear" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
+                    🗑️ Effacer
+                  </button>
+                  <button id="btnLogRefresh" class="px-3 py-2 text-sm rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 transition-colors focus:outline-none focus:ring-0">
+                    🔄 Actualiser
+                  </button>
+                  <button id="btnLogExportCsv" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
+                    📊 CSV
+                  </button>
+                  <button id="btnLogExportJson" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
+                    📄 JSON
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Filtres dynamiques -->
+              <div class="flex gap-2 items-center flex-wrap">
+                <input 
+                  type="text" 
+                  id="logSearchText" 
+                  placeholder="Recherche plein texte (message + détails)..." 
+                  class="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm min-w-[300px] focus:outline-none focus:ring-0 focus:border-white/20"
+                />
+                <button id="btnResetFilters" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
+                  🔄 Réinitialiser filtres
+                </button>
+              </div>
+              
+              <!-- Facettes (optionnel, à activer si souhaité) -->
+              <div id="logFacets" class="hidden mt-3 text-xs text-slate-400">
+                <!-- Facettes dynamiques seront générées ici -->
+              </div>
+            </div>
+            
+            <!-- En-tête du tableau (colonnes) -->
+            <div class="text-xs text-slate-400 mb-2 px-3 grid grid-cols-12 gap-2">
+              <div class="col-span-1">Time</div>
+              <div class="col-span-1">Source</div>
+              <div class="col-span-2">HTTP</div>
+              <div class="col-span-6">Message</div>
+              <div class="col-span-2 text-right">Duration</div>
+            </div>
+            
+            <!-- Liste des logs (virtualisation) -->
+            <div id="logsList" class="space-y-1 max-h-[600px] overflow-y-auto hide-scrollbar">
+              <!-- Dynamically populated -->
+              <p class="text-center text-slate-400 py-8">Chargement...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Config Section (hidden by default) -->
+        <section id="section-config" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Configuration actuelle</h3>
+            <div id="configInfo" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- DIRIS Section (hidden by default) -->
+        <section id="section-diris" class="hidden space-y-6">
+          
+          <!-- Tabs Navigation DIRIS -->
+          <div class="card rounded-xl p-1 shadow-glass">
+            <div class="flex gap-1 overflow-x-auto hide-scrollbar">
+              <button class="diris-tab-btn active flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="overview">
+                📊 Vue d'ensemble
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="devices">
+                🔌 Devices
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="coherence">
+                📈 Cohérence
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="config">
+                ⚙️ Configuration
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="history">
+                📜 Historique
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB: Vue d'ensemble -->
+          <div id="diris-tab-overview" class="diris-tab-content space-y-6">
+          
+          <!-- Statut global DIRIS -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Statut DIRIS Global</h3>
+                <p class="text-xs text-slate-400 mt-1">Vue d'ensemble du système DIRIS</p>
+              </div>
+              <div id="dirisGlobalStatus" class="flex items-center gap-2">
+                <div id="dirisGlobalStatusDot" class="status-dot unknown"></div>
+                <span id="dirisGlobalStatusText" class="text-sm font-medium">Vérification...</span>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="p-3 bg-white/5 rounded-lg text-center">
+                <p class="text-xs text-slate-400 mb-1">Services</p>
+                <p id="dirisServicesStatus" class="text-lg font-bold text-green-400">✅ Actifs</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg text-center">
+                <p class="text-xs text-slate-400 mb-1">Devices</p>
+                <p id="dirisDevicesCount" class="text-lg font-bold text-blue-400">0</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg text-center">
+                <p class="text-xs text-slate-400 mb-1">Performance</p>
+                <p id="dirisPerformanceStatus" class="text-lg font-bold text-yellow-400">⚡ Bon</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg text-center">
+                <p class="text-xs text-slate-400 mb-1">Alertes</p>
+                <p id="dirisAlertsCount" class="text-lg font-bold text-orange-400">0</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Services DIRIS -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Services DIRIS</h3>
+                <p class="text-xs text-slate-400 mt-1">Gestion des services d'acquisition</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="dirisAutoRefresh" class="w-4 h-4 rounded bg-white/5 border-white/10" checked>
+                  <label for="dirisAutoRefresh" class="text-xs text-slate-400">Auto-refresh</label>
+                </div>
+                <button id="btnRefreshDiris" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🔄 Actualiser
+                </button>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Acquisition Service -->
+              <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium">Service d'Acquisition</h4>
+                  <div id="dirisAcqStatusDot" class="status-dot unknown"></div>
+                </div>
+                <p id="dirisAcqStatus" class="text-sm text-slate-400 mb-3">Chargement...</p>
+                <div class="flex gap-2">
+                  <button id="btnStartAcquisition" class="flex-1 px-3 py-2 text-sm rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 transition-colors">
+                    ▶️ Démarrer
+                  </button>
+                  <button id="btnStopAcquisition" class="flex-1 px-3 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors">
+                    ⏸️ Arrêter
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Data Retention Service -->
+              <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium">Service de Rétention</h4>
+                  <div id="dirisRetStatusDot" class="status-dot unknown"></div>
+                </div>
+                <p id="dirisRetStatus" class="text-sm text-slate-400 mb-3">Chargement...</p>
+                <button id="btnTriggerCleanup" class="w-full px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
+                  🧹 Nettoyage manuel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Métriques d'acquisition en temps réel -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Métriques d'acquisition</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Points/seconde</p>
+                <p id="dirisPointsPerSec" class="text-2xl font-bold text-brand-400">0</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Devices/seconde</p>
+                <p id="dirisDevicesPerSec" class="text-2xl font-bold text-blue-400">0</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Latence P95</p>
+                <p id="dirisP95Latency" class="text-2xl font-bold text-purple-400">0ms</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Devices actifs</p>
+                <p id="dirisActiveDevices" class="text-2xl font-bold text-green-400">0</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Statistiques de base de données -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Base de données DIRIS</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">Total mesures</p>
+                <p id="dirisTotalMeasurements" class="text-2xl font-bold">0</p>
+                <p class="text-xs text-slate-400 mt-1">Dans DIRIS.Measurements</p>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">À supprimer</p>
+                <p id="dirisMeasurementsToDelete" class="text-2xl font-bold text-orange-400">0</p>
+                <p class="text-xs text-slate-400 mt-1">Ancienneté > rétention</p>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400 mb-1">Taille BDD</p>
+                <p id="dirisDatabaseSize" class="text-2xl font-bold text-blue-400">0 MB</p>
+                <p class="text-xs text-slate-400 mt-1">Table DIRIS</p>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-sm text-slate-400">Mesure la plus ancienne</p>
+                <p id="dirisOldestMeasurement" class="font-mono text-xs mt-1">-</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-sm text-slate-400">Mesure la plus récente</p>
+                <p id="dirisNewestMeasurement" class="font-mono text-xs mt-1">-</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Graphiques temps réel -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Graphiques temps réel</h3>
+              <div class="flex gap-2">
+                <button id="btnPauseCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  ⏸️ Pause
+                </button>
+                <button id="btnResetCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🔄 Reset
+                </button>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="p-4 bg-white/5 rounded-lg">
+                <h4 class="text-sm font-medium mb-3">Throughput (Points/seconde)</h4>
+                <div style="height: 200px; position: relative;">
+                  <canvas id="dirisThroughputChart"></canvas>
+                </div>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <h4 class="text-sm font-medium mb-3">Latence (ms)</h4>
+                <div style="height: 200px; position: relative;">
+                  <canvas id="dirisLatencyChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 p-4 bg-white/5 rounded-lg">
+              <h4 class="text-sm font-medium mb-3">Devices Actifs</h4>
+              <div style="height: 150px; position: relative;">
+                <canvas id="dirisDevicesChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Système d'alertes -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Système d'alertes</h3>
+                <p class="text-xs text-slate-400 mt-1">Configuration des seuils de performance</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="dirisAlertsEnabled" class="w-4 h-4 rounded bg-white/5 border-white/10" checked>
+                <label for="dirisAlertsEnabled" class="text-xs text-slate-400">Alertes actives</label>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div class="space-y-3">
+                <h4 class="text-sm font-medium">Seuils d'alerte</h4>
+                <div>
+                  <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                    Latence max (ms)
+                    <span class="config-info-icon" data-tooltip="Seuil maximum de latence avant déclenchement d'une alerte. Recommandé: 1000-5000ms">ℹ️</span>
+                  </label>
+                  <input type="number" id="alertMaxLatency" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="2000" min="100" max="10000">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                    Throughput min (pts/s)
+                    <span class="config-info-icon" data-tooltip="Seuil minimum de throughput avant déclenchement d'une alerte. Recommandé: 1-10 pts/s">ℹ️</span>
+                  </label>
+                  <input type="number" id="alertMinThroughput" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1" min="0" max="100">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                    Devices actifs min
+                    <span class="config-info-icon" data-tooltip="Nombre minimum de devices actifs avant déclenchement d'une alerte">ℹ️</span>
+                  </label>
+                  <input type="number" id="alertMinDevices" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1" min="0" max="50">
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-sm font-medium">Alertes récentes</h4>
+                  <button id="btnClearAlerts" class="px-3 py-1 text-xs rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                    🗑️ Vider
+                  </button>
+                </div>
+                <div id="dirisAlertsList" class="space-y-2 max-h-48 overflow-y-auto hide-scrollbar">
+                  <p class="text-center text-slate-400 py-4">Aucune alerte récente</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          </div>
+          <!-- FIN TAB: Vue d'ensemble -->
+
+          <!-- TAB: Cohérence -->
+          <div id="diris-tab-coherence" class="diris-tab-content space-y-6 hidden">
+
+          <!-- Statistiques de cohérence en temps réel -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">📊 Cohérence de l'acquisition</h3>
+                <p class="text-xs text-slate-400 mt-1">Statistiques en temps réel pour vérifier la stabilité</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="btnResetCoherence" class="px-3 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors">
+                  🔄 Réinitialiser
+                </button>
+                <button id="btnClearCoherenceData" class="px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
+                  🗑️ Vider données
+                </button>
+                <button id="btnRefreshCoherence" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🔄 Actualiser
+                </button>
+              </div>
+            </div>
+            
+            <!-- Métriques principales -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Qualité données</p>
+                <p id="coherenceQuality" class="text-2xl font-bold value-excellent">100%</p>
+                <p class="text-xs text-slate-500 mt-1">Quality = 1</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Fréquence acquisition</p>
+                <p id="coherenceFrequency" class="text-2xl font-bold value-good">~1.7s</p>
+                <p class="text-xs text-slate-500 mt-1">Millisecondes</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Régularité</p>
+                <p id="coherenceRegularity" class="text-2xl font-bold value-excellent">±50ms</p>
+                <p class="text-xs text-slate-500 mt-1">Écart-type</p>
+              </div>
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Score cohérence</p>
+                <p id="coherenceScore" class="text-2xl font-bold value-excellent">95/100</p>
+                <p class="text-xs text-slate-500 mt-1">Global</p>
+              </div>
+            </div>
+            
+            <!-- Statistiques par device -->
+            <div class="mb-4">
+              <h4 class="text-sm font-medium mb-3">Statistiques par Device (dernière heure)</h4>
+              <div id="coherenceDeviceStats" class="space-y-2">
+                <p class="text-center text-slate-400 py-4">Chargement...</p>
+              </div>
+            </div>
+            
+            <!-- Trous détectés -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-sm font-medium">Interruptions détectées (30 dernières minutes)</h4>
+                <button id="btnClearGaps" class="px-3 py-1 text-xs rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🗑️ Vider l'affichage
+                </button>
+              </div>
+              <div id="coherenceGaps" class="space-y-2 max-h-96 overflow-y-auto hide-scrollbar">
+                <p class="text-center text-slate-400 py-4">Analyse en cours...</p>
+              </div>
+            </div>
+          </div>
+          
+          </div>
+          <!-- FIN TAB: Cohérence -->
+
+          <!-- TAB: Configuration -->
+          <div id="diris-tab-config" class="diris-tab-content space-y-6 hidden">
+
+          <!-- Configuration -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Configuration DIRIS</h3>
+                <p class="text-xs text-slate-400 mt-1">Paramètres d'acquisition et rétention</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="btnResetDirisConfig" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🔄 Reset
+                </button>
+                <button id="btnSaveDirisConfig" class="px-4 py-2 text-sm rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors">
+                  💾 Sauvegarder
+                </button>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Acquisition Settings -->
+              <div>
+                <h4 class="font-medium mb-3 text-sm">Acquisition</h4>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Parallélisme (devices simultanés)
+                      <span class="config-info-icon" data-tooltip="Nombre de devices interrogés simultanément. Plus élevé = plus rapide mais plus de charge réseau. Recommandé: 4-8">ℹ️</span>
+                    </label>
+                    <input type="number" id="configParallelism" min="1" max="20" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="6">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Intervalle de poll (ms)
+                      <span class="config-info-icon" data-tooltip="Fréquence d'interrogation des devices. Plus bas = plus réactif mais plus de charge. Recommandé: 1000-3000ms">ℹ️</span>
+                    </label>
+                    <input type="number" id="configPollInterval" min="500" max="10000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1500">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Taille max des lots
+                      <span class="config-info-icon" data-tooltip="Nombre maximum de mesures traitées par lot en base. Plus élevé = plus efficace mais plus de mémoire. Recommandé: 500-2000">ℹ️</span>
+                    </label>
+                    <input type="number" id="configMaxBatch" min="100" max="5000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1000">
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Retention Settings -->
+              <div>
+                <h4 class="font-medium mb-3 text-sm">Rétention des données</h4>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Durée de rétention (jours)
+                      <span class="config-info-icon" data-tooltip="Nombre de jours de conservation des données. Les mesures plus anciennes seront supprimées. Recommandé: 7-30 jours selon l'usage">ℹ️</span>
+                    </label>
+                    <input type="number" id="configRetentionDays" min="1" max="365" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="10">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Heure de nettoyage
+                      <span class="config-info-icon" data-tooltip="Heure quotidienne (format 24h) pour le nettoyage automatique. Choisir une heure de faible activité. Recommandé: 2-4h du matin">ℹ️</span>
+                    </label>
+                    <input type="number" id="configCleanupHour" min="0" max="23" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="2">
+                    <p class="text-xs text-slate-500 mt-1">Format 24h (0-23)</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="configRetentionEnabled" class="w-4 h-4 rounded bg-white/5 border-white/10">
+                    <label for="configRetentionEnabled" class="text-xs text-slate-400 flex items-center gap-2">
+                      Activer le nettoyage automatique
+                      <span class="config-info-icon" data-tooltip="Active le nettoyage automatique quotidien des données anciennes. Désactiver seulement pour maintenance manuelle">ℹ️</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          </div>
+          <!-- FIN TAB: Configuration -->
+
+          <!-- TAB: Devices -->
+          <div id="diris-tab-devices" class="diris-tab-content space-y-6 hidden">
+
+          <!-- Devices DIRIS -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Devices DIRIS</h3>
+                <p class="text-xs text-slate-400 mt-1">Liste des équipements configurés</p>
+              </div>
+              <button id="btnAddDevice" class="px-3 py-2 text-sm rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors">
+                ➕ Ajouter
+              </button>
+            </div>
+            <div id="dirisDevicesList" class="space-y-2">
+              <!-- Dynamically populated -->
+              <p class="text-center text-slate-400 py-8">Chargement des devices...</p>
+            </div>
+          </div>
+          
+          </div>
+          <!-- FIN TAB: Devices -->
+
+          <!-- TAB: Historique -->
+          <div id="diris-tab-history" class="diris-tab-content space-y-6 hidden">
+
+          <!-- Dernières mesures -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Dernières mesures</h3>
+              <div class="flex gap-2">
+                <button onclick="window.dirisManager.exportData('csv')" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  📊 Export CSV
+                </button>
+                <button onclick="window.dirisManager.exportData('json')" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  📄 Export JSON
+                </button>
+              </div>
+            </div>
+            <div id="dirisLatestReadings" class="space-y-3 max-h-[400px] overflow-y-auto hide-scrollbar">
+              <!-- Dynamically populated -->
+              <p class="text-center text-slate-400 py-8">Chargement des mesures...</p>
+            </div>
+          </div>
+
+          <!-- Historique des actions -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Historique des actions</h3>
+                <p class="text-xs text-slate-400 mt-1">Journal des événements DIRIS</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="window.dirisManager.clearHistory()" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🗑️ Vider
+                </button>
+                <button onclick="window.dirisManager.exportHistory()" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  📄 Export
+                </button>
+              </div>
+            </div>
+            <div id="dirisHistoryList" class="space-y-2 max-h-64 overflow-y-auto hide-scrollbar">
+              <p class="text-center text-slate-400 py-8">Aucun événement enregistré</p>
+            </div>
+          </div>
+          
+          </div>
+          <!-- FIN TAB: Historique -->
+
+        </section>
+
+        <!-- API Section (hidden by default) -->
+        <section id="section-api" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <h3 class="font-semibold mb-4">Contrôleurs API</h3>
+            <div id="controllersList" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Requêtes Section (hidden by default) -->
+        <section id="section-requests" class="hidden space-y-6">
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-semibold">Requêtes API</h3>
+                <p class="text-xs text-slate-400 mt-1">Historique des 100 dernières requêtes</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="btnClearRequests" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  Vider
+                </button>
+                <button id="btnExportRequests" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  Exporter CSV
+                </button>
+              </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div class="p-3 bg-white/5 rounded-lg">
+                <p class="text-xs text-slate-400">Total</p>
+                <p id="reqStatsTotal" class="text-2xl font-bold">0</p>
+              </div>
+              <div class="p-3 bg-green-500/10 rounded-lg">
+                <p class="text-xs text-green-400">Réussies</p>
+                <p id="reqStatsSuccess" class="text-2xl font-bold text-green-400">0</p>
+              </div>
+              <div class="p-3 bg-red-500/10 rounded-lg">
+                <p class="text-xs text-red-400">Échouées</p>
+                <p id="reqStatsError" class="text-2xl font-bold text-red-400">0</p>
+              </div>
+              <div class="p-3 bg-blue-500/10 rounded-lg">
+                <p class="text-xs text-blue-400">Temps moyen</p>
+                <p id="reqStatsAvgTime" class="text-2xl font-bold text-blue-400">0ms</p>
+              </div>
+            </div>
+
+            <!-- Liste des requêtes -->
+            <div id="requestsList" class="space-y-2 max-h-[600px] overflow-y-auto hide-scrollbar">
+              <p class="text-center text-slate-400 py-8">Aucune requête enregistrée</p>
+            </div>
+          </div>
+        </section>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Fonction pour gérer les cartes collapsibles
+    function toggleCollapsible(cardId) {
+      const content = document.getElementById(cardId);
+      const icon = document.getElementById(cardId + 'Icon');
+      
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+    
+    // Fonction pour gérer les sous-onglets DIRIS
+    function initDirisTabs() {
+      const tabButtons = document.querySelectorAll('.diris-tab-btn');
+      const tabContents = document.querySelectorAll('.diris-tab-content');
+      
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const tabName = button.getAttribute('data-diris-tab');
+          
+          // Désactiver tous les boutons et cacher tous les contenus
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.add('hidden'));
+          
+          // Activer le bouton et afficher le contenu sélectionné
+          button.classList.add('active');
+          const targetTab = document.getElementById(`diris-tab-${tabName}`);
+          if (targetTab) {
+            targetTab.classList.remove('hidden');
+          }
+          
+          console.log(`🎯 DIRIS Tab switched to: ${tabName}`);
+        });
+      });
+      
+      console.log('✅ DIRIS Tabs initialized');
+    }
+    
+    // Initialiser les tabs DIRIS au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+      initDirisTabs();
+    });
+  </script>
+  <script type="module" src="js/admin.js?v=20251003-1020"></script>
+</body>
+</html>
+

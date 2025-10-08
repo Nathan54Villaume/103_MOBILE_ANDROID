@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Test Boutons Reset</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #0f172a; color: white; }
+    .test-btn { padding: 10px 20px; margin: 10px; background: #6366f1; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .test-btn:hover { background: #4f46e5; }
+    .log { margin-top: 20px; padding: 10px; background: #1e293b; border: 1px solid #334155; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test des boutons Reset</h1>
+  <p>Ce test vérifie que les fonctions onClick sont correctement liées.</p>
+  
+  <button class="test-btn" onclick="testResetFunction()">Tester window.resetChart()</button>
+  <button class="test-btn" onclick="resetChart('tr1-power')">Reset TR1 (direct)</button>
+  <button class="test-btn" onclick="resetChart('tr2-power')">Reset TR2 (direct)</button>
+  
+  <div class="log" id="log">
+    <strong>Console :</strong><br>
+    <div id="log-content">Cliquez sur un bouton pour tester...</div>
+  </div>
+
+  <script>
+    // Intercepter les logs console
+    const originalLog = console.log;
+    const originalError = console.error;
+    const logContent = document.getElementById('log-content');
+    
+    function addLog(type, message) {
+      const time = new Date().toLocaleTimeString();
+      logContent.innerHTML += `<br>[${time}] ${type}: ${message}`;
+      logContent.scrollTop = logContent.scrollHeight;
+    }
+    
+    console.log = (...args) => {
+      originalLog(...args);
+      addLog('LOG', args.join(' '));
+    };
+    
+    console.error = (...args) => {
+      originalError(...args);
+      addLog('ERROR', args.join(' '));
+    };
+    
+    function testResetFunction() {
+      console.log('🔍 Test de la fonction resetChart...');
+      
+      if (typeof window.resetChart === 'function') {
+        console.log('✅ window.resetChart existe');
+        window.resetChart('test-non-existant');
+      } else {
+        console.error('❌ window.resetChart n\'existe pas !');
+      }
+    }
+    
+    // Simuler un registre vide pour le test
+    if (typeof window.resetChart === 'undefined') {
+      console.error('❌ PROBLÈME: window.resetChart non définie !');
+      window.resetChart = (cardId) => {
+        console.error(`❌ Fonction simulée appelée pour ${cardId} - mais registre vide`);
+      };
+    }
+  </script>
+</body>
+</html>

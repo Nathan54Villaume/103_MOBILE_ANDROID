@@ -77,10 +77,15 @@ public class DirisCleanupController : ControllerBase
             }
 
             var retentionDays = _configuration.GetValue<int>("DataRetention:RetentionDays", 10);
+            var maxDatabaseSizeMB = _configuration.GetValue<int>("Diris:DataRetention:MaxDatabaseSizeMB", 1024);
             var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
             using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync();
+
+            var databaseSizeStr = await GetDatabaseSize(connection);
+            var currentSizeMB = ParseDatabaseSize(databaseSizeStr);
+            var percentageUsed = maxDatabaseSizeMB > 0 ? (currentSizeMB / maxDatabaseSizeMB) * 100 : 0;
 
             var stats = new
             {
@@ -91,7 +96,10 @@ public class DirisCleanupController : ControllerBase
                 measurementsToRetain = await GetMeasurementsToRetain(connection, cutoffDate),
                 oldestMeasurement = await GetOldestMeasurement(connection),
                 newestMeasurement = await GetNewestMeasurement(connection),
-                databaseSize = await GetDatabaseSize(connection)
+                databaseSize = databaseSizeStr,
+                currentSizeMB = currentSizeMB,
+                maxDatabaseSizeMB = maxDatabaseSizeMB,
+                percentageUsed = Math.Round(percentageUsed, 2)
             };
 
             return Ok(new
@@ -212,6 +220,19 @@ public class DirisCleanupController : ControllerBase
         
         var result = await cmd.ExecuteScalarAsync();
         return result == DBNull.Value || result == null ? "0.00 MB" : $"{result} MB";
+    }
+
+    private decimal ParseDatabaseSize(string sizeStr)
+    {
+        if (string.IsNullOrEmpty(sizeStr))
+            return 0;
+
+        // Extract number from "15.26 MB" format
+        var parts = sizeStr.Split(' ');
+        if (parts.Length > 0 && decimal.TryParse(parts[0], out var size))
+            return size;
+
+        return 0;
     }
 }
 

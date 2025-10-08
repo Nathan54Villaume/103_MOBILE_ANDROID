@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Poste Electrique n°19</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        .transformers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .transformer {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .tr1 { border-left: 4px solid #0066cc; }
+        .tr2 { border-left: 4px solid #d50000; }
+        .tr3 { border-left: 4px solid #00aa44; }
+        .tr4 { border-left: 4px solid #ffaa00; }
+        .tr5 { border-left: 4px solid #6a0dad; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test - Poste Electrique n°19</h1>
+    
+    <div class="test-section">
+        <h2>📋 Configuration</h2>
+        <p><span class="info">Poste:</span> n°19</p>
+        <p><span class="info">API:</span> http://10.250.13.4/api/energy_Poste_19</p>
+        <p><span class="info">Transformateurs:</span> TR1, TR2, TR3, TR4, TR5</p>
+        <p><span class="info">Graphiques:</span> 15 (3 par transformateur)</p>
+        <p><span class="info">KPIs:</span> 50 (10 par transformateur)</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🏭 Transformateurs</h2>
+        <div class="transformers">
+            <div class="transformer tr1">
+                <h3>TR1</h3>
+                <p>Puissance Active</p>
+                <p>Tensions de Phase</p>
+                <p>Facteur de Puissance</p>
+            </div>
+            <div class="transformer tr2">
+                <h3>TR2</h3>
+                <p>Puissance Active</p>
+                <p>Tensions de Phase</p>
+                <p>Facteur de Puissance</p>
+            </div>
+            <div class="transformer tr3">
+                <h3>TR3</h3>
+                <p>Puissance Active</p>
+                <p>Tensions de Phase</p>
+                <p>Facteur de Puissance</p>
+            </div>
+            <div class="transformer tr4">
+                <h3>TR4</h3>
+                <p>Puissance Active</p>
+                <p>Tensions de Phase</p>
+                <p>Facteur de Puissance</p>
+            </div>
+            <div class="transformer tr5">
+                <h3>TR5</h3>
+                <p>Puissance Active</p>
+                <p>Tensions de Phase</p>
+                <p>Facteur de Puissance</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Statut de l'Implémentation</h2>
+        <p><span class="success">✓</span> Dossier créé: Supervision-Poste-Electrique_19</p>
+        <p><span class="success">✓</span> Fichiers copiés et adaptés</p>
+        <p><span class="success">✓</span> index.html configuré pour le Poste 19</p>
+        <p><span class="success">✓</span> API configurée: /api/energy_Poste_19</p>
+        <p><span class="success">✓</span> 5 transformateurs ajoutés (TR1-TR5)</p>
+        <p><span class="success">✓</span> 15 graphiques configurés</p>
+        <p><span class="success">✓</span> 50 KPIs configurés</p>
+        <p><span class="success">✓</span> Couleurs différenciées par transformateur</p>
+        <p><span class="success">✓</span> JavaScript adapté pour 5 transformateurs</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Liens de Test</h2>
+        <p><a href="index.html" style="color: #60a5fa;">📊 Interface Principale - Poste 19</a></p>
+        <p><a href="../Supervision-Poste-Electrique_Dev/index_dev.html" style="color: #60a5fa;">📊 Interface Originale - Poste 8</a></p>
+    </div>
+
+    <div class="test-section">
+        <h2>📁 Structure des Fichiers</h2>
+        <pre style="background: #333; padding: 15px; border-radius: 5px; overflow-x: auto;">
+Supervision-Poste-Electrique_19/
+├── index.html (vue principale)
+├── js/
+│   ├── main.js (logique 5 transformateurs)
+│   ├── api.js (API Poste 19)
+│   ├── kpi.js (KPIs TR1-TR5)
+│   ├── charts.js (15 graphiques)
+│   ├── config.js (configuration)
+│   └── ... (autres fichiers)
+├── charts/ (système de graphiques)
+└── style.css
+        </pre>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Prochaines Étapes</h2>
+        <p><span class="info">1.</span> Tester l'interface principale</p>
+        <p><span class="info">2.</span> Vérifier la connexion API</p>
+        <p><span class="info">3.</span> Valider les données des 5 transformateurs</p>
+        <p><span class="info">4.</span> Ajuster les couleurs si nécessaire</p>
+        <p><span class="info">5.</span> Ajouter la navigation entre postes (optionnel)</p>
+    </div>
+
+    <script>
+        console.log('🔧 Test Poste 19 - Configuration chargée');
+        console.log('📊 Transformateurs: TR1, TR2, TR3, TR4, TR5');
+        console.log('🌐 API: http://10.250.13.4/api/energy_Poste_19');
+        console.log('📈 Graphiques: 15 (3 par transformateur)');
+        console.log('📊 KPIs: 50 (10 par transformateur)');
+    </script>
+</body>
+</html>

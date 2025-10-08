@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API</title>
+</head>
+<body>
+    <h1>Test de l'API</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Test en cours...</p>';
+            
+            try {
+                // Test de l'endpoint TR1
+                const response = await fetch('http://10.250.13.4:8088/api/energy/tr1/snapshot');
+                const data = await response.json();
+                
+                results.innerHTML = `
+                    <h2>✅ API accessible !</h2>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Données reçues:</strong></p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                results.innerHTML = `
+                    <h2>❌ Erreur API</h2>
+                    <p><strong>Erreur:</strong> ${error.message}</p>
+                    <p><strong>Type:</strong> ${error.name}</p>
+                `;
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>

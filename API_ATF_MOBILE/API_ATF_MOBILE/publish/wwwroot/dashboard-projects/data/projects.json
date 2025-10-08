@@ -1,0 +1,258 @@
+[
+  {
+    "id": "suivi-produit-ats",
+    "title": "Suivi Produit – ATS",
+    "area": "ATS · Supervision · SQL",
+    "filters": ["ATS","Supervision","SQL"],
+    "status": "livre",
+    "objective": "Mettre en place une traçabilité complète des couronnes utilisées pour le treillis soudé, du scan en entrée machine jusqu'au produit fini.",
+    "real_short": [
+      "Scan étiquettes des couronnes d'ébauche",
+      "Impression étiquettes roquette",
+      "Base SQL stock roquette"
+    ],
+    "real": [
+      "Scan des étiquettes des couronne d'ébauche",
+      "Impression d'étiquettes roquette (poids réel/théorique, lot, coulée…)",
+      "Base SQL pour gestion de stock",
+      "Intégration supervision/production"
+    ],
+    "results_short": [
+      "Traçabilité complète",
+      "Réduction erreurs",
+      "Conformité renforcée"
+    ],
+    "results": [
+      "Traçabilité complète bout-en-bout du scan d'entrée au produit fini",
+      "Réduction significative des erreurs humaines de saisie",
+      "Optimisation logistique et conformité aux exigences qualité"
+    ],
+    "skills": ["SQL Server","Automatisme","RFID","Cimplicity","Basic Script","Gestion projet"],
+    "images": [
+      { "src": "../images/projets/suivi-produit-1.jpg?v=2", "title": "Étiquette roquette" },
+      { "src": "../images/projets/suivi-produit-2.jpg?v=3", "title": "Interface supervision" }
+    ],
+    "media": []
+  },
+  {
+    "id": "gestion-rfid-ats",
+    "title": "Gestion RFID – ATS",
+    "area": "ATS · RFID · Sécurité",
+    "filters": ["ATS","RFID","SQL","Supervision"],
+    "status": "livre",
+    "objective": "Chaque démarrage de machine est conditionné par la lecture du badge de pointage SAM, renforçant ainsi la sécurité et assurant une meilleure traçabilité.",
+    "real_short": [
+      "Badge obligatoire",
+      "Base SQL équipes",
+      "Stats opérateurs"
+    ],
+    "real": [
+      "RFID obligatoire au démarrage de chaque machine",
+      "Badge chef requis en cas de casse-fil pour validation",
+      "Base SQL de gestion d'équipes et personnels",
+      "Statistiques complètes par opérateur et machine"
+    ],
+    "results_short": [
+      "Sécurité renforcée",
+      "Discipline accrue",
+      "Traçabilité opérateurs"
+    ],
+    "results": [
+      "Sécurité renforcée avec contrôle d'accès systématique",
+      "Discipline accrue et responsabilisation des équipes",
+      "Suivi précis de la productivité par opérateur et par poste"
+    ],
+    "skills": ["C#","SQL Server","Cimplicity","Basic Script","RFID"],
+    "images": [
+      { "src": "../images/projets/Gestion_RFID_ATS-1.jpg?v=2", "title": "Interface RFID" },
+      { "src": "../images/projets/Gestion_RFID_ATS-2.jpg?v=2", "title": "Badge opérateur" }
+    ],
+    "media": []
+  },
+  {
+    "id": "gestion-rfid-atr",
+    "title": "Gestion RFID – ATR",
+    "area": "ATR · RFID · Sécurité",
+    "filters": ["ATR","RFID","SQL","Supervision"],
+    "status": "en_cours",
+    "objective": "Déployer le même dispositif RFID sur l'unité ATR (projet en cours).",
+    "real_short": [
+      "Controle démmarage machines",
+      "Adaptation base SQL existante",
+      "Tracabilité Accrue"
+    ],
+    "real": [
+      "Analyse des points de badgeage sur l'unité ATR",
+      "Intégration avec base SQL existante",
+      "Adaptation vues supervision et droits d'accès",
+      "Tracabilité Accrue"
+    ],
+    "results_short": [
+      "POC en cours",
+      "Sécurité cross-site",
+      "Traçabilité étendue"
+    ],
+    "results": [
+      "Projet en cours (POC + phase de cadrage)",
+      "Sécurité renforcée sur les deux sites (ATS/ATR)",
+      "Traçabilité cross-site unifiée",
+      "Harmonisation des processus entre ATS et ATR"
+    ],
+    "skills": ["C#","SQL Server","Cimplicity","Basic Script","RFID","Déploiement multi-site"],
+    "images": [
+      { "src": "../images/projets/Gestion_RFID_ATR-1.jpg?v=1", "title": "Interface RFID ATR" }
+    ],
+    "media": []
+  },
+  {
+    "id": "suivis-energies",
+    "title": "Suivis des Energies – ATS / ATR",
+    "area": "ATS · ATR · Web · DataViz",
+    "filters": ["ATS","ATR","SQL","Supervision"],
+    "status": "livre",
+    "objective": "Donner une vision temps réel des mesure énergétiques pour optimiser les coûts et détecter les anomalies facilement.",
+    "real_short": [
+      "Pose compteurs énergie",
+      "Collecte OPC → SQL",
+      "Supervision web"
+    ],
+    "real": [
+      "Pose de multiples compteurs d'énergie sur transformateurs et lignes",
+      "Collecte automatique des données via OPC/IGS vers SQL Server",
+      "Supervision ultra détaillée accessible depuis n'importe quel PC connecté au réseau Sam/Riva, simplement via une URL",
+      "Tableaux de bord interactifs avec graphiques temps réel"
+    ],
+    "results_short": [
+      "Vision temps réel",
+      "Détection anomalies",
+      "Optimisation coûts"
+    ],
+    "results": [
+      "Pilotage précis de l'énergie avec historiques détaillés",
+      "Détection précoce des dérives et anomalies de consommation",
+      "Optimisation significative des coûts énergétiques",
+      "Support décisionnel pour la direction avec KPIs énergétiques"
+    ],
+    "skills": ["OPC","S7","HTML5","Tailwind CSS","Chart.js","SQL Server","Communication industrielle"],
+    "images": [
+      { "src": "../images/projets/Suivis_des_Energies-1.jpg", "title": "Tableau de bord énergétique" }
+    ],
+    "media": [
+      { "type": "chart", "label": "TR1 — conso synthèse" }
+    ]
+  },
+  {
+    "id": "app-changement-gamme",
+    "title": "Application « Changement de Gamme »",
+    "area": "Android · API · UX",
+    "filters": ["Android","ATS"],
+    "status": "livre",
+    "objective": "Concevoir une application mobile destinée à accompagner les équipes de production et de maintenance, afin d'optimiser leur efficacité et d'améliorer la coordination des changements de gammes.",
+    "real_short": [
+      "Application Android",
+      "API (Communication)",
+      "Interface multi-devices"
+    ],
+    "real": [
+      "Programmation native ANDROID en langage Kotlin",
+      "API   pour communication entre l'application et la base de données",
+      "Navigation multi-écrans adaptée (téléphone / tablette / PC)",
+      "Interface Web d'administration pour gestion de l'utilisation de la tablette",
+      "Système de notifications et guidage étape par étape"
+    ],
+    "results_short": [
+      "Gain de temps",
+      "Organisation améliorée",
+      "Tracabilité accrue"
+    ],
+    "results": [
+      "Gain de temps significatif pour les équipes, avec une baisse des erreurs de saisie",
+      "Organisation et structure des étapes de changement de gamme simplifiée",
+      "Accès direct aux résultats et rapports de suivi en temps réel"
+    ],
+    "skills": ["Android","Kotlin","Retrofit","API REST","Architecture client/serveur","UI/UX"],
+    "images": [
+      { "src": "../images/projets/Appli_Chgt_Gamme_1.png?v=2", "title": "Écran d'accueil" },
+      { "src": "../images/projets/Appli_Chgt_Gamme_2.png?v=2", "title": "Liste des Gammes" },
+      { "src": "../images/projets/Appli_Chgt_Gamme_3.png?v=2", "title": "Validation étapes" },
+      { "src": "../images/projets/Appli_Chgt_Gamme_4.png?v=2", "title": "Interface Parametres" }
+    ],
+    "media": []
+  },
+  {
+    "id": "suivis-soudures-atr",
+    "title": "Suivis des Soudures - ATR",
+    "area": "ATR · Supervision · Qualité",
+    "filters": ["ATR","Supervision","SQL"],
+    "status": "livre",
+    "objective": "Mettre en place un suivi et une traçabilité complète des soudures.",
+    "real_short": [
+      "Table échange SAM/PLC",
+      "Base SQL historique",
+      "Affichage dynamique"
+    ],
+    "real": [
+      "Mise en place d'une table d'échange standard entre le réseau SAM et les PLC des soudeuses",
+      "Base SQL dédiée pour historiser toutes les infos de soudure (date, ligne, lot, coulée, soudeur, paramètres de soudage...)",
+      "Affichage dynamique temps réel : liste des soudures + état des soudeuses",
+      "Saisie de commentaires en direct pour l'équipe de maintenance",
+      "Export des données pour analyses qualité"
+    ],
+    "results_short": [
+      "Traçabilité soudures",
+      "Visibilité Etat soudeuses",
+      "Analyses qualité"
+    ],
+    "results": [
+      "Traçabilité complète des soudures et recuits avec historique détaillé",
+      "Visibilité accrue sur l'état des machines en temps réel",
+      "Communication facilitée entre production et maintenance",
+      "Exploitation des données pour analyses qualité et maintenance prédictive",
+      "Conformité aux exigences de traçabilité industrielle"
+    ],
+    "skills": ["Cimplicity","Basic Script","SQL Server","Réseau industriel","Analyse de données"],
+    "images": [
+      { "src": "../images/projets/SuivisSoudure-1.jpg", "title": "Supervision soudures" },
+      { "src": "../images/projets/SuivisSoudure-2.jpg", "title": "Historique paramètres" }
+    ],
+    "media": []
+  },
+  {
+    "id": "camera-etiquette-atr",
+    "title": "Détection d'étiquette par Caméra – ATR",
+    "area": "ATR · Vision · Automatisme",
+    "filters": ["ATR","Vision","Automatisme"],
+    "status": "livre",
+    "objective": "Empêcher qu'une bobine sois stockée sans étiquette.",
+    "real_short": [
+      "Caméra IFM LIGNE 7",
+      "Détection étiquette",
+      "Intégration Profinet"
+    ],
+    "real": [
+      "Installation d'une caméra IFM Vision Assistant sur le bobinoir de la ligne 7",
+      "Paramétrage précis de l'algorithme de détection d'étiquette (ROI, seuils, validation)",
+      "Intégration complète de la caméra à l'automate Siemens en Profinet",
+      "Programmation du trigger pour piloter la caméra au moment exact où l'étiquette est posée",
+      "Suivi statistique détaillé des contrôles: nombre de détections, taux de réussite/échec, temps de cycle",
+      "Interface opérateur pour visualisation en direct"
+    ],
+    "results_short": [
+      "Zéro défaut étiquette",
+      "Contrôle automatique",
+      "Fiabilité 100%"
+    ],
+    "results": [
+      "Suppression totale des risques d'expédition de bobines sans étiquette",
+      "Contrôle automatisé ultra-rapide sans aucune surcharge pour l'opérateur",
+      "Fiabilité renforcée du processus de production",
+      "Réduction drastique des non-conformités client",
+      "ROI rapide par élimination des reprises et retours"
+    ],
+    "skills": ["Vision industrielle","IFM Vision Assistant","Automatisme","Profinet","Statistiques"],
+    "images": [
+      { "src": "../images/projets/Détection_Etiquette-1.jpg", "title": "Caméra de détection" }
+    ],
+    "media": []
+  }
+]

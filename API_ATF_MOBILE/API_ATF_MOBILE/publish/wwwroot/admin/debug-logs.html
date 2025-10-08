@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Event Viewer</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .debug { background: #2a2a2a; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px; margin: 5px; background: #4a4a4a; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #5a5a5a; }
+        pre { background: #000; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🐛 Debug Event Viewer</h1>
+    
+    <div class="debug">
+        <h2>Tests API</h2>
+        <button onclick="testApiLogs()">Test API getLogs()</button>
+        <button onclick="testLogService()">Test LogService</button>
+        <button onclick="testNormalization()">Test Normalisation</button>
+        <pre id="apiResult"></pre>
+    </div>
+
+    <div class="debug">
+        <h2>Tests Service</h2>
+        <button onclick="testServiceState()">État du Service</button>
+        <button onclick="testLoadLogs()">Charger Logs</button>
+        <button onclick="testPlayStop()">Test Play/Stop</button>
+        <pre id="serviceResult"></pre>
+    </div>
+
+    <div class="debug">
+        <h2>Logs Console</h2>
+        <button onclick="clearConsole()">Vider Console</button>
+        <div id="consoleOutput" style="background: #000; padding: 10px; height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script type="module">
+        import apiClient from './js/api-client.js';
+        import logService from './js/log-service.js';
+
+        // Capturer les logs console
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('consoleOutput');
+
+        function addToConsole(type, ...args) {
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? '#ff6b6b' : '#4ecdc4';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${args.join(' ')}`;
+            consoleOutput.appendChild(div);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        console.log = (...args) => {
+            originalLog(...args);
+            addToConsole('log', ...args);
+        };
+
+        console.error = (...args) => {
+            originalError(...args);
+            addToConsole('error', ...args);
+        };
+
+        // Tests
+        window.testApiLogs = async function() {
+            const result = document.getElementById('apiResult');
+            try {
+                console.log('🧪 Test API getLogs...');
+                const logs = await apiClient.getLogs(10);
+                result.textContent = JSON.stringify(logs, null, 2);
+                console.log('✅ API OK, logs reçus:', logs.length);
+            } catch (error) {
+                result.textContent = 'ERREUR: ' + error.message;
+                console.error('❌ Erreur API:', error);
+            }
+        };
+
+        window.testLogService = function() {
+            const result = document.getElementById('apiResult');
+            try {
+                console.log('🧪 Test LogService...');
+                const state = logService.getState();
+                result.textContent = JSON.stringify(state, null, 2);
+                console.log('✅ Service OK, état:', state);
+            } catch (error) {
+                result.textContent = 'ERREUR: ' + error.message;
+                console.error('❌ Erreur Service:', error);
+            }
+        };
+
+        window.testNormalization = function() {
+            const result = document.getElementById('apiResult');
+            try {
+                console.log('🧪 Test Normalisation...');
+                const testLog = {
+                    id: 'test-123',
+                    timestamp: new Date().toISOString(),
+                    level: 'Information',
+                    message: 'Test message',
+                    source: 'API'
+                };
+                const normalized = logService.normalizeLog(testLog);
+                result.textContent = JSON.stringify(normalized, null, 2);
+                console.log('✅ Normalisation OK');
+            } catch (error) {
+                result.textContent = 'ERREUR: ' + error.message;
+                console.error('❌ Erreur Normalisation:', error);
+            }
+        };
+
+        window.testServiceState = function() {
+            const result = document.getElementById('serviceResult');
+            const state = logService.getState();
+            result.textContent = JSON.stringify(state, null, 2);
+            console.log('📊 État service:', state);
+        };
+
+        window.testLoadLogs = async function() {
+            const result = document.getElementById('serviceResult');
+            try {
+                console.log('🔄 Test chargement logs...');
+                await logService.loadInitialLogs();
+                const logs = logService.getDisplayedLogs();
+                result.textContent = `Logs chargés: ${logs.length}\n` + JSON.stringify(logs.slice(0, 3), null, 2);
+                console.log('✅ Chargement OK, logs:', logs.length);
+            } catch (error) {
+                result.textContent = 'ERREUR: ' + error.message;
+                console.error('❌ Erreur chargement:', error);
+            }
+        };
+
+        window.testPlayStop = function() {
+            const result = document.getElementById('serviceResult');
+            console.log('▶️ Test Play...');
+            logService.start();
+            
+            setTimeout(() => {
+                console.log('⏸️ Test Stop...');
+                logService.stop();
+                const state = logService.getState();
+                result.textContent = JSON.stringify(state, null, 2);
+            }, 3000);
+        };
+
+        window.clearConsole = function() {
+            consoleOutput.innerHTML = '';
+        };
+
+        // Auto-test au chargement
+        console.log('🚀 Debug Event Viewer chargé');
+        console.log('🔧 Utilisez les boutons pour tester les fonctionnalités');
+    </script>
+</body>
+</html>

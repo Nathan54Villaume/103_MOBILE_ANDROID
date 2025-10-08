@@ -1,0 +1,36 @@
+[2025-10-08 02:00:02.950 +02:00 INF] Data retention cleanup completed. Removed 0 measurements, retained 0 measurements {"SourceContext":"Diris.Server.Services.DataRetentionService"}
+[2025-10-08 07:36:41.041 +02:00 ERR] Error in acquisition cycle {"SourceContext":"Diris.Server.Services.AcquisitionService"}
+Microsoft.Data.SqlClient.SqlException (0x80131904): Une erreur de niveau transport s'est produite lors de la réception des résultats du serveur. (provider: Fournisseur TCP, error: 0 - Une tentative de connexion a échoué car le parti connecté n’a pas répondu convenablement au-delà d’une certaine durée ou une connexion établie a échoué car l’hôte de connexion n’a pas répondu.)
+ ---> System.ComponentModel.Win32Exception (10060): Une tentative de connexion a échoué car le parti connecté n’a pas répondu convenablement au-delà d’une certaine durée ou une connexion établie a échoué car l’hôte de connexion n’a pas répondu.
+   at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderAsync(IAsyncResult asyncResult)
+   at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- End of stack trace from previous location ---
+   at Diris.Storage.SqlServer.Repositories.DeviceRepository.ExecuteQueryAsync[T](String sql, Func`2 mapper, SqlParameter[] parameters)
+   at Diris.Storage.SqlServer.Repositories.DeviceRepository.GetEnabledDevicesAsync()
+   at Diris.Server.Services.AcquisitionService.PerformAcquisitionCycleAsync(CancellationToken cancellationToken)
+   at Diris.Server.Services.AcquisitionService.ExecuteAsync(CancellationToken stoppingToken)
+ClientConnectionId :ad96476b-e775-4b72-83c3-660c1702905c
+Error Number :10060,State :0,Class :20
+[2025-10-08 07:37:01.051 +02:00 ERR] Error in acquisition cycle {"SourceContext":"Diris.Server.Services.AcquisitionService"}
+Microsoft.Data.SqlClient.SqlException (0x80131904): Une erreur liée au réseau ou spécifique à l'instance s'est produite lors de l'établissement d'une connexion à SQL Server. Le serveur est introuvable ou n'est pas accessible. Vérifiez que le nom de l'instance est correct et que SQL Server est configuré pour autoriser les connexions distantes. (provider: Fournisseur TCP, error: 0 - Dépassement du délai d’attente.)
+ ---> System.ComponentModel.Win32Exception (258): Dépassement du délai d’attente.
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.Connect(ServerInfo serverInfo, SqlInternalConnectionTds connHandler, TimeoutTimer timeout, SqlConnectionString connectionOptions, Boolean withFailover)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+   at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, DbConnectionPool pool, Func`3 accessTokenCallback)
+   at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+   at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(DbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+   at Microsoft.Data.ProviderBase.DbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+   at Microsoft.Data.ProviderBase.DbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+   at Microsoft.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+   at Microsoft.Data.ProviderBase.DbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+   at Diris.Storage.SqlServer.Repositories.DeviceRepository.ExecuteQueryAsync[T](String sql, Func`2 mapper, SqlParameter[] parameters)
+   at Diris.Storage.SqlServer.Repositories.DeviceRepository.GetEnabledDevicesAsync()
+   at Diris.Server.Services.AcquisitionService.PerformAcquisitionCycleAsync(CancellationToken cancellationToken)
+   at Diris.Server.Services.AcquisitionService.ExecuteAsync(CancellationToken stoppingToken)
+ClientConnectionId :00000000-0000-0000-0000-000000000000
+Error Number :258,State :0,Class :20

@@ -43,7 +43,8 @@ public class DirisConfigController : ControllerBase
                 {
                     enabled = _configuration.GetValue<bool>("Diris:DataRetention:Enabled", true),
                     retentionDays = _configuration.GetValue<int>("Diris:DataRetention:RetentionDays", 10),
-                    cleanupHour = _configuration.GetValue<int>("Diris:DataRetention:CleanupHour", 2)
+                    cleanupHour = _configuration.GetValue<int>("Diris:DataRetention:CleanupHour", 2),
+                    maxDatabaseSizeMB = _configuration.GetValue<int>("Diris:DataRetention:MaxDatabaseSizeMB", 1024)
                 }
             };
 
@@ -145,7 +146,8 @@ public class DirisConfigController : ControllerBase
                 {
                     Enabled = true,
                     RetentionDays = 10,
-                    CleanupHour = 2
+                    CleanupHour = 2,
+                    MaxDatabaseSizeMB = 1024
                 }
             };
 
@@ -194,6 +196,9 @@ public class DirisConfigController : ControllerBase
         if (config.DataRetention?.CleanupHour < 0 || config.DataRetention?.CleanupHour > 23)
             errors.Add("Cleanup hour must be between 0 and 23");
 
+        if (config.DataRetention?.MaxDatabaseSizeMB < 100 || config.DataRetention?.MaxDatabaseSizeMB > 10240)
+            errors.Add("Max database size must be between 100 MB and 10 GB (10240 MB)");
+
         return new ConfigurationValidationResult
         {
             IsValid = errors.Count == 0,
@@ -216,6 +221,7 @@ public class DirisConfigController : ControllerBase
             _configuration["Diris:DataRetention:Enabled"] = config.DataRetention.Enabled.ToString();
             _configuration["Diris:DataRetention:RetentionDays"] = config.DataRetention.RetentionDays.ToString();
             _configuration["Diris:DataRetention:CleanupHour"] = config.DataRetention.CleanupHour.ToString();
+            _configuration["Diris:DataRetention:MaxDatabaseSizeMB"] = config.DataRetention.MaxDatabaseSizeMB.ToString();
         }
     }
 
@@ -241,7 +247,8 @@ public class DirisConfigController : ControllerBase
                 {
                     ["Enabled"] = config.DataRetention?.Enabled ?? true,
                     ["RetentionDays"] = config.DataRetention?.RetentionDays ?? 10,
-                    ["CleanupHour"] = config.DataRetention?.CleanupHour ?? 2
+                    ["CleanupHour"] = config.DataRetention?.CleanupHour ?? 2,
+                    ["MaxDatabaseSizeMB"] = config.DataRetention?.MaxDatabaseSizeMB ?? 1024
                 }
             };
 
@@ -325,6 +332,7 @@ public class DataRetentionConfig
     public bool Enabled { get; set; }
     public int RetentionDays { get; set; }
     public int CleanupHour { get; set; }
+    public int MaxDatabaseSizeMB { get; set; }
 }
 
 /// <summary>
