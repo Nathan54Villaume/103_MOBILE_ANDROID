@@ -1602,7 +1602,8 @@ export class DirisManager {
         
       console.log('🎯 [DEBUG] Calcul score cohérence:', {
         coherenceStartTime: this.coherenceStartTime,
-        url: url
+        url: url,
+        coherenceStartTimeDetails: this.coherenceStartTime ? new Date(this.coherenceStartTime).toLocaleString() : 'null'
       });
         
       const response = await fetch(url, {
@@ -1617,7 +1618,11 @@ export class DirisManager {
       }
       
       const scoreData = await response.json();
-      console.log('✅ [DEBUG] Score reçu:', scoreData);
+      console.log('✅ [DEBUG] Score reçu:', {
+        score: scoreData.score,
+        breakdown: scoreData.breakdown,
+        fullData: scoreData
+      });
       
       document.getElementById('coherenceScore').textContent = `${scoreData.score}/100`;
       document.getElementById('coherenceScore').className = scoreData.score >= 90 ? 
