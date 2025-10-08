@@ -92,6 +92,7 @@ export class DirisManager {
     // Coherence stats
     document.getElementById('btnRefreshCoherence')?.addEventListener('click', () => this.loadCoherenceStats());
     document.getElementById('btnResetCoherence')?.addEventListener('click', () => this.resetCoherence());
+    document.getElementById('btnClearCoherenceData')?.addEventListener('click', () => this.clearCoherenceData());
     document.getElementById('btnClearGaps')?.addEventListener('click', () => this.clearGaps());
     
     // Alerts
@@ -1534,7 +1535,14 @@ export class DirisManager {
   // ========================================
   async loadCoherenceStats() {
     try {
-      const response = await fetch('/api/diris/coherence', {
+      // Récupérer le point de départ stocké
+      this.coherenceStartTime = localStorage.getItem('dirisCoherenceStartTime');
+      
+      const url = this.coherenceStartTime 
+        ? `/api/diris/coherence?since=${encodeURIComponent(this.coherenceStartTime)}`
+        : '/api/diris/coherence';
+        
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${this.apiClient.token}`
         }
@@ -1561,7 +1569,7 @@ export class DirisManager {
     // Fréquence d'acquisition
     if (data.frequency && data.frequency.length > 0) {
       const avgInterval = data.frequency.reduce((sum, d) => sum + d.avgMs, 0) / data.frequency.length;
-      document.getElementById('coherenceFrequency').textContent = `~${(avgInterval / 1000).toFixed(1)}s`;
+      document.getElementById('coherenceFrequency').textContent = `${Math.round(avgInterval)}ms`;
       document.getElementById('coherenceFrequency').className = avgInterval >= 1400 && avgInterval <= 2000 ? 
         'text-2xl font-bold value-excellent' : 
         'text-2xl font-bold value-good';
@@ -1707,7 +1715,11 @@ export class DirisManager {
   }
 
   resetCoherence() {
-    if (confirm('Réinitialiser toutes les statistiques de cohérence ?\n\nCela va vider l\'affichage actuel.')) {
+    if (confirm('Réinitialiser le calcul de cohérence ?\n\n• Les statistiques seront recalculées depuis maintenant\n• L\'historique précédent sera ignoré\n• Nouveau point de départ pour le score')) {
+      // Marquer le nouveau point de départ
+      this.coherenceStartTime = new Date().toISOString();
+      localStorage.setItem('dirisCoherenceStartTime', this.coherenceStartTime);
+      
       // Réinitialiser les KPIs
       document.getElementById('coherenceQuality').textContent = '-%';
       document.getElementById('coherenceQuality').className = 'text-2xl font-bold text-slate-400';
@@ -1724,14 +1736,45 @@ export class DirisManager {
       // Vider les stats par device
       const deviceStatsContainer = document.getElementById('coherenceDeviceStats');
       if (deviceStatsContainer) {
-        deviceStatsContainer.innerHTML = '<p class="text-center text-slate-400 py-4">Statistiques réinitialisées</p>';
+        deviceStatsContainer.innerHTML = '<p class="text-center text-slate-400 py-4">Nouveau calcul depuis ' + new Date(this.coherenceStartTime).toLocaleTimeString() + '</p>';
       }
       
       // Vider les interruptions
       this.clearGaps();
       
-      this.showSuccess('✅ Statistiques de cohérence réinitialisées');
-      this.addHistoryEvent('info', 'Cohérence réinitialisée', 'L\'affichage des statistiques a été vidé');
+      this.showSuccess('✅ Nouveau point de départ défini pour le calcul de cohérence');
+      this.addHistoryEvent('info', 'Cohérence réinitialisée', 'Nouveau calcul depuis ' + new Date(this.coherenceStartTime).toLocaleString());
+      
+      // Recharger immédiatement avec le nouveau point de départ
+      this.loadCoherenceStats();
+    }
+  }
+
+  async clearCoherenceData() {
+    if (confirm('⚠️ ATTENTION : Supprimer les données de cohérence de la base ?\n\n' +
+                '• Cela va supprimer les mesures anciennes\n' +
+                '• Seules les 5 dernières minutes seront conservées\n' +
+                '• Le score de cohérence sera recalculé\n\n' +
+                'Continuer ?')) {
+      
+      try {
+        const response = await this.apiClient.request('POST', '/api/diris/coherence/clear-data?minutesToKeep=5');
+        
+        if (response.success) {
+          this.showSuccess(`✅ Données nettoyées : ${response.deletedRows} mesures supprimées`);
+          this.addHistoryEvent('info', 'Données cohérence', `Nettoyage : ${response.deletedRows} mesures supprimées`);
+          
+          // Recharger les statistiques après nettoyage
+          setTimeout(() => {
+            this.loadCoherenceStats();
+          }, 1000);
+        } else {
+          throw new Error('Réponse inattendue du serveur');
+        }
+      } catch (error) {
+        console.error('Erreur nettoyage données:', error);
+        this.showError('❌ Erreur lors du nettoyage des données');
+      }
     }
   }
 
