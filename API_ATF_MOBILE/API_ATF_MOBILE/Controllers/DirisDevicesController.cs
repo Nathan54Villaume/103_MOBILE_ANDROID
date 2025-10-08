@@ -159,15 +159,6 @@ public class DirisDevicesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Gets tag mappings for a device
-    /// </summary>
-    [HttpGet("{id}/tags")]
-    public async Task<IActionResult> GetTagMappings(int id)
-    {
-        var mappings = await _deviceRegistry.GetTagMappingsAsync(id);
-        return Ok(mappings);
-    }
 
     /// <summary>
     /// Updates tag mappings for a device
