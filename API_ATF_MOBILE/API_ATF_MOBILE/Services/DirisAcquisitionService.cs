@@ -15,7 +15,7 @@ public class DirisAcquisitionService : BackgroundService
     private readonly ISystemMetricsCollector _metricsCollector;
     private readonly ILogger<DirisAcquisitionService> _logger;
     private readonly DirisAcquisitionOptions _options;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly DirisAcquisitionControlService _controlService;
 
     public DirisAcquisitionService(
         IDeviceRegistry deviceRegistry,
@@ -24,7 +24,7 @@ public class DirisAcquisitionService : BackgroundService
         ISystemMetricsCollector metricsCollector,
         ILogger<DirisAcquisitionService> logger,
         IOptions<DirisAcquisitionOptions> options,
-        IServiceProvider serviceProvider)
+        DirisAcquisitionControlService controlService)
     {
         _deviceRegistry = deviceRegistry;
         _deviceReader = deviceReader;
@@ -32,7 +32,7 @@ public class DirisAcquisitionService : BackgroundService
         _metricsCollector = metricsCollector;
         _logger = logger;
         _options = options.Value;
-        _serviceProvider = serviceProvider;
+        _controlService = controlService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,19 +44,20 @@ public class DirisAcquisitionService : BackgroundService
             try
             {
                 // Vérifier si l'acquisition est activée
-                var controlService = _serviceProvider.GetRequiredService<DirisAcquisitionControlService>();
-                if (controlService.IsRunning)
+                if (_controlService.IsRunning)
                 {
                     await PerformAcquisitionCycleAsync(stoppingToken);
+                    
+                    // Attendre le prochain cycle avec l'intervalle de polling configuré
+                    var delay = TimeSpan.FromMilliseconds(_options.DefaultPollIntervalMs);
+                    await Task.Delay(delay, stoppingToken);
                 }
                 else
                 {
+                    // Acquisition arrêtée : attendre plus longtemps pour économiser du CPU
                     _logger.LogDebug("DIRIS acquisition is paused by control service");
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
-                
-                // Wait for the next cycle
-                var delay = TimeSpan.FromMilliseconds(_options.DefaultPollIntervalMs);
-                await Task.Delay(delay, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -69,6 +70,8 @@ public class DirisAcquisitionService : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
+        
+        _logger.LogInformation("DIRIS Acquisition service stopped");
     }
 
     private async Task PerformAcquisitionCycleAsync(CancellationToken cancellationToken)
