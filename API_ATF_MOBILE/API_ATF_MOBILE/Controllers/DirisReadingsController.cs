@@ -183,15 +183,23 @@ public class DirisReadingsController : ControllerBase
 
         while (await reader.ReadAsync())
         {
+            var deviceIdOrd = reader.GetOrdinal("DeviceId");
+            var deviceNameOrd = reader.GetOrdinal("DeviceName");
+            var signalOrd = reader.GetOrdinal("Signal");
+            var valueOrd = reader.GetOrdinal("Value");
+            var qualityOrd = reader.GetOrdinal("Quality");
+            var utcTsOrd = reader.GetOrdinal("UtcTs");
+            var unitOrd = reader.GetOrdinal("Unit");
+            
             results.Add(new
             {
-                DeviceId = reader.GetInt32("DeviceId"),
-                DeviceName = reader.GetString("DeviceName"),
-                Signal = reader.GetString("Signal"),
-                Value = reader.GetDouble("Value"),
-                Quality = reader.GetByte("Quality"),
-                UtcTs = reader.GetDateTime("UtcTs"),
-                Unit = reader.IsDBNull("Unit") ? null : reader.GetString("Unit")
+                DeviceId = reader.GetInt32(deviceIdOrd),
+                DeviceName = reader.IsDBNull(deviceNameOrd) ? $"Device {reader.GetInt32(deviceIdOrd)}" : reader.GetString(deviceNameOrd),
+                Signal = reader.GetString(signalOrd),
+                Value = reader.GetDouble(valueOrd),
+                Quality = reader.GetByte(qualityOrd),
+                UtcTs = reader.GetDateTime(utcTsOrd),
+                Unit = reader.IsDBNull(unitOrd) ? null : reader.GetString(unitOrd)
             });
         }
 

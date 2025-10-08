@@ -85,6 +85,22 @@
     .value-danger { color: #ef4444; } /* Rouge - Danger */
     .value-critical { color: #dc2626; } /* Rouge foncé - Critique */
     
+    /* DIRIS Tabs */
+    .diris-tab-btn {
+      color: #94a3b8;
+    }
+    .diris-tab-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      font-weight: 600;
+    }
+    .diris-tab-content {
+      display: none;
+    }
+    .diris-tab-content:not(.hidden) {
+      display: block;
+    }
+    
     /* Configuration info icons and tooltips */
     .config-info-icon {
       cursor: help;
@@ -616,6 +632,30 @@
         <!-- DIRIS Section (hidden by default) -->
         <section id="section-diris" class="hidden space-y-6">
           
+          <!-- Tabs Navigation DIRIS -->
+          <div class="card rounded-xl p-1 shadow-glass">
+            <div class="flex gap-1 overflow-x-auto hide-scrollbar">
+              <button class="diris-tab-btn active flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="overview">
+                📊 Vue d'ensemble
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="devices">
+                🔌 Devices
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="coherence">
+                📈 Cohérence
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="config">
+                ⚙️ Configuration
+              </button>
+              <button class="diris-tab-btn flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-white/10" data-diris-tab="history">
+                📜 Historique
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB: Vue d'ensemble -->
+          <div id="diris-tab-overview" class="diris-tab-content space-y-6">
+          
           <!-- Statut global DIRIS -->
           <div class="card rounded-xl p-5 shadow-glass">
             <div class="flex items-center justify-between mb-4">
@@ -695,6 +735,41 @@
                 <button id="btnTriggerCleanup" class="w-full px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
                   🧹 Nettoyage manuel
                 </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Graphiques temps réel -->
+          <div class="card rounded-xl p-5 shadow-glass">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold">Graphiques temps réel</h3>
+              <div class="flex gap-2">
+                <button id="btnPauseCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  ⏸️ Pause
+                </button>
+                <button id="btnResetCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
+                  🔄 Reset
+                </button>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="p-4 bg-white/5 rounded-lg">
+                <h4 class="text-sm font-medium mb-3">Throughput (Points/seconde)</h4>
+                <div style="height: 200px; position: relative;">
+                  <canvas id="dirisThroughputChart"></canvas>
+                </div>
+              </div>
+              <div class="p-4 bg-white/5 rounded-lg">
+                <h4 class="text-sm font-medium mb-3">Latence (ms)</h4>
+                <div style="height: 200px; position: relative;">
+                  <canvas id="dirisLatencyChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 p-4 bg-white/5 rounded-lg">
+              <h4 class="text-sm font-medium mb-3">Devices Actifs</h4>
+              <div style="height: 150px; position: relative;">
+                <canvas id="dirisDevicesChart"></canvas>
               </div>
             </div>
           </div>
@@ -802,6 +877,12 @@
               </div>
             </div>
           </div>
+          
+          </div>
+          <!-- FIN TAB: Vue d'ensemble -->
+
+          <!-- TAB: Cohérence -->
+          <div id="diris-tab-coherence" class="diris-tab-content space-y-6 hidden">
 
           <!-- Statistiques de cohérence en temps réel -->
           <div class="card rounded-xl p-5 shadow-glass">
@@ -855,6 +936,12 @@
               </div>
             </div>
           </div>
+          
+          </div>
+          <!-- FIN TAB: Cohérence -->
+
+          <!-- TAB: Configuration -->
+          <div id="diris-tab-config" class="diris-tab-content space-y-6 hidden">
 
           <!-- Configuration -->
           <div class="card rounded-xl p-5 shadow-glass">
@@ -932,6 +1019,12 @@
               </div>
             </div>
           </div>
+          
+          </div>
+          <!-- FIN TAB: Configuration -->
+
+          <!-- TAB: Devices -->
+          <div id="diris-tab-devices" class="diris-tab-content space-y-6 hidden">
 
           <!-- Devices DIRIS -->
           <div class="card rounded-xl p-5 shadow-glass">
@@ -949,6 +1042,12 @@
               <p class="text-center text-slate-400 py-8">Chargement des devices...</p>
             </div>
           </div>
+          
+          </div>
+          <!-- FIN TAB: Devices -->
+
+          <!-- TAB: Historique -->
+          <div id="diris-tab-history" class="diris-tab-content space-y-6 hidden">
 
           <!-- Dernières mesures -->
           <div class="card rounded-xl p-5 shadow-glass">
@@ -966,41 +1065,6 @@
             <div id="dirisLatestReadings" class="space-y-3 max-h-[400px] overflow-y-auto hide-scrollbar">
               <!-- Dynamically populated -->
               <p class="text-center text-slate-400 py-8">Chargement des mesures...</p>
-            </div>
-          </div>
-
-          <!-- Graphiques temps réel -->
-          <div class="card rounded-xl p-5 shadow-glass">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-semibold">Graphiques temps réel</h3>
-              <div class="flex gap-2">
-                <button id="btnPauseCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
-                  ⏸️ Pause
-                </button>
-                <button id="btnResetCharts" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors">
-                  🔄 Reset
-                </button>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div class="p-4 bg-white/5 rounded-lg">
-                <h4 class="text-sm font-medium mb-3">Throughput (Points/seconde)</h4>
-                <div style="height: 200px; position: relative;">
-                  <canvas id="dirisThroughputChart"></canvas>
-                </div>
-              </div>
-              <div class="p-4 bg-white/5 rounded-lg">
-                <h4 class="text-sm font-medium mb-3">Latence (ms)</h4>
-                <div style="height: 200px; position: relative;">
-                  <canvas id="dirisLatencyChart"></canvas>
-                </div>
-              </div>
-            </div>
-            <div class="mt-4 p-4 bg-white/5 rounded-lg">
-              <h4 class="text-sm font-medium mb-3">Devices Actifs</h4>
-              <div style="height: 150px; position: relative;">
-                <canvas id="dirisDevicesChart"></canvas>
-              </div>
             </div>
           </div>
 
@@ -1024,6 +1088,9 @@
               <p class="text-center text-slate-400 py-8">Aucun événement enregistré</p>
             </div>
           </div>
+          
+          </div>
+          <!-- FIN TAB: Historique -->
 
         </section>
 
@@ -1104,6 +1171,38 @@
         icon.style.transform = 'rotate(0deg)';
       }
     }
+    
+    // Fonction pour gérer les sous-onglets DIRIS
+    function initDirisTabs() {
+      const tabButtons = document.querySelectorAll('.diris-tab-btn');
+      const tabContents = document.querySelectorAll('.diris-tab-content');
+      
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const tabName = button.getAttribute('data-diris-tab');
+          
+          // Désactiver tous les boutons et cacher tous les contenus
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.add('hidden'));
+          
+          // Activer le bouton et afficher le contenu sélectionné
+          button.classList.add('active');
+          const targetTab = document.getElementById(`diris-tab-${tabName}`);
+          if (targetTab) {
+            targetTab.classList.remove('hidden');
+          }
+          
+          console.log(`🎯 DIRIS Tab switched to: ${tabName}`);
+        });
+      });
+      
+      console.log('✅ DIRIS Tabs initialized');
+    }
+    
+    // Initialiser les tabs DIRIS au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+      initDirisTabs();
+    });
   </script>
   <script type="module" src="js/admin.js?v=20251003-1020"></script>
 </body>
