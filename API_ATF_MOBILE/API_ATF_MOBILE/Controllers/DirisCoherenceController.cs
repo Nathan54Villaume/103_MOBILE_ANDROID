@@ -361,6 +361,26 @@ public class DirisCoherenceController : ControllerBase
         using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         
+        // Si on utilise le paramètre 'since', vérifier d'abord s'il y a assez de données
+        if (since != null && DateTime.TryParse(since, out var sinceDate))
+        {
+            // Vérifier le nombre total de mesures depuis 'since'
+            var countSql = $@"
+                SELECT COUNT(*) 
+                FROM [DIRIS].[Measurements] 
+                WHERE UtcTs > @SinceDate";
+                
+            using var countCommand = new SqlCommand(countSql, connection);
+            countCommand.Parameters.AddWithValue("@SinceDate", sinceDate);
+            var totalMeasures = (int)await countCommand.ExecuteScalarAsync();
+            
+            // Si moins de 20 mesures, considérer comme score parfait (pas assez de données pour juger)
+            if (totalMeasures < 20)
+            {
+                return 40; // Score parfait par défaut
+            }
+        }
+        
         var quality = await GetQualityStats(connection, since);
         var qualityObj = (dynamic)quality;
         
