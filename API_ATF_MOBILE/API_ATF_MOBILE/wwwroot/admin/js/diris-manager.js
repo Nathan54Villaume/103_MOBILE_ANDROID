@@ -91,6 +91,10 @@ export class DirisManager {
     
     // Coherence stats
     document.getElementById('btnRefreshCoherence')?.addEventListener('click', () => this.loadCoherenceStats());
+    document.getElementById('btnClearGaps')?.addEventListener('click', () => this.clearGaps());
+    
+    // Alerts
+    document.getElementById('btnClearAlerts')?.addEventListener('click', () => this.clearAlerts());
   }
 
   // ========================================
@@ -1698,6 +1702,24 @@ export class DirisManager {
     if (this.coherenceRefreshInterval) {
       clearInterval(this.coherenceRefreshInterval);
       this.coherenceRefreshInterval = null;
+    }
+  }
+
+  clearGaps() {
+    const container = document.getElementById('coherenceGaps');
+    if (container) {
+      container.innerHTML = '<p class="text-center text-green-400 py-4">✅ Affichage vidé (actualiser pour recharger)</p>';
+      this.showSuccess('Affichage des interruptions vidé');
+    }
+  }
+
+  clearAlerts() {
+    const container = document.getElementById('dirisAlertsList');
+    if (container) {
+      this.alerts = [];
+      container.innerHTML = '<p class="text-center text-slate-400 py-4">Aucune alerte récente</p>';
+      document.getElementById('dirisAlertsCount').textContent = '0';
+      this.showSuccess('Alertes vidées');
     }
   }
 }

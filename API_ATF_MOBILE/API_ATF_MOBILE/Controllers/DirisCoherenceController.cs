@@ -303,60 +303,95 @@ public class DirisCoherenceController : ControllerBase
         try
         {
             var connectionString = _configuration.GetConnectionString("SqlAiAtr");
-            using var connection = new SqlConnection(connectionString);
-            await connection.OpenAsync();
-
-            var quality = await GetQualityStats(connection);
-            var frequency = await GetFrequencyStats(connection);
-            var gaps = await GetGaps(connection);
-
-            var qualityData = (dynamic)quality;
-            int score = 0;
-
-            // Qualité parfaite = 40 points
-            if (qualityData.perfectQuality)
-            {
-                score += 40;
-            }
-
-            // Régularité de la fréquence = 30 points
-            var freqList = frequency.ToList();
-            if (freqList.Any())
-            {
-                var avgStdDev = freqList.Average(f => (double?)((dynamic)f).StdDevMs ?? 0);
-                if (avgStdDev < 100)
-                    score += 30;
-                else if (avgStdDev < 200)
-                    score += 20;
-                else if (avgStdDev < 500)
-                    score += 10;
-            }
-
-            // Absence de trous significatifs = 30 points
-            var gapList = gaps.ToList();
-            if (!gapList.Any())
-                score += 30;
-            else if (gapList.Count() <= 2)
-                score += 20;
-            else if (gapList.Count() <= 5)
-                score += 10;
+            
+            // Calculer chaque composante du score de manière isolée
+            int qualityScore = await CalculateQualityScore(connectionString);
+            int regularityScore = await CalculateRegularityScore(connectionString);
+            int gapsScore = await CalculateGapsScore(connectionString);
+            
+            int totalScore = qualityScore + regularityScore + gapsScore;
 
             return Ok(new
             {
-                score = score,
-                rating = score >= 90 ? "Excellent" : score >= 75 ? "Bon" : score >= 50 ? "Moyen" : "Faible",
+                score = totalScore,
+                rating = totalScore >= 90 ? "Excellent" : totalScore >= 75 ? "Bon" : totalScore >= 50 ? "Moyen" : "Faible",
                 details = new
                 {
-                    qualityScore = qualityData.perfectQuality ? 40 : 0,
-                    regularityScore = score >= 70 ? 30 : score >= 50 ? 20 : 10,
-                    gapsScore = !gapList.Any() ? 30 : gapList.Count() <= 2 ? 20 : 10
+                    qualityScore = qualityScore,
+                    regularityScore = regularityScore,
+                    gapsScore = gapsScore
                 }
             });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erreur lors du calcul du score de cohérence");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
         }
+    }
+
+    private async Task<int> CalculateQualityScore(string connectionString)
+    {
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        
+        var quality = await GetQualityStats(connection);
+        var qualityObj = (dynamic)quality;
+        
+        return qualityObj.perfectQuality ? 40 : 0;
+    }
+
+    private async Task<int> CalculateRegularityScore(string connectionString)
+    {
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        
+        const string sql = @"
+            WITH Intervals AS (
+                SELECT DATEDIFF(MILLISECOND, LAG(UtcTs) OVER (PARTITION BY DeviceId ORDER BY UtcTs), UtcTs) as IntervalMs
+                FROM [DIRIS].[Measurements]
+                WHERE UtcTs > DATEADD(MINUTE, -10, GETUTCDATE())
+            )
+            SELECT AVG(CAST(IntervalMs AS FLOAT)) as AvgStdDev
+            FROM (
+                SELECT STDEV(CAST(IntervalMs AS FLOAT)) as IntervalMs
+                FROM Intervals
+                WHERE IntervalMs IS NOT NULL
+            ) t";
+        
+        using var command = new SqlCommand(sql, connection);
+        var result = await command.ExecuteScalarAsync();
+        
+        if (result == null || result == DBNull.Value)
+            return 30; // Pas de données = score parfait par défaut
+        
+        var avgStdDev = Convert.ToDouble(result);
+        
+        if (avgStdDev < 100)
+            return 30;
+        else if (avgStdDev < 200)
+            return 20;
+        else if (avgStdDev < 500)
+            return 10;
+        
+        return 0;
+    }
+
+    private async Task<int> CalculateGapsScore(string connectionString)
+    {
+        using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        
+        var gaps = await GetGaps(connection);
+        var gapCount = gaps.Count();
+        
+        if (gapCount == 0)
+            return 30;
+        else if (gapCount <= 2)
+            return 20;
+        else if (gapCount <= 5)
+            return 10;
+        
+        return 0;
     }
 }
