@@ -1645,7 +1645,7 @@ export class DirisManager {
       <div class="bg-slate-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         <div class="bg-slate-700 px-6 py-4 border-b border-slate-600">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-white">⚙️ Configuration des Fréquences par Signal</h3>
+            <h3 class="text-lg font-semibold text-white">⚙️ Configuration du Preset Universel (81 signaux)</h3>
             <button id="btnClosePresetConfig" class="text-slate-400 hover:text-white">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1730,27 +1730,37 @@ export class DirisManager {
       this.updateSelectedCount(modal);
     });
 
-    // Charger les signaux et leurs fréquences actuelles pour le device actuellement sélectionné
-    const currentDeviceSelect = document.querySelector('#deviceSelect');
-    const currentDeviceId = currentDeviceSelect ? parseInt(currentDeviceSelect.value) : null;
-    
-    if (!currentDeviceId) {
-      this.showError('Veuillez d\'abord sélectionner un device');
-      modal.remove();
-      return;
-    }
-
-    this.loadCurrentSignalsForPresets(modal, currentDeviceId);
+    // Charger les signaux d'un device de référence (le premier device disponible)
+    this.loadCurrentSignalsForPresets(modal);
   }
 
-  loadCurrentSignalsForPresets(modal, deviceId) {
-    // Charger les signaux du device spécifique avec leurs fréquences actuelles
-    this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`)
+  loadCurrentSignalsForPresets(modal) {
+    // Charger les signaux du premier device disponible comme modèle de preset universel
+    this.apiClient.request('/api/diris/devices')
+      .then(devicesResponse => {
+        // Vérifier la structure de la réponse
+        let devices = [];
+        if (Array.isArray(devicesResponse)) {
+          devices = devicesResponse;
+        } else if (devicesResponse.value && Array.isArray(devicesResponse.value)) {
+          devices = devicesResponse.value;
+        }
+        
+        if (devices.length > 0) {
+          // Utiliser le premier device comme modèle
+          const firstDevice = devices[0];
+          const deviceId = firstDevice.deviceId;
+          
+          return this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`);
+        } else {
+          throw new Error('Aucun device trouvé');
+        }
+      })
       .then(response => {
         if (response.success && response.frequencies) {
           const signals = response.frequencies.map(freq => ({
             ...freq,
-            deviceId: deviceId
+            deviceId: 'preset' // Marquer comme preset universel
           }));
           this.renderSignalsTable(modal, signals);
         } else {
@@ -1772,14 +1782,14 @@ export class DirisManager {
     tbody.innerHTML = signals.map(signal => `
       <tr class="hover:bg-slate-600/50">
         <td class="px-4 py-3">
-          <input type="checkbox" class="signal-preset-checkbox rounded border-slate-500" data-signal="${signal.signal}" data-device="${signal.deviceId}">
+          <input type="checkbox" class="signal-preset-checkbox rounded border-slate-500" data-signal="${signal.signal}">
         </td>
         <td class="px-4 py-3 text-sm text-white font-mono">${signal.signal}</td>
         <td class="px-4 py-3 text-sm text-slate-300">${signal.description || '-'}</td>
         <td class="px-4 py-3 text-sm text-slate-400">${signal.unit || '-'}</td>
         <td class="px-4 py-3 text-sm text-blue-300">${signal.frequencyDescription}</td>
         <td class="px-4 py-3">
-          <select class="signal-frequency-select px-2 py-1 bg-slate-700 border border-slate-500 rounded text-white text-sm" data-signal="${signal.signal}" data-device="${signal.deviceId}">
+          <select class="signal-frequency-select px-2 py-1 bg-slate-700 border border-slate-500 rounded text-white text-sm" data-signal="${signal.signal}">
             <option value="1000" ${signal.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
             <option value="2000" ${signal.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
             <option value="5000" ${signal.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
@@ -1844,8 +1854,7 @@ export class DirisManager {
       const selectedSignals = [];
       modal.querySelectorAll('.signal-preset-checkbox:checked').forEach(checkbox => {
         const signal = checkbox.dataset.signal;
-        const deviceId = parseInt(checkbox.dataset.device);
-        const frequencySelect = modal.querySelector(`.signal-frequency-select[data-signal="${signal}"][data-device="${deviceId}"]`);
+        const frequencySelect = modal.querySelector(`.signal-frequency-select[data-signal="${signal}"]`);
         
         if (frequencySelect) {
           selectedSignals.push({
@@ -1871,11 +1880,11 @@ export class DirisManager {
       });
       
       if (response.success) {
-        this.showSuccess(`✅ Presets sauvegardés et appliqués à tous les devices`);
-        this.addHistoryEvent('success', 'Presets configurés', `Basés sur ${selectedSignals.length} signaux du device actuel`);
+        this.showSuccess(`✅ Preset universel sauvegardé (${selectedSignals.length} signaux configurés)`);
+        this.addHistoryEvent('success', 'Preset universel configuré', `${selectedSignals.length} signaux configurés pour tous les devices`);
         modal.remove();
       } else {
-        this.showError(`❌ Erreur lors de la sauvegarde des presets: ${response.message}`);
+        this.showError(`❌ Erreur lors de la sauvegarde du preset: ${response.message}`);
       }
     } catch (error) {
       console.error('Erreur sauvegarde presets:', error);
