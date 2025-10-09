@@ -266,9 +266,19 @@ class DirisLogsViewer {
         // Enlever le timestamp et le niveau
         const fullMessage = log.replace(/^\[[^\]]+\s+[A-Z]{3}\]\s*/, '');
         
-        // Extraire seulement la première ligne comme message principal
+        // Extraire seulement la première ligne
         const lines = fullMessage.split('\n');
-        return lines[0].trim();
+        let mainMessage = lines[0].trim();
+        
+        // Supprimer le JSON de la fin du message principal
+        // Chercher le début du JSON (après le message utile)
+        const jsonStart = mainMessage.indexOf('{');
+        if (jsonStart !== -1) {
+            mainMessage = mainMessage.substring(0, jsonStart).trim();
+        }
+        
+        // Supprimer les espaces en fin
+        return mainMessage;
     }
 
     /**
