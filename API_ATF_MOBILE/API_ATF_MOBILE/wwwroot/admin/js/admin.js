@@ -9,6 +9,7 @@ import { initDatabaseManager, updateDatabaseStatus } from './database-manager.js
 import { initS7Manager, updateS7Status } from './s7-manager.js';
 import { DirisManager } from './diris-manager.js';
 import dirisLogsViewer from './diris-logs-viewer.js';
+import webTerminal from './terminal.js';
 import { initConfigViewer } from './config-viewer.js';
 import { initApiViewer } from './api-viewer.js';
 import { initRequestsViewer, updateRequestsDisplay } from './requests-viewer.js?v=20251003-0940';
@@ -220,6 +221,7 @@ async function initApp() {
     window.dirisManager.init();
     
     dirisLogsViewer.init();
+    webTerminal.init();
     initConfigViewer();
     initApiViewer();
     initRequestsViewer();
@@ -345,6 +347,9 @@ async function refreshCurrentSection() {
                 if (window.dirisLogsViewer) {
                     await window.dirisLogsViewer.loadLogs();
                 }
+                break;
+            case 'terminal':
+                // Terminal Web - pas de rafraîchissement automatique nécessaire
                 break;
             case 'config':
                 await loadConfiguration();
@@ -750,6 +755,8 @@ function startPolling() {
             } else if (state.currentSection === 'logs') {
                 // DIRIS Logs Viewer gère son propre auto-refresh
                 // Pas besoin de rafraîchir ici
+            } else if (state.currentSection === 'terminal') {
+                // Terminal Web - pas de rafraîchissement automatique
             } else if (state.currentSection === 'requests') {
                 updateRequestsDisplay();
             }
