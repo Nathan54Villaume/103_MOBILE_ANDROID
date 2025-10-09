@@ -150,8 +150,10 @@ class WebTerminal {
         // Nouveau prompt
         this.printPrompt();
         
-        // Scroll vers le bas
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        // Scroll vers le bas avec délai pour s'assurer que le contenu est rendu
+        setTimeout(() => {
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }, 10);
     }
 
     /**
@@ -307,12 +309,32 @@ class WebTerminal {
         }
 
         const host = args[0];
-        this.appendOutput(`<span class="text-blue-400">Test de connectivité vers ${host}...</span>`);
+        this.appendOutput(`<span class="text-blue-400">Envoi d'une requête 'Ping' vers ${host} avec 32 octets de données :</span>`);
         
-        // Simuler le ping
+        // Simuler le ping avec 4 tentatives comme un vrai ping
+        for (let i = 1; i <= 4; i++) {
+            setTimeout(() => {
+                const time = Math.floor(Math.random() * 5) + 1; // 1-5ms aléatoire
+                this.appendOutput(`<span class="text-green-400">Réponse de ${host} : octets=32 temps=${time}ms TTL=64</span>`);
+                
+                // Scroll après chaque réponse
+                setTimeout(() => {
+                    const terminalOutput = document.getElementById('terminalOutput');
+                    if (terminalOutput) {
+                        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+                    }
+                }, 10);
+            }, i * 1000);
+        }
+        
+        // Statistiques finales
         setTimeout(() => {
-            this.appendOutput(`<span class="text-green-400">Réponse de ${host}: temps&lt;1ms TTL=64</span>`);
-        }, 1000);
+            this.appendOutput('');
+            this.appendOutput(`<span class="text-blue-400">Statistiques Ping pour ${host} :</span>`);
+            this.appendOutput(`<span class="text-green-400">    Paquets : envoyés = 4, reçus = 4, perdus = 0 (0% de perte),</span>`);
+            this.appendOutput(`<span class="text-green-400">Durée approximative en millisecondes :</span>`);
+            this.appendOutput(`<span class="text-green-400">    Minimum = 1ms, Maximum = 5ms, Moyenne = 3ms</span>`);
+        }, 5000);
     }
 
     /**
@@ -430,6 +452,11 @@ class WebTerminal {
             line.innerHTML = text;
             line.className = 'terminal-line font-mono text-sm leading-relaxed';
             terminalOutput.appendChild(line);
+            
+            // Auto-scroll vers le bas
+            setTimeout(() => {
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            }, 10);
         }
     }
 
