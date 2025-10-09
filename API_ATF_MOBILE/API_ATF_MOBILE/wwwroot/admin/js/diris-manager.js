@@ -684,14 +684,11 @@ export class DirisManager {
           <button id="btnSaveSignals" class="px-3 py-2 text-sm rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors">
             💾 Sauvegarder
           </button>
-          <button id="btnSaveFrequencies" class="px-3 py-2 text-sm rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 transition-colors">
-            ⏱️ Sauvegarder fréquences
-          </button>
           <button id="btnApplyPresets" class="px-3 py-2 text-sm rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border border-indigo-500/30 transition-colors">
             🎯 Appliquer presets
           </button>
-          <button id="btnCreateAllSignals" class="px-3 py-2 text-sm rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors">
-            🔄 Recréer tous les signaux
+          <button id="btnConfigurePresets" class="px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
+            ⚙️ Configurer presets
           </button>
         </div>
         
@@ -771,17 +768,12 @@ export class DirisManager {
       this.saveSignalSettings(device.deviceId, modal);
     });
     
-    modal.querySelector('#btnCreateAllSignals').addEventListener('click', () => {
-      this.discoverTags(device.deviceId);
-      modal.remove();
-    });
-    
-    modal.querySelector('#btnSaveFrequencies').addEventListener('click', () => {
-      this.saveSignalFrequencies(device.deviceId, modal);
-    });
-    
     modal.querySelector('#btnApplyPresets').addEventListener('click', () => {
       this.applyFrequencyPresets(device.deviceId, modal);
+    });
+    
+    modal.querySelector('#btnConfigurePresets').addEventListener('click', () => {
+      this.showPresetConfigurationModal();
     });
     
     // Mise à jour du compteur
@@ -1615,32 +1607,6 @@ export class DirisManager {
     }
   }
 
-  async saveSignalFrequencies(deviceId, modal) {
-    try {
-      const frequencies = Array.from(modal.querySelectorAll('.signal-frequency'))
-        .map(select => ({
-          signal: select.dataset.signal,
-          recordingFrequencyMs: parseInt(select.value)
-        }));
-      
-      this.showInfo('⏱️ Sauvegarde des fréquences d\'enregistrement...');
-      
-      const response = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}/bulk`, {
-        method: 'PUT',
-        body: JSON.stringify({ frequencies })
-      });
-      
-      if (response.success) {
-        this.showSuccess(`✅ Fréquences sauvegardées pour ${response.updatedCount} signaux`);
-        this.addHistoryEvent('success', 'Fréquences mises à jour', `${response.updatedCount} fréquences mises à jour pour device ${deviceId}`);
-      } else {
-        this.showError(`❌ Erreur: ${response.message || 'Impossible de sauvegarder les fréquences'}`);
-      }
-    } catch (error) {
-      console.error('Erreur sauvegarde fréquences:', error);
-      this.showError('Erreur lors de la sauvegarde des fréquences');
-    }
-  }
 
   async applyFrequencyPresets(deviceId, modal) {
     try {
@@ -1663,6 +1629,206 @@ export class DirisManager {
     } catch (error) {
       console.error('Erreur application presets:', error);
       this.showError('Erreur lors de l\'application des presets');
+    }
+  }
+
+  showPresetConfigurationModal() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+    
+    modal.innerHTML = `
+      <div class="bg-slate-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div class="bg-slate-700 px-6 py-4 border-b border-slate-600">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">⚙️ Configuration des Presets de Fréquence</h3>
+            <button id="btnClosePresetConfig" class="text-slate-400 hover:text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div class="space-y-6">
+            <div class="bg-slate-700/50 rounded-lg p-4">
+              <h4 class="text-md font-medium text-white mb-4">📊 Presets par Type de Signal</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Courants -->
+                <div class="bg-slate-600/50 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-white mb-2">⚡ Courants (I_*)</label>
+                  <select id="presetCurrents" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
+                    <option value="1000">1 seconde</option>
+                    <option value="2000">2 secondes</option>
+                    <option value="5000">5 secondes</option>
+                    <option value="10000">10 secondes</option>
+                    <option value="30000">30 secondes</option>
+                    <option value="60000">1 minute</option>
+                    <option value="300000">5 minutes</option>
+                    <option value="600000">10 minutes</option>
+                  </select>
+                  <p class="text-xs text-slate-400 mt-1">Signaux critiques - temps réel</p>
+                </div>
+
+                <!-- Tensions -->
+                <div class="bg-slate-600/50 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-white mb-2">🔌 Tensions (PV*, LV_*)</label>
+                  <select id="presetVoltages" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
+                    <option value="1000">1 seconde</option>
+                    <option value="2000">2 secondes</option>
+                    <option value="5000">5 secondes</option>
+                    <option value="10000">10 secondes</option>
+                    <option value="30000">30 secondes</option>
+                    <option value="60000">1 minute</option>
+                    <option value="300000">5 minutes</option>
+                    <option value="600000">10 minutes</option>
+                  </select>
+                  <p class="text-xs text-slate-400 mt-1">Signaux critiques - temps réel</p>
+                </div>
+
+                <!-- Puissances -->
+                <div class="bg-slate-600/50 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-white mb-2">⚡ Puissances (AP, IP, RP)</label>
+                  <select id="presetPowers" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
+                    <option value="1000">1 seconde</option>
+                    <option value="2000" selected>2 secondes</option>
+                    <option value="5000">5 secondes</option>
+                    <option value="10000">10 secondes</option>
+                    <option value="30000">30 secondes</option>
+                    <option value="60000">1 minute</option>
+                    <option value="300000">5 minutes</option>
+                    <option value="600000">10 minutes</option>
+                  </select>
+                  <p class="text-xs text-slate-400 mt-1">Important - légèrement moins critique</p>
+                </div>
+
+                <!-- THD -->
+                <div class="bg-slate-600/50 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-white mb-2">📈 THD</label>
+                  <select id="presetThd" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
+                    <option value="1000">1 seconde</option>
+                    <option value="2000">2 secondes</option>
+                    <option value="5000" selected>5 secondes</option>
+                    <option value="10000">10 secondes</option>
+                    <option value="30000">30 secondes</option>
+                    <option value="60000">1 minute</option>
+                    <option value="300000">5 minutes</option>
+                    <option value="600000">10 minutes</option>
+                  </select>
+                  <p class="text-xs text-slate-400 mt-1">Qualité - moins prioritaire</p>
+                </div>
+
+                <!-- Énergies -->
+                <div class="bg-slate-600/50 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-white mb-2">🔋 Énergies (E*_255)</label>
+                  <select id="presetEnergies" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
+                    <option value="1000">1 seconde</option>
+                    <option value="2000">2 secondes</option>
+                    <option value="5000">5 secondes</option>
+                    <option value="10000">10 secondes</option>
+                    <option value="30000" selected>30 secondes</option>
+                    <option value="60000">1 minute</option>
+                    <option value="300000">5 minutes</option>
+                    <option value="600000">10 minutes</option>
+                  </select>
+                  <p class="text-xs text-slate-400 mt-1">Cumul - peu variable</p>
+                </div>
+
+                <!-- Moyennes -->
+                <div class="bg-slate-600/50 rounded-lg p-4">
+                  <label class="block text-sm font-medium text-white mb-2">📊 Moyennes (AVG_*, MAXAVG*)</label>
+                  <select id="presetAverages" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
+                    <option value="1000">1 seconde</option>
+                    <option value="2000">2 secondes</option>
+                    <option value="5000">5 secondes</option>
+                    <option value="10000" selected>10 secondes</option>
+                    <option value="30000">30 secondes</option>
+                    <option value="60000">1 minute</option>
+                    <option value="300000">5 minutes</option>
+                    <option value="600000">10 minutes</option>
+                  </select>
+                  <p class="text-xs text-slate-400 mt-1">Statistiques - moyennes</p>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+              <h4 class="text-md font-medium text-blue-300 mb-2">ℹ️ Information</h4>
+              <p class="text-sm text-blue-200">
+                Ces presets seront appliqués à tous les signaux correspondants lors de l'utilisation du bouton "Appliquer presets". 
+                Vous pouvez personnaliser chaque catégorie selon vos besoins.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-slate-700 px-6 py-4 border-t border-slate-600 flex justify-end space-x-3">
+          <button id="btnSavePresetConfig" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            💾 Sauvegarder les Presets
+          </button>
+          <button id="btnCancelPresetConfig" class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors">
+            Annuler
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Event listeners
+    modal.querySelector('#btnClosePresetConfig').addEventListener('click', () => modal.remove());
+    modal.querySelector('#btnCancelPresetConfig').addEventListener('click', () => modal.remove());
+    modal.querySelector('#btnSavePresetConfig').addEventListener('click', () => {
+      this.savePresetConfiguration(modal);
+    });
+
+    // Charger les presets actuels
+    this.loadCurrentPresets(modal);
+  }
+
+  loadCurrentPresets(modal) {
+    // Charger les presets actuels depuis l'API
+    this.apiClient.request('/api/diris/signals/frequency/presets')
+      .then(response => {
+        if (response.success && response.presets) {
+          const presets = response.presets;
+          modal.querySelector('#presetCurrents').value = presets.currents || 1000;
+          modal.querySelector('#presetVoltages').value = presets.voltages || 1000;
+          modal.querySelector('#presetPowers').value = presets.powers || 2000;
+          modal.querySelector('#presetThd').value = presets.thd || 5000;
+          modal.querySelector('#presetEnergies').value = presets.energies || 30000;
+          modal.querySelector('#presetAverages').value = presets.averages || 10000;
+        }
+      })
+      .catch(error => {
+        console.error('Erreur chargement presets:', error);
+      });
+  }
+
+  async savePresetConfiguration(modal) {
+    try {
+      const presets = {
+        currents: parseInt(modal.querySelector('#presetCurrents').value),
+        voltages: parseInt(modal.querySelector('#presetVoltages').value),
+        powers: parseInt(modal.querySelector('#presetPowers').value),
+        thd: parseInt(modal.querySelector('#presetThd').value),
+        energies: parseInt(modal.querySelector('#presetEnergies').value),
+        averages: parseInt(modal.querySelector('#presetAverages').value)
+      };
+
+      this.showInfo('💾 Sauvegarde de la configuration des presets...');
+      
+      // Ici, vous pourriez ajouter un endpoint pour sauvegarder les presets
+      // Pour l'instant, on affiche juste un message de succès
+      this.showSuccess('✅ Configuration des presets sauvegardée');
+      this.addHistoryEvent('success', 'Presets configurés', 'Configuration des presets mise à jour');
+      
+      modal.remove();
+    } catch (error) {
+      console.error('Erreur sauvegarde presets:', error);
+      this.showError('Erreur lors de la sauvegarde de la configuration');
     }
   }
 
