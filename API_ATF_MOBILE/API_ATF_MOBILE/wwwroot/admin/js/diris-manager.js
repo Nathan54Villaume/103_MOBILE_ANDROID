@@ -1647,16 +1647,11 @@ export class DirisManager {
         
         <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           <div class="mb-4 flex justify-between items-center">
-            <div class="flex space-x-2">
-              <button id="btnSelectAll" class="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded transition-colors">
-                Tout sélectionner
-              </button>
-              <button id="btnDeselectAll" class="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-sm rounded transition-colors">
-                Tout désélectionner
-              </button>
+            <div class="text-sm text-slate-400">
+              Configuration des fréquences pour tous les signaux du preset universel
             </div>
             <div class="text-sm text-slate-400">
-              <span id="selectedCount">0</span> signaux sélectionnés
+              <span id="totalSignals">0</span> signaux au total
             </div>
           </div>
           
@@ -1664,9 +1659,6 @@ export class DirisManager {
             <table class="w-full">
               <thead class="bg-slate-600">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
-                    <input type="checkbox" id="selectAllCheckbox" class="rounded border-slate-500">
-                  </th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Signal</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Description</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Unité</th>
@@ -1681,10 +1673,7 @@ export class DirisManager {
           </div>
         </div>
         
-        <div class="bg-slate-700 px-6 py-4 border-t border-slate-600 flex justify-between items-center">
-          <div class="text-sm text-slate-400">
-            <span id="totalSignals">0</span> signaux au total
-          </div>
+        <div class="bg-slate-700 px-6 py-4 border-t border-slate-600 flex justify-end">
           <div class="flex space-x-3">
             <button id="btnCancelPresetConfig" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded transition-colors">
               Annuler
@@ -1704,21 +1693,6 @@ export class DirisManager {
     modal.querySelector('#btnCancelPresetConfig').addEventListener('click', () => modal.remove());
     modal.querySelector('#btnSavePresetConfig').addEventListener('click', () => {
       this.savePresetConfiguration(modal);
-    });
-    
-    modal.querySelector('#btnSelectAll').addEventListener('click', () => {
-      modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => cb.checked = true);
-      this.updateSelectedCount(modal);
-    });
-    
-    modal.querySelector('#btnDeselectAll').addEventListener('click', () => {
-      modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => cb.checked = false);
-      this.updateSelectedCount(modal);
-    });
-    
-    modal.querySelector('#selectAllCheckbox').addEventListener('change', (e) => {
-      modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => cb.checked = e.target.checked);
-      this.updateSelectedCount(modal);
     });
 
     // Charger les signaux d'un device de référence (le premier device disponible)
@@ -1772,9 +1746,6 @@ export class DirisManager {
     
     tbody.innerHTML = signals.map(signal => `
       <tr class="hover:bg-slate-600/50">
-        <td class="px-4 py-3">
-          <input type="checkbox" class="signal-preset-checkbox rounded border-slate-500" data-signal="${signal.signal}">
-        </td>
         <td class="px-4 py-3 text-sm text-white font-mono">${signal.signal}</td>
         <td class="px-4 py-3 text-sm text-slate-300">${signal.description || '-'}</td>
         <td class="px-4 py-3 text-sm text-slate-400">${signal.unit || '-'}</td>
@@ -1793,31 +1764,6 @@ export class DirisManager {
         </td>
       </tr>
     `).join('');
-    
-    // Ajouter les event listeners pour les checkboxes
-    modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => {
-      cb.addEventListener('change', () => this.updateSelectedCount(modal));
-    });
-    
-    this.updateSelectedCount(modal);
-  }
-
-  updateSelectedCount(modal) {
-    const selected = modal.querySelectorAll('.signal-preset-checkbox:checked').length;
-    const total = modal.querySelectorAll('.signal-preset-checkbox').length;
-    modal.querySelector('#selectedCount').textContent = selected;
-    
-    // Mettre à jour la checkbox "select all"
-    const selectAllCheckbox = modal.querySelector('#selectAllCheckbox');
-    if (selected === 0) {
-      selectAllCheckbox.indeterminate = false;
-      selectAllCheckbox.checked = false;
-    } else if (selected === total) {
-      selectAllCheckbox.indeterminate = false;
-      selectAllCheckbox.checked = true;
-    } else {
-      selectAllCheckbox.indeterminate = true;
-    }
   }
 
   loadCurrentPresets(modal) {
@@ -1841,29 +1787,25 @@ export class DirisManager {
 
   async savePresetConfiguration(modal) {
     try {
-      // Collecter les signaux sélectionnés avec leurs nouvelles fréquences
-      const selectedSignals = [];
-      modal.querySelectorAll('.signal-preset-checkbox:checked').forEach(checkbox => {
-        const signal = checkbox.dataset.signal;
-        const frequencySelect = modal.querySelector(`.signal-frequency-select[data-signal="${signal}"]`);
-        
-        if (frequencySelect) {
-          selectedSignals.push({
-            signal: signal,
-            recordingFrequencyMs: parseInt(frequencySelect.value)
-          });
-        }
+      // Collecter tous les signaux avec leurs nouvelles fréquences
+      const allSignals = [];
+      modal.querySelectorAll('.signal-frequency-select').forEach(select => {
+        const signal = select.dataset.signal;
+        allSignals.push({
+          signal: signal,
+          recordingFrequencyMs: parseInt(select.value)
+        });
       });
 
-      if (selectedSignals.length === 0) {
-        this.showWarning('⚠️ Veuillez sélectionner au moins un signal à modifier');
+      if (allSignals.length === 0) {
+        this.showWarning('⚠️ Aucun signal trouvé à configurer');
         return;
       }
 
-      this.showInfo(`💾 Configuration des presets basée sur ${selectedSignals.length} signaux sélectionnés...`);
+      this.showInfo(`💾 Configuration des presets basée sur ${allSignals.length} signaux...`);
       
-      // Sauvegarder les presets basés sur les signaux sélectionnés
-      const presets = this.generatePresetsFromSignals(selectedSignals);
+      // Sauvegarder les presets basés sur tous les signaux
+      const presets = this.generatePresetsFromSignals(allSignals);
       
       const response = await this.apiClient.request('/api/diris/signals/frequency/presets', {
         method: 'POST',
@@ -1871,8 +1813,8 @@ export class DirisManager {
       });
       
       if (response.success) {
-        this.showSuccess(`✅ Preset universel sauvegardé (${selectedSignals.length} signaux configurés)`);
-        this.addHistoryEvent('success', 'Preset universel configuré', `${selectedSignals.length} signaux configurés pour tous les devices`);
+        this.showSuccess(`✅ Preset universel sauvegardé (${allSignals.length} signaux configurés)`);
+        this.addHistoryEvent('success', 'Preset universel configuré', `${allSignals.length} signaux configurés pour tous les devices`);
         modal.remove();
       } else {
         this.showError(`❌ Erreur lors de la sauvegarde du preset: ${response.message}`);
