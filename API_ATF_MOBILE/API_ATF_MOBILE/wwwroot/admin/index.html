@@ -1209,9 +1209,14 @@
                 <h3 class="font-semibold">Devices DIRIS</h3>
                 <p class="text-xs text-slate-400 mt-1">Liste des équipements configurés</p>
               </div>
-              <button id="btnAddDevice" class="px-3 py-2 text-sm rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors">
-                ➕ Ajouter
-              </button>
+              <div class="flex gap-2">
+                <button id="btnConfigurePresets" class="px-3 py-2 text-sm rounded-lg bg-purple-500 hover:bg-purple-600 transition-colors" title="Configurer le preset universel de 81 signaux">
+                  ⚙️ Configurer presets
+                </button>
+                <button id="btnAddDevice" class="px-3 py-2 text-sm rounded-lg bg-brand-500 hover:bg-brand-600 transition-colors">
+                  ➕ Ajouter
+                </button>
+              </div>
             </div>
             <div id="dirisDevicesList" class="space-y-2">
               <!-- Dynamically populated -->

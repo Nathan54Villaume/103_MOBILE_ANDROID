@@ -79,6 +79,7 @@ export class DirisManager {
     
     // Devices
     document.getElementById('btnAddDevice')?.addEventListener('click', () => this.showAddDeviceDialog());
+    document.getElementById('btnConfigurePresets')?.addEventListener('click', () => this.showPresetConfigurationModal());
     
     // Charts controls
     document.getElementById('btnPauseCharts')?.addEventListener('click', () => this.toggleChartsPause());
@@ -690,9 +691,6 @@ export class DirisManager {
           <button id="btnApplyPresets" class="px-3 py-2 text-sm rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border border-indigo-500/30 transition-colors">
             🎯 Appliquer presets
           </button>
-          <button id="btnConfigurePresets" class="px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
-            ⚙️ Configurer presets
-          </button>
         </div>
         
         <div class="overflow-y-auto max-h-[60vh] border border-white/10 rounded-lg">
@@ -773,10 +771,6 @@ export class DirisManager {
     
     modal.querySelector('#btnApplyPresets').addEventListener('click', () => {
       this.applyFrequencyPresets(device.deviceId, modal);
-    });
-    
-    modal.querySelector('#btnConfigurePresets').addEventListener('click', () => {
-      this.showPresetConfigurationModal();
     });
     
     // Mise à jour du compteur
