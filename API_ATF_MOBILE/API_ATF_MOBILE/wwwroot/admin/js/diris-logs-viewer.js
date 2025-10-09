@@ -130,29 +130,87 @@ class DirisLogsViewer {
             const message = this.extractMessage(log);
             const levelClass = this.getLevelClass(level);
             const levelIcon = this.getLevelIcon(level);
+            
+            // Extraire le message principal (première ligne) et les détails JSON
+            const lines = message.split('\n');
+            const mainMessage = lines[0].trim();
+            const detailsJson = lines.slice(1).join('\n').trim();
+            const hasDetails = detailsJson.length > 0;
 
             return `
-                <div class="log-entry ${levelClass} border-l-4 p-3 mb-2 bg-slate-800/50 rounded hover:bg-slate-700/50 transition-colors">
-                    <div class="flex items-start gap-3">
-                        <span class="text-xl flex-shrink-0">${levelIcon}</span>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-xs text-slate-400 font-mono">${timestamp}</span>
-                                <span class="text-xs px-2 py-0.5 rounded ${this.getLevelBadgeClass(level)}">${level}</span>
-                            </div>
-                            <pre class="text-sm text-slate-200 whitespace-pre-wrap font-mono leading-relaxed">${this.escapeHtml(message)}</pre>
-                        </div>
+                <div class="log-entry ${levelClass} border-l-4 p-2 mb-1 bg-slate-800/50 rounded hover:bg-slate-700/50 transition-colors cursor-pointer" data-log-index="${index}">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg flex-shrink-0">${levelIcon}</span>
+                        <span class="text-xs text-slate-400 font-mono flex-shrink-0">${timestamp}</span>
+                        <span class="text-xs px-2 py-0.5 rounded ${this.getLevelBadgeClass(level)} flex-shrink-0">${level}</span>
+                        <span class="text-sm text-slate-200 flex-1 min-w-0 truncate">${this.escapeHtml(mainMessage)}</span>
+                        ${hasDetails ? '<span class="expand-details text-slate-400 text-xs cursor-pointer hover:text-white">▶️</span>' : ''}
                     </div>
+                    ${hasDetails ? `
+                        <div class="log-details hidden mt-2 ml-8 p-2 bg-slate-900/50 rounded border-l-2 border-slate-600">
+                            <pre class="text-xs text-slate-300 font-mono whitespace-pre-wrap">${this.escapeHtml(detailsJson)}</pre>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         }).join('');
 
         container.innerHTML = html;
         
+        // Attacher les event listeners pour les détails
+        this.attachDetailsListeners();
+        
         // Auto-scroll vers le bas si auto-refresh est activé
         if (this.autoRefresh) {
             container.scrollTop = container.scrollHeight;
         }
+    }
+
+    /**
+     * Attacher les listeners pour les détails
+     */
+    attachDetailsListeners() {
+        const logEntries = document.querySelectorAll('.log-entry[data-log-index]');
+        logEntries.forEach(entry => {
+            entry.addEventListener('click', (e) => {
+                // Ne pas déclencher si on clique sur la flèche
+                if (e.target.classList.contains('expand-details')) {
+                    e.stopPropagation();
+                    return;
+                }
+                
+                const details = entry.querySelector('.log-details');
+                const arrow = entry.querySelector('.expand-details');
+                
+                if (details && arrow) {
+                    if (details.classList.contains('hidden')) {
+                        details.classList.remove('hidden');
+                        arrow.textContent = '🔽';
+                    } else {
+                        details.classList.add('hidden');
+                        arrow.textContent = '▶️';
+                    }
+                }
+            });
+        });
+        
+        // Gérer les clics sur les flèches
+        const arrows = document.querySelectorAll('.expand-details');
+        arrows.forEach(arrow => {
+            arrow.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const entry = e.target.closest('.log-entry');
+                const details = entry.querySelector('.log-details');
+                
+                if (details.classList.contains('hidden')) {
+                    details.classList.remove('hidden');
+                    arrow.textContent = '🔽';
+                } else {
+                    details.classList.add('hidden');
+                    arrow.textContent = '▶️';
+                }
+            });
+        });
     }
 
     /**
@@ -180,7 +238,20 @@ class DirisLogsViewer {
      */
     extractTimestamp(log) {
         const match = log.match(/\[([^\]]+)\s+[A-Z]{3}\]/);
-        return match ? match[1] : '';
+        if (!match) return '';
+        
+        // Convertir en format simplifié: 09/10/25 - 08:25:02
+        const timestampStr = match[1];
+        const date = new Date(timestampStr);
+        
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = String(date.getFullYear()).slice(-2);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        
+        return `${day}/${month}/${year} - ${hours}:${minutes}:${seconds}`;
     }
 
     /**
