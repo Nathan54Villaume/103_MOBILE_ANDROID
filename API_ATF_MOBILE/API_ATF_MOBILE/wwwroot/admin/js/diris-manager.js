@@ -1741,35 +1741,43 @@ export class DirisManager {
       this.apiClient.request('/api/diris/signals/frequency/presets')
     ])
     .then(([devicesResponse, presetsResponse]) => {
-      // Vérifier si devicesResponse est un array direct ou un objet avec propriété devices
+      // Vérifier si devicesResponse est un array direct ou un objet avec propriété devices/value
       let devices = [];
       if (Array.isArray(devicesResponse)) {
         devices = devicesResponse;
       } else if (devicesResponse.success && devicesResponse.devices) {
         devices = devicesResponse.devices;
+      } else if (devicesResponse.value && Array.isArray(devicesResponse.value)) {
+        devices = devicesResponse.value;
       }
       
       if (devices.length > 0) {
         const allSignals = [];
         
         // Charger les signaux de chaque device
-        const devicePromises = devices.map(device => 
-          this.apiClient.request(`/api/diris/signals/frequency/device/${device.id}`)
+        const devicePromises = devices.map(device => {
+          const deviceId = device.deviceId; // Utiliser deviceId directement
+          if (!deviceId) {
+            console.error('❌ Aucun deviceId trouvé pour le device:', device);
+            return Promise.resolve();
+          }
+          
+          return this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`)
             .then(response => {
               if (response.success && response.frequencies) {
                 response.frequencies.forEach(freq => {
                   allSignals.push({
                     ...freq,
-                    deviceId: device.id,
+                    deviceId: deviceId,
                     deviceName: device.name
                   });
                 });
               }
             })
             .catch(error => {
-              console.error(`Erreur chargement signaux device ${device.id}:`, error);
-            })
-        );
+              console.error(`Erreur chargement signaux device ${deviceId}:`, error);
+            });
+        });
         
         Promise.all(devicePromises).then(() => {
           this.renderSignalsTable(modal, allSignals);
