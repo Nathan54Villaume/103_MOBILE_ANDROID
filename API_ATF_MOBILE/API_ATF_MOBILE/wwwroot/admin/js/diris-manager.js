@@ -1642,10 +1642,10 @@ export class DirisManager {
     modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
     
     modal.innerHTML = `
-      <div class="bg-slate-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div class="bg-slate-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         <div class="bg-slate-700 px-6 py-4 border-b border-slate-600">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-white">⚙️ Configuration des Presets de Fréquence</h3>
+            <h3 class="text-lg font-semibold text-white">⚙️ Configuration des Fréquences par Signal</h3>
             <button id="btnClosePresetConfig" class="text-slate-400 hover:text-white">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1655,127 +1655,53 @@ export class DirisManager {
         </div>
         
         <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div class="space-y-6">
-            <div class="bg-slate-700/50 rounded-lg p-4">
-              <h4 class="text-md font-medium text-white mb-4">📊 Presets par Type de Signal</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <!-- Courants -->
-                <div class="bg-slate-600/50 rounded-lg p-4">
-                  <label class="block text-sm font-medium text-white mb-2">⚡ Courants (I_*)</label>
-                  <select id="presetCurrents" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
-                    <option value="1000">1 seconde</option>
-                    <option value="2000">2 secondes</option>
-                    <option value="5000">5 secondes</option>
-                    <option value="10000">10 secondes</option>
-                    <option value="30000">30 secondes</option>
-                    <option value="60000">1 minute</option>
-                    <option value="300000">5 minutes</option>
-                    <option value="600000">10 minutes</option>
-                  </select>
-                  <p class="text-xs text-slate-400 mt-1">Signaux critiques - temps réel</p>
-                </div>
-
-                <!-- Tensions -->
-                <div class="bg-slate-600/50 rounded-lg p-4">
-                  <label class="block text-sm font-medium text-white mb-2">🔌 Tensions (PV*, LV_*)</label>
-                  <select id="presetVoltages" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
-                    <option value="1000">1 seconde</option>
-                    <option value="2000">2 secondes</option>
-                    <option value="5000">5 secondes</option>
-                    <option value="10000">10 secondes</option>
-                    <option value="30000">30 secondes</option>
-                    <option value="60000">1 minute</option>
-                    <option value="300000">5 minutes</option>
-                    <option value="600000">10 minutes</option>
-                  </select>
-                  <p class="text-xs text-slate-400 mt-1">Signaux critiques - temps réel</p>
-                </div>
-
-                <!-- Puissances -->
-                <div class="bg-slate-600/50 rounded-lg p-4">
-                  <label class="block text-sm font-medium text-white mb-2">⚡ Puissances (AP, IP, RP)</label>
-                  <select id="presetPowers" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
-                    <option value="1000">1 seconde</option>
-                    <option value="2000" selected>2 secondes</option>
-                    <option value="5000">5 secondes</option>
-                    <option value="10000">10 secondes</option>
-                    <option value="30000">30 secondes</option>
-                    <option value="60000">1 minute</option>
-                    <option value="300000">5 minutes</option>
-                    <option value="600000">10 minutes</option>
-                  </select>
-                  <p class="text-xs text-slate-400 mt-1">Important - légèrement moins critique</p>
-                </div>
-
-                <!-- THD -->
-                <div class="bg-slate-600/50 rounded-lg p-4">
-                  <label class="block text-sm font-medium text-white mb-2">📈 THD</label>
-                  <select id="presetThd" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
-                    <option value="1000">1 seconde</option>
-                    <option value="2000">2 secondes</option>
-                    <option value="5000" selected>5 secondes</option>
-                    <option value="10000">10 secondes</option>
-                    <option value="30000">30 secondes</option>
-                    <option value="60000">1 minute</option>
-                    <option value="300000">5 minutes</option>
-                    <option value="600000">10 minutes</option>
-                  </select>
-                  <p class="text-xs text-slate-400 mt-1">Qualité - moins prioritaire</p>
-                </div>
-
-                <!-- Énergies -->
-                <div class="bg-slate-600/50 rounded-lg p-4">
-                  <label class="block text-sm font-medium text-white mb-2">🔋 Énergies (E*_255)</label>
-                  <select id="presetEnergies" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
-                    <option value="1000">1 seconde</option>
-                    <option value="2000">2 secondes</option>
-                    <option value="5000">5 secondes</option>
-                    <option value="10000">10 secondes</option>
-                    <option value="30000" selected>30 secondes</option>
-                    <option value="60000">1 minute</option>
-                    <option value="300000">5 minutes</option>
-                    <option value="600000">10 minutes</option>
-                  </select>
-                  <p class="text-xs text-slate-400 mt-1">Cumul - peu variable</p>
-                </div>
-
-                <!-- Moyennes -->
-                <div class="bg-slate-600/50 rounded-lg p-4">
-                  <label class="block text-sm font-medium text-white mb-2">📊 Moyennes (AVG_*, MAXAVG*)</label>
-                  <select id="presetAverages" class="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white">
-                    <option value="1000">1 seconde</option>
-                    <option value="2000">2 secondes</option>
-                    <option value="5000">5 secondes</option>
-                    <option value="10000" selected>10 secondes</option>
-                    <option value="30000">30 secondes</option>
-                    <option value="60000">1 minute</option>
-                    <option value="300000">5 minutes</option>
-                    <option value="600000">10 minutes</option>
-                  </select>
-                  <p class="text-xs text-slate-400 mt-1">Statistiques - moyennes</p>
-                </div>
-
-              </div>
+          <div class="mb-4 flex justify-between items-center">
+            <div class="flex space-x-2">
+              <button id="btnSelectAll" class="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded transition-colors">
+                Tout sélectionner
+              </button>
+              <button id="btnDeselectAll" class="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-sm rounded transition-colors">
+                Tout désélectionner
+              </button>
             </div>
-
-            <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
-              <h4 class="text-md font-medium text-blue-300 mb-2">ℹ️ Information</h4>
-              <p class="text-sm text-blue-200">
-                Ces presets seront appliqués à tous les signaux correspondants lors de l'utilisation du bouton "Appliquer presets". 
-                Vous pouvez personnaliser chaque catégorie selon vos besoins.
-              </p>
+            <div class="text-sm text-slate-400">
+              <span id="selectedCount">0</span> signaux sélectionnés
             </div>
+          </div>
+          
+          <div class="bg-slate-700 rounded-lg overflow-hidden">
+            <table class="w-full">
+              <thead class="bg-slate-600">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    <input type="checkbox" id="selectAllCheckbox" class="rounded border-slate-500">
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Signal</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Description</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Unité</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Fréquence Actuelle</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Nouvelle Fréquence</th>
+                </tr>
+              </thead>
+              <tbody id="presetSignalsTableBody" class="divide-y divide-slate-600">
+                <!-- Les signaux seront chargés ici -->
+              </tbody>
+            </table>
           </div>
         </div>
         
-        <div class="bg-slate-700 px-6 py-4 border-t border-slate-600 flex justify-end space-x-3">
-          <button id="btnSavePresetConfig" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-            💾 Sauvegarder les Presets
-          </button>
-          <button id="btnCancelPresetConfig" class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors">
-            Annuler
-          </button>
+        <div class="bg-slate-700 px-6 py-4 border-t border-slate-600 flex justify-between items-center">
+          <div class="text-sm text-slate-400">
+            <span id="totalSignals">0</span> signaux au total
+          </div>
+          <div class="flex space-x-3">
+            <button id="btnCancelPresetConfig" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded transition-colors">
+              Annuler
+            </button>
+            <button id="btnSavePresetConfig" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors">
+              💾 Sauvegarder Configuration
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -1788,9 +1714,121 @@ export class DirisManager {
     modal.querySelector('#btnSavePresetConfig').addEventListener('click', () => {
       this.savePresetConfiguration(modal);
     });
+    
+    modal.querySelector('#btnSelectAll').addEventListener('click', () => {
+      modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => cb.checked = true);
+      this.updateSelectedCount(modal);
+    });
+    
+    modal.querySelector('#btnDeselectAll').addEventListener('click', () => {
+      modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => cb.checked = false);
+      this.updateSelectedCount(modal);
+    });
+    
+    modal.querySelector('#selectAllCheckbox').addEventListener('change', (e) => {
+      modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => cb.checked = e.target.checked);
+      this.updateSelectedCount(modal);
+    });
 
-    // Charger les presets actuels
-    this.loadCurrentPresets(modal);
+    // Charger les signaux et leurs fréquences actuelles
+    this.loadCurrentSignalsForPresets(modal);
+  }
+
+  loadCurrentSignalsForPresets(modal) {
+    // Charger tous les signaux de tous les devices avec leurs fréquences actuelles
+    Promise.all([
+      this.apiClient.request('/api/diris/devices'),
+      this.apiClient.request('/api/diris/signals/frequency/presets')
+    ])
+    .then(([devicesResponse, presetsResponse]) => {
+      if (devicesResponse.success && devicesResponse.devices) {
+        const devices = devicesResponse.devices;
+        const allSignals = [];
+        
+        // Charger les signaux de chaque device
+        const devicePromises = devices.map(device => 
+          this.apiClient.request(`/api/diris/signals/frequency/device/${device.id}`)
+            .then(response => {
+              if (response.success && response.frequencies) {
+                response.frequencies.forEach(freq => {
+                  allSignals.push({
+                    ...freq,
+                    deviceId: device.id,
+                    deviceName: device.name
+                  });
+                });
+              }
+            })
+            .catch(error => {
+              console.error(`Erreur chargement signaux device ${device.id}:`, error);
+            })
+        );
+        
+        Promise.all(devicePromises).then(() => {
+          this.renderSignalsTable(modal, allSignals);
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Erreur chargement signaux:', error);
+      this.showError('Erreur lors du chargement des signaux');
+    });
+  }
+
+  renderSignalsTable(modal, signals) {
+    const tbody = modal.querySelector('#presetSignalsTableBody');
+    const totalCount = modal.querySelector('#totalSignals');
+    
+    totalCount.textContent = signals.length;
+    
+    tbody.innerHTML = signals.map(signal => `
+      <tr class="hover:bg-slate-600/50">
+        <td class="px-4 py-3">
+          <input type="checkbox" class="signal-preset-checkbox rounded border-slate-500" data-signal="${signal.signal}" data-device="${signal.deviceId}">
+        </td>
+        <td class="px-4 py-3 text-sm text-white font-mono">${signal.signal}</td>
+        <td class="px-4 py-3 text-sm text-slate-300">${signal.description || '-'}</td>
+        <td class="px-4 py-3 text-sm text-slate-400">${signal.unit || '-'}</td>
+        <td class="px-4 py-3 text-sm text-blue-300">${signal.frequencyDescription}</td>
+        <td class="px-4 py-3">
+          <select class="signal-frequency-select px-2 py-1 bg-slate-700 border border-slate-500 rounded text-white text-sm" data-signal="${signal.signal}" data-device="${signal.deviceId}">
+            <option value="1000" ${signal.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
+            <option value="2000" ${signal.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
+            <option value="5000" ${signal.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
+            <option value="10000" ${signal.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
+            <option value="30000" ${signal.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
+            <option value="60000" ${signal.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
+            <option value="300000" ${signal.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
+            <option value="600000" ${signal.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
+          </select>
+        </td>
+      </tr>
+    `).join('');
+    
+    // Ajouter les event listeners pour les checkboxes
+    modal.querySelectorAll('.signal-preset-checkbox').forEach(cb => {
+      cb.addEventListener('change', () => this.updateSelectedCount(modal));
+    });
+    
+    this.updateSelectedCount(modal);
+  }
+
+  updateSelectedCount(modal) {
+    const selected = modal.querySelectorAll('.signal-preset-checkbox:checked').length;
+    const total = modal.querySelectorAll('.signal-preset-checkbox').length;
+    modal.querySelector('#selectedCount').textContent = selected;
+    
+    // Mettre à jour la checkbox "select all"
+    const selectAllCheckbox = modal.querySelector('#selectAllCheckbox');
+    if (selected === 0) {
+      selectAllCheckbox.indeterminate = false;
+      selectAllCheckbox.checked = false;
+    } else if (selected === total) {
+      selectAllCheckbox.indeterminate = false;
+      selectAllCheckbox.checked = true;
+    } else {
+      selectAllCheckbox.indeterminate = true;
+    }
   }
 
   loadCurrentPresets(modal) {
@@ -1814,28 +1852,66 @@ export class DirisManager {
 
   async savePresetConfiguration(modal) {
     try {
-      const presets = {
-        currents: parseInt(modal.querySelector('#presetCurrents').value),
-        voltages: parseInt(modal.querySelector('#presetVoltages').value),
-        powers: parseInt(modal.querySelector('#presetPowers').value),
-        thd: parseInt(modal.querySelector('#presetThd').value),
-        energies: parseInt(modal.querySelector('#presetEnergies').value),
-        averages: parseInt(modal.querySelector('#presetAverages').value)
-      };
-
-      this.showInfo('💾 Sauvegarde de la configuration des presets...');
-      
-      const response = await this.apiClient.request('/api/diris/signals/frequency/presets', {
-        method: 'POST',
-        body: JSON.stringify(presets)
+      // Collecter les signaux sélectionnés avec leurs nouvelles fréquences
+      const selectedSignals = [];
+      modal.querySelectorAll('.signal-preset-checkbox:checked').forEach(checkbox => {
+        const signal = checkbox.dataset.signal;
+        const deviceId = parseInt(checkbox.dataset.device);
+        const frequencySelect = modal.querySelector(`.signal-frequency-select[data-signal="${signal}"][data-device="${deviceId}"]`);
+        
+        if (frequencySelect) {
+          selectedSignals.push({
+            signal: signal,
+            deviceId: deviceId,
+            recordingFrequencyMs: parseInt(frequencySelect.value)
+          });
+        }
       });
+
+      if (selectedSignals.length === 0) {
+        this.showWarning('⚠️ Veuillez sélectionner au moins un signal à modifier');
+        return;
+      }
+
+      this.showInfo(`💾 Sauvegarde de ${selectedSignals.length} signaux...`);
       
-      if (response.success) {
-        this.showSuccess('✅ Configuration des presets sauvegardée');
-        this.addHistoryEvent('success', 'Presets configurés', 'Configuration des presets mise à jour');
+      // Mettre à jour chaque signal individuellement
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const signalData of selectedSignals) {
+        try {
+          const response = await this.apiClient.request(`/api/diris/signals/frequency/device/${signalData.deviceId}/bulk`, {
+            method: 'POST',
+            body: JSON.stringify({
+              frequencies: [{
+                signal: signalData.signal,
+                recordingFrequencyMs: signalData.recordingFrequencyMs
+              }]
+            })
+          });
+          
+          if (response.success) {
+            successCount++;
+          } else {
+            errorCount++;
+            console.error(`Erreur signal ${signalData.signal}:`, response.message);
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`Erreur signal ${signalData.signal}:`, error);
+        }
+      }
+      
+      if (errorCount === 0) {
+        this.showSuccess(`✅ ${successCount} signaux mis à jour avec succès`);
+        this.addHistoryEvent('success', 'Fréquences mises à jour', `${successCount} signaux modifiés`);
         modal.remove();
+      } else if (successCount > 0) {
+        this.showWarning(`⚠️ ${successCount} signaux mis à jour, ${errorCount} erreurs`);
+        this.addHistoryEvent('warning', 'Fréquences partiellement mises à jour', `${successCount}/${successCount + errorCount} signaux modifiés`);
       } else {
-        this.showError(`❌ Erreur: ${response.message || 'Impossible de sauvegarder la configuration'}`);
+        this.showError(`❌ Aucun signal n'a pu être mis à jour (${errorCount} erreurs)`);
       }
     } catch (error) {
       console.error('Erreur sauvegarde presets:', error);
@@ -1849,6 +1925,10 @@ export class DirisManager {
 
   showError(message) {
     this.showNotification(message, 'error');
+  }
+
+  showWarning(message) {
+    this.showNotification(message, 'warning');
   }
 
   showInfo(message) {
