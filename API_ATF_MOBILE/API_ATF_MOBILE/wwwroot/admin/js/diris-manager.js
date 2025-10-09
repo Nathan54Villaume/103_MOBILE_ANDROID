@@ -685,9 +685,6 @@ export class DirisManager {
           <button id="btnDeselectAll" class="px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
             ❌ Tout désélectionner
           </button>
-          <button id="btnSaveSignals" class="px-3 py-2 text-sm rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors">
-            💾 Sauvegarder
-          </button>
           <button id="btnApplyPresets" class="px-3 py-2 text-sm rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border border-indigo-500/30 transition-colors">
             🎯 Appliquer presets
           </button>
@@ -738,8 +735,8 @@ export class DirisManager {
             <span id="enabledCount">${tagMappings.filter(t => t.enabled).length}</span> / ${tagMappings.length} signaux activés
           </div>
           <div class="flex gap-2">
-            <button class="close-modal px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
-              Fermer
+            <button id="btnSaveSignals" class="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg text-sm transition-colors">
+              💾 Sauvegarder
             </button>
           </div>
         </div>
