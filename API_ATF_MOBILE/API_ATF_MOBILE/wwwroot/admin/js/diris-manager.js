@@ -1741,8 +1741,15 @@ export class DirisManager {
       this.apiClient.request('/api/diris/signals/frequency/presets')
     ])
     .then(([devicesResponse, presetsResponse]) => {
-      if (devicesResponse.success && devicesResponse.devices) {
-        const devices = devicesResponse.devices;
+      // Vérifier si devicesResponse est un array direct ou un objet avec propriété devices
+      let devices = [];
+      if (Array.isArray(devicesResponse)) {
+        devices = devicesResponse;
+      } else if (devicesResponse.success && devicesResponse.devices) {
+        devices = devicesResponse.devices;
+      }
+      
+      if (devices.length > 0) {
         const allSignals = [];
         
         // Charger les signaux de chaque device
@@ -1767,6 +1774,8 @@ export class DirisManager {
         Promise.all(devicePromises).then(() => {
           this.renderSignalsTable(modal, allSignals);
         });
+      } else {
+        this.renderSignalsTable(modal, []);
       }
     })
     .catch(error => {
