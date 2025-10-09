@@ -1730,66 +1730,37 @@ export class DirisManager {
       this.updateSelectedCount(modal);
     });
 
-    // Charger les signaux et leurs fréquences actuelles
-    this.loadCurrentSignalsForPresets(modal);
+    // Charger les signaux et leurs fréquences actuelles pour le device actuellement sélectionné
+    const currentDeviceSelect = document.querySelector('#deviceSelect');
+    const currentDeviceId = currentDeviceSelect ? parseInt(currentDeviceSelect.value) : null;
+    
+    if (!currentDeviceId) {
+      this.showError('Veuillez d\'abord sélectionner un device');
+      modal.remove();
+      return;
+    }
+
+    this.loadCurrentSignalsForPresets(modal, currentDeviceId);
   }
 
-  loadCurrentSignalsForPresets(modal) {
-    // Charger tous les signaux de tous les devices avec leurs fréquences actuelles
-    Promise.all([
-      this.apiClient.request('/api/diris/devices'),
-      this.apiClient.request('/api/diris/signals/frequency/presets')
-    ])
-    .then(([devicesResponse, presetsResponse]) => {
-      // Vérifier si devicesResponse est un array direct ou un objet avec propriété devices/value
-      let devices = [];
-      if (Array.isArray(devicesResponse)) {
-        devices = devicesResponse;
-      } else if (devicesResponse.success && devicesResponse.devices) {
-        devices = devicesResponse.devices;
-      } else if (devicesResponse.value && Array.isArray(devicesResponse.value)) {
-        devices = devicesResponse.value;
-      }
-      
-      if (devices.length > 0) {
-        const allSignals = [];
-        
-        // Charger les signaux de chaque device
-        const devicePromises = devices.map(device => {
-          const deviceId = device.deviceId; // Utiliser deviceId directement
-          if (!deviceId) {
-            console.error('❌ Aucun deviceId trouvé pour le device:', device);
-            return Promise.resolve();
-          }
-          
-          return this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`)
-            .then(response => {
-              if (response.success && response.frequencies) {
-                response.frequencies.forEach(freq => {
-                  allSignals.push({
-                    ...freq,
-                    deviceId: deviceId,
-                    deviceName: device.name
-                  });
-                });
-              }
-            })
-            .catch(error => {
-              console.error(`Erreur chargement signaux device ${deviceId}:`, error);
-            });
-        });
-        
-        Promise.all(devicePromises).then(() => {
-          this.renderSignalsTable(modal, allSignals);
-        });
-      } else {
-        this.renderSignalsTable(modal, []);
-      }
-    })
-    .catch(error => {
-      console.error('Erreur chargement signaux:', error);
-      this.showError('Erreur lors du chargement des signaux');
-    });
+  loadCurrentSignalsForPresets(modal, deviceId) {
+    // Charger les signaux du device spécifique avec leurs fréquences actuelles
+    this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`)
+      .then(response => {
+        if (response.success && response.frequencies) {
+          const signals = response.frequencies.map(freq => ({
+            ...freq,
+            deviceId: deviceId
+          }));
+          this.renderSignalsTable(modal, signals);
+        } else {
+          this.renderSignalsTable(modal, []);
+        }
+      })
+      .catch(error => {
+        console.error('Erreur chargement signaux:', error);
+        this.showError('Erreur lors du chargement des signaux');
+      });
   }
 
   renderSignalsTable(modal, signals) {
@@ -1879,7 +1850,6 @@ export class DirisManager {
         if (frequencySelect) {
           selectedSignals.push({
             signal: signal,
-            deviceId: deviceId,
             recordingFrequencyMs: parseInt(frequencySelect.value)
           });
         }
@@ -1890,50 +1860,59 @@ export class DirisManager {
         return;
       }
 
-      this.showInfo(`💾 Sauvegarde de ${selectedSignals.length} signaux...`);
+      this.showInfo(`💾 Configuration des presets basée sur ${selectedSignals.length} signaux sélectionnés...`);
       
-      // Mettre à jour chaque signal individuellement
-      let successCount = 0;
-      let errorCount = 0;
+      // Sauvegarder les presets basés sur les signaux sélectionnés
+      const presets = this.generatePresetsFromSignals(selectedSignals);
       
-      for (const signalData of selectedSignals) {
-        try {
-          const response = await this.apiClient.request(`/api/diris/signals/frequency/device/${signalData.deviceId}/bulk`, {
-            method: 'POST',
-            body: JSON.stringify({
-              frequencies: [{
-                signal: signalData.signal,
-                recordingFrequencyMs: signalData.recordingFrequencyMs
-              }]
-            })
-          });
-          
-          if (response.success) {
-            successCount++;
-          } else {
-            errorCount++;
-            console.error(`Erreur signal ${signalData.signal}:`, response.message);
-          }
-        } catch (error) {
-          errorCount++;
-          console.error(`Erreur signal ${signalData.signal}:`, error);
-        }
-      }
+      const response = await this.apiClient.request('/api/diris/signals/frequency/presets', {
+        method: 'POST',
+        body: JSON.stringify(presets)
+      });
       
-      if (errorCount === 0) {
-        this.showSuccess(`✅ ${successCount} signaux mis à jour avec succès`);
-        this.addHistoryEvent('success', 'Fréquences mises à jour', `${successCount} signaux modifiés`);
+      if (response.success) {
+        this.showSuccess(`✅ Presets sauvegardés et appliqués à tous les devices`);
+        this.addHistoryEvent('success', 'Presets configurés', `Basés sur ${selectedSignals.length} signaux du device actuel`);
         modal.remove();
-      } else if (successCount > 0) {
-        this.showWarning(`⚠️ ${successCount} signaux mis à jour, ${errorCount} erreurs`);
-        this.addHistoryEvent('warning', 'Fréquences partiellement mises à jour', `${successCount}/${successCount + errorCount} signaux modifiés`);
       } else {
-        this.showError(`❌ Aucun signal n'a pu être mis à jour (${errorCount} erreurs)`);
+        this.showError(`❌ Erreur lors de la sauvegarde des presets: ${response.message}`);
       }
     } catch (error) {
       console.error('Erreur sauvegarde presets:', error);
       this.showError('Erreur lors de la sauvegarde de la configuration');
     }
+  }
+
+  generatePresetsFromSignals(selectedSignals) {
+    // Analyser les signaux sélectionnés pour générer les presets par type
+    const presets = {
+      currents: 1000,    // Par défaut
+      voltages: 1000,    // Par défaut
+      powers: 2000,      // Par défaut
+      thd: 5000,         // Par défaut
+      energies: 30000,   // Par défaut
+      averages: 10000    // Par défaut
+    };
+
+    // Analyser chaque signal pour déterminer le type et la fréquence
+    selectedSignals.forEach(signalData => {
+      const signal = signalData.signal;
+      const frequency = signalData.recordingFrequencyMs;
+
+      if (signal.startsWith('I_') || signal.startsWith('PV') || signal.startsWith('LV_') || signal === 'F_255') {
+        presets.currents = frequency;
+      } else if (signal.includes('RP') || signal.includes('IP') || signal.includes('AP')) {
+        presets.powers = frequency;
+      } else if (signal.startsWith('THD_')) {
+        presets.thd = frequency;
+      } else if (signal.startsWith('E') && signal.endsWith('_255')) {
+        presets.energies = frequency;
+      } else if (signal.startsWith('AVG_') || signal.startsWith('MAXAVG')) {
+        presets.averages = frequency;
+      }
+    });
+
+    return presets;
   }
 
   showSuccess(message) {
