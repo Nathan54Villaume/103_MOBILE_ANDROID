@@ -127,15 +127,13 @@ class DirisLogsViewer {
         const html = this.logs.map((log, index) => {
             const level = this.extractLogLevel(log);
             const timestamp = this.extractTimestamp(log);
-            const message = this.extractMessage(log);
+            const mainMessage = this.extractMessage(log); // Message principal simplifié
+            const fullMessage = this.extractFullMessage(log); // Message complet avec détails
             const levelClass = this.getLevelClass(level);
             const levelIcon = this.getLevelIcon(level);
             
-            // Extraire le message principal (première ligne) et les détails JSON
-            const lines = message.split('\n');
-            const mainMessage = lines[0].trim();
-            const detailsJson = lines.slice(1).join('\n').trim();
-            const hasDetails = detailsJson.length > 0;
+            // Vérifier s'il y a des détails (plus d'une ligne ou contient du JSON)
+            const hasDetails = fullMessage.includes('{') || fullMessage.includes('}') || fullMessage.split('\n').length > 1;
 
             return `
                 <div class="log-entry ${levelClass} border-l-4 p-2 mb-1 bg-slate-800/50 rounded hover:bg-slate-700/50 transition-colors cursor-pointer" data-log-index="${index}">
@@ -147,8 +145,8 @@ class DirisLogsViewer {
                         ${hasDetails ? '<span class="expand-details text-slate-400 text-xs cursor-pointer hover:text-white">▶️</span>' : ''}
                     </div>
                     ${hasDetails ? `
-                        <div class="log-details hidden mt-2 ml-8 p-2 bg-slate-900/50 rounded border-l-2 border-slate-600">
-                            <pre class="text-xs text-slate-300 font-mono whitespace-pre-wrap">${this.escapeHtml(detailsJson)}</pre>
+                        <div class="log-details hidden mt-2 ml-8 p-3 bg-slate-900/50 rounded border-l-2 border-slate-600">
+                            <pre class="text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">${this.escapeHtml(fullMessage)}</pre>
                         </div>
                     ` : ''}
                 </div>
@@ -179,18 +177,7 @@ class DirisLogsViewer {
                     return;
                 }
                 
-                const details = entry.querySelector('.log-details');
-                const arrow = entry.querySelector('.expand-details');
-                
-                if (details && arrow) {
-                    if (details.classList.contains('hidden')) {
-                        details.classList.remove('hidden');
-                        arrow.textContent = '🔽';
-                    } else {
-                        details.classList.add('hidden');
-                        arrow.textContent = '▶️';
-                    }
-                }
+                this.toggleLogDetails(entry);
             });
         });
         
@@ -200,17 +187,29 @@ class DirisLogsViewer {
             arrow.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const entry = e.target.closest('.log-entry');
-                const details = entry.querySelector('.log-details');
-                
-                if (details.classList.contains('hidden')) {
-                    details.classList.remove('hidden');
-                    arrow.textContent = '🔽';
-                } else {
-                    details.classList.add('hidden');
-                    arrow.textContent = '▶️';
-                }
+                this.toggleLogDetails(entry);
             });
         });
+    }
+
+    /**
+     * Basculer l'affichage des détails d'un log
+     */
+    toggleLogDetails(entry) {
+        const details = entry.querySelector('.log-details');
+        const arrow = entry.querySelector('.expand-details');
+        
+        if (details && arrow) {
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                arrow.textContent = '🔽';
+                entry.classList.add('expanded');
+            } else {
+                details.classList.add('hidden');
+                arrow.textContent = '▶️';
+                entry.classList.remove('expanded');
+            }
+        }
     }
 
     /**
@@ -261,9 +260,21 @@ class DirisLogsViewer {
     }
 
     /**
-     * Extraire le message
+     * Extraire le message principal (simplifié)
      */
     extractMessage(log) {
+        // Enlever le timestamp et le niveau
+        const fullMessage = log.replace(/^\[[^\]]+\s+[A-Z]{3}\]\s*/, '');
+        
+        // Extraire seulement la première ligne comme message principal
+        const lines = fullMessage.split('\n');
+        return lines[0].trim();
+    }
+
+    /**
+     * Extraire le message complet avec détails
+     */
+    extractFullMessage(log) {
         // Enlever le timestamp et le niveau
         return log.replace(/^\[[^\]]+\s+[A-Z]{3}\]\s*/, '');
     }
