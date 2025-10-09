@@ -12,6 +12,7 @@ public class TagMap
     public double Scale { get; set; } = 1.0;
     public bool Enabled { get; set; } = true;
     public string? Description { get; set; }
+    public int RecordingFrequencyMs { get; set; } = 1000; // Fréquence d'enregistrement par défaut : 5 secondes
     
     /// <summary>
     /// Applies the scale factor to a raw value
