@@ -647,9 +647,12 @@ export class DirisManager {
       // Fusionner les données
       const enrichedTagMappings = (tagMappings || []).map(tag => {
         const frequencyData = frequencies?.frequencies?.find(f => f.signal === tag.signal);
+        const finalFrequency = frequencyData?.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal);
+        
+        
         return {
           ...tag,
-          recordingFrequencyMs: frequencyData?.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)
+          recordingFrequencyMs: finalFrequency
         };
       });
       
@@ -713,14 +716,14 @@ export class DirisManager {
                   <td class="px-3 py-2">${tag.scale}</td>
                   <td class="px-3 py-2 text-center">
                     <select class="signal-frequency w-full px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white" data-signal="${this.escapeHtml(tag.signal)}">
-                      <option value="1000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 1000 ? 'selected' : ''}>1 seconde</option>
-                      <option value="2000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 2000 ? 'selected' : ''}>2 secondes</option>
-                      <option value="5000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 5000 ? 'selected' : ''}>5 secondes</option>
-                      <option value="10000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 10000 ? 'selected' : ''}>10 secondes</option>
-                      <option value="30000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 30000 ? 'selected' : ''}>30 secondes</option>
-                      <option value="60000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 60000 ? 'selected' : ''}>1 minute</option>
-                      <option value="300000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 300000 ? 'selected' : ''}>5 minutes</option>
-                      <option value="600000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 600000 ? 'selected' : ''}>10 minutes</option>
+                      <option value="1000" ${tag.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
+                      <option value="2000" ${tag.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
+                      <option value="5000" ${tag.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
+                      <option value="10000" ${tag.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
+                      <option value="30000" ${tag.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
+                      <option value="60000" ${tag.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
+                      <option value="300000" ${tag.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
+                      <option value="600000" ${tag.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
                     </select>
                   </td>
                   <td class="px-3 py-2 text-center">
@@ -1794,8 +1797,8 @@ export class DirisManager {
     // Charger les presets actuels depuis l'API
     this.apiClient.request('/api/diris/signals/frequency/presets')
       .then(response => {
-        if (response.success && response.presets) {
-          const presets = response.presets;
+        if (response.success && response.currentPresets) {
+          const presets = response.currentPresets;
           modal.querySelector('#presetCurrents').value = presets.currents || 1000;
           modal.querySelector('#presetVoltages').value = presets.voltages || 1000;
           modal.querySelector('#presetPowers').value = presets.powers || 2000;
@@ -1822,12 +1825,18 @@ export class DirisManager {
 
       this.showInfo('💾 Sauvegarde de la configuration des presets...');
       
-      // Ici, vous pourriez ajouter un endpoint pour sauvegarder les presets
-      // Pour l'instant, on affiche juste un message de succès
-      this.showSuccess('✅ Configuration des presets sauvegardée');
-      this.addHistoryEvent('success', 'Presets configurés', 'Configuration des presets mise à jour');
+      const response = await this.apiClient.request('/api/diris/signals/frequency/presets', {
+        method: 'POST',
+        body: JSON.stringify(presets)
+      });
       
-      modal.remove();
+      if (response.success) {
+        this.showSuccess('✅ Configuration des presets sauvegardée');
+        this.addHistoryEvent('success', 'Presets configurés', 'Configuration des presets mise à jour');
+        modal.remove();
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de sauvegarder la configuration'}`);
+      }
     } catch (error) {
       console.error('Erreur sauvegarde presets:', error);
       this.showError('Erreur lors de la sauvegarde de la configuration');

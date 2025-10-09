@@ -16,6 +16,9 @@ public class DirisSignalFrequencyController : ControllerBase
     private readonly IDeviceRegistry _deviceRegistry;
     private readonly ILogger<DirisSignalFrequencyController> _logger;
     private readonly string _connectionString;
+    
+    // Stockage temporaire des presets (en attendant une table de configuration)
+    private static SavePresetsRequest _currentPresets = new SavePresetsRequest();
 
     public DirisSignalFrequencyController(
         IDeviceRegistry deviceRegistry,
@@ -229,7 +232,7 @@ public class DirisSignalFrequencyController : ControllerBase
 
             foreach (var mapping in tagMappings)
             {
-                var frequency = GetDefaultFrequencyForSignal(mapping.Signal);
+                var frequency = GetConfiguredFrequencyForSignal(mapping.Signal);
                 
                 var sql = @"
                     UPDATE [DIRIS].[TagMap] 
@@ -287,14 +290,59 @@ public class DirisSignalFrequencyController : ControllerBase
         return Ok(new
         {
             success = true,
-            presets = presets
+            presets = presets,
+            currentPresets = new
+            {
+                currents = _currentPresets.Currents,
+                voltages = _currentPresets.Voltages,
+                powers = _currentPresets.Powers,
+                thd = _currentPresets.Thd,
+                energies = _currentPresets.Energies,
+                averages = _currentPresets.Averages
+            }
         });
+    }
+
+    /// <summary>
+    /// Sauvegarde la configuration des presets par défaut
+    /// </summary>
+    [HttpPost("presets")]
+    public async Task<IActionResult> SaveFrequencyPresets([FromBody] SavePresetsRequest request)
+    {
+        try
+        {
+            // Sauvegarder les presets dans la variable statique
+            _currentPresets = request;
+            
+            _logger.LogInformation("Presets mis à jour: Courants={Currents}ms, Voltages={Voltages}ms, Puissances={Powers}ms, THD={Thd}ms, Énergies={Energies}ms, Moyennes={Averages}ms",
+                request.Currents, request.Voltages, request.Powers, request.Thd, request.Energies, request.Averages);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Configuration des presets sauvegardée",
+                presets = new
+                {
+                    currents = request.Currents,
+                    voltages = request.Voltages,
+                    powers = request.Powers,
+                    thd = request.Thd,
+                    energies = request.Energies,
+                    averages = request.Averages
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving frequency presets");
+            return StatusCode(500, new { success = false, message = "Error saving frequency presets" });
+        }
     }
 
     #region Helper Methods
 
     /// <summary>
-    /// Obtient la fréquence par défaut selon le type de signal
+    /// Obtient la fréquence par défaut selon le type de signal (hardcodée)
     /// </summary>
     private int GetDefaultFrequencyForSignal(string signal)
     {
@@ -305,6 +353,22 @@ public class DirisSignalFrequencyController : ControllerBase
             var s when s.StartsWith("THD_") => 5000, // 5s - THD
             var s when s.StartsWith("E") && s.EndsWith("_255") => 30000, // 30s - Énergies
             var s when s.StartsWith("AVG_") || s.StartsWith("MAXAVG") => 10000, // 10s - Moyennes/Max
+            _ => 5000 // 5s - Par défaut
+        };
+    }
+
+    /// <summary>
+    /// Obtient la fréquence configurée selon le type de signal (utilise les presets sauvegardés)
+    /// </summary>
+    private int GetConfiguredFrequencyForSignal(string signal)
+    {
+        return signal switch
+        {
+            var s when s.StartsWith("I_") || s.StartsWith("PV") || s.StartsWith("LV_") || s == "F_255" => _currentPresets.Currents,
+            var s when s.Contains("RP") || s.Contains("IP") || s.Contains("AP") => _currentPresets.Powers,
+            var s when s.StartsWith("THD_") => _currentPresets.Thd,
+            var s when s.StartsWith("E") && s.EndsWith("_255") => _currentPresets.Energies,
+            var s when s.StartsWith("AVG_") || s.StartsWith("MAXAVG") => _currentPresets.Averages,
             _ => 5000 // 5s - Par défaut
         };
     }
@@ -354,4 +418,17 @@ public class SignalFrequencyUpdate
 {
     public string Signal { get; set; } = string.Empty;
     public int RecordingFrequencyMs { get; set; }
+}
+
+/// <summary>
+/// Modèle pour sauvegarder la configuration des presets
+/// </summary>
+public class SavePresetsRequest
+{
+    public int Currents { get; set; } = 1000;
+    public int Voltages { get; set; } = 1000;
+    public int Powers { get; set; } = 2000;
+    public int Thd { get; set; } = 5000;
+    public int Energies { get; set; } = 30000;
+    public int Averages { get; set; } = 10000;
 }
