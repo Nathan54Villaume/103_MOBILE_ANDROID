@@ -64,6 +64,9 @@ builder.Services.AddHostedService<DirisDataRetentionService>(provider => provide
 // 3.5) DIRIS Services - Database Size Monitor
 builder.Services.AddHostedService<DirisDatabaseSizeMonitorService>();
 
+// 3.6) DIRIS Services - Acquisition Watchdog
+builder.Services.AddHostedService<DirisAcquisitionWatchdogService>();
+
 
 
 // 3.2) Configuration JWT Authentication
