@@ -1622,7 +1622,9 @@ export class DirisManager {
         
         // Recharger la modal pour voir les nouvelles fréquences
         modal.remove();
-        this.manageSignals(deviceId);
+        setTimeout(() => {
+          this.manageSignals(deviceId);
+        }, 100);
       } else {
         this.showError(`❌ Erreur: ${response.message || 'Impossible d\'appliquer les presets'}`);
       }
