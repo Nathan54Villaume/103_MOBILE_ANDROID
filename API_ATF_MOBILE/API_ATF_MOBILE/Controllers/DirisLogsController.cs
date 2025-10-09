@@ -28,8 +28,8 @@ public class DirisLogsController : ControllerBase
     {
         try
         {
-            // Chercher le fichier de log le plus récent
-            var logsPath = Path.Combine(_environment.ContentRootPath, "logs");
+            // Chercher le fichier de log le plus récent dans DATA (persistant)
+            var logsPath = @"C:\API_ATF_MOBILE\DATA\logs";
             
             if (!Directory.Exists(logsPath))
             {
@@ -86,7 +86,7 @@ public class DirisLogsController : ControllerBase
     {
         try
         {
-            var logsPath = Path.Combine(_environment.ContentRootPath, "logs");
+            var logsPath = @"C:\API_ATF_MOBILE\DATA\logs";
             
             if (!Directory.Exists(logsPath))
             {
@@ -150,7 +150,7 @@ public class DirisLogsController : ControllerBase
     {
         try
         {
-            var logsPath = Path.Combine(_environment.ContentRootPath, "logs");
+            var logsPath = @"C:\API_ATF_MOBILE\DATA\logs";
             
             if (!Directory.Exists(logsPath))
             {
@@ -244,7 +244,7 @@ public class DirisLogsController : ControllerBase
     {
         try
         {
-            var logsPath = Path.Combine(_environment.ContentRootPath, "logs");
+            var logsPath = @"C:\API_ATF_MOBILE\DATA\logs";
             
             if (!Directory.Exists(logsPath))
             {

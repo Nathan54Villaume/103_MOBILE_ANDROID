@@ -15,11 +15,12 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog for DIRIS logging
+// Logs stockés dans C:\API_ATF_MOBILE\DATA\logs (persistants entre redéploiements)
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.File("logs/app-.log", rollingInterval: Serilog.RollingInterval.Day, retainedFileCountLimit: 30)
+    .WriteTo.File(@"C:\API_ATF_MOBILE\DATA\logs\app-.log", rollingInterval: Serilog.RollingInterval.Day, retainedFileCountLimit: 30)
     .CreateLogger();
 
 builder.Host.UseSerilog();
