@@ -627,70 +627,65 @@
           
         </section>
 
-        <!-- EXTENSION: Logs Section - Event Viewer (hidden by default) -->
+        <!-- DIRIS Logs Section (hidden by default) -->
         <section id="section-logs" class="hidden space-y-6">
           <div class="card rounded-xl p-5 shadow-glass">
             <!-- Barre d'actions (sticky) -->
             <div class="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10 pb-4 mb-4 border-b border-white/10">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-3">
-                  <h3 class="font-semibold">Event Viewer - Logs système</h3>
-                  <span id="logCounter" class="px-2 py-1 text-xs bg-white/10 rounded">0 / 0</span>
+                  <h3 class="font-semibold">📝 Logs DIRIS - Acquisition & Système</h3>
+                  <span id="dirisLogsCurrentFile" class="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded font-mono">-</span>
+                  <span id="dirisLogCounter" class="px-2 py-1 text-xs bg-white/10 rounded">
+                    <span id="dirisLogsDisplayedCount">0</span> / <span id="dirisLogsTotalCount">0</span>
+                  </span>
                 </div>
                 
-                <!-- Contrôles Play/Stop/Clear/Export -->
+                <!-- Contrôles Play/Stop/Clear/Refresh -->
                 <div class="flex gap-2">
-                  <button id="btnLogPlay" class="px-3 py-2 text-sm rounded-lg bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 transition-colors flex items-center gap-2 focus:outline-none focus:ring-0">
-                    ▶️ Play
+                  <button id="dirisLogsPlayBtn" class="px-3 py-2 text-sm rounded-lg bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 transition-colors flex items-center gap-2 focus:outline-none focus:ring-0">
+                    ▶️ Auto-refresh
                   </button>
-                  <button id="btnLogStop" class="px-3 py-2 text-sm rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 transition-colors flex items-center gap-2 opacity-50 cursor-not-allowed focus:outline-none focus:ring-0" disabled>
+                  <button id="dirisLogsStopBtn" class="hidden px-3 py-2 text-sm rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 transition-colors flex items-center gap-2 focus:outline-none focus:ring-0">
                     ⏸️ Stop
                   </button>
-                  <button id="btnLogClear" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
-                    🗑️ Effacer
+                  <button id="dirisLogsClearBtn" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
+                    🗑️ Vider
                   </button>
-                  <button id="btnLogRefresh" class="px-3 py-2 text-sm rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 transition-colors focus:outline-none focus:ring-0">
+                  <button id="dirisLogsRefreshBtn" class="px-3 py-2 text-sm rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 transition-colors focus:outline-none focus:ring-0">
                     🔄 Actualiser
-                  </button>
-                  <button id="btnLogExportCsv" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
-                    📊 CSV
-                  </button>
-                  <button id="btnLogExportJson" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
-                    📄 JSON
                   </button>
                 </div>
               </div>
               
-              <!-- Filtres dynamiques -->
+              <!-- Filtres -->
               <div class="flex gap-2 items-center flex-wrap">
-                <input 
-                  type="text" 
-                  id="logSearchText" 
-                  placeholder="Recherche plein texte (message + détails)..." 
-                  class="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm min-w-[300px] focus:outline-none focus:ring-0 focus:border-white/20"
-                />
-                <button id="btnResetFilters" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition-colors focus:outline-none focus:ring-0">
-                  🔄 Réinitialiser filtres
+                <button data-diris-log-filter="all" class="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white transition-colors focus:outline-none focus:ring-0">
+                  📋 Tous les logs
                 </button>
+                <button data-diris-log-filter="acquisition" class="px-3 py-2 text-sm rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors focus:outline-none focus:ring-0">
+                  🔌 Acquisition uniquement
+                </button>
+                <button data-diris-log-filter="errors" class="px-3 py-2 text-sm rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors focus:outline-none focus:ring-0">
+                  🔴 Erreurs uniquement
+                </button>
+                <select id="dirisLogsMaxLines" class="px-3 py-2 text-sm rounded-lg bg-slate-700 text-slate-300 border border-white/10 focus:outline-none focus:ring-0">
+                  <option value="50">50 lignes</option>
+                  <option value="100">100 lignes</option>
+                  <option value="200" selected>200 lignes</option>
+                  <option value="500">500 lignes</option>
+                  <option value="1000">1000 lignes</option>
+                </select>
               </div>
               
-              <!-- Facettes (optionnel, à activer si souhaité) -->
-              <div id="logFacets" class="hidden mt-3 text-xs text-slate-400">
-                <!-- Facettes dynamiques seront générées ici -->
+              <!-- Info persistance -->
+              <div class="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-sm text-blue-300">
+                💾 <strong>Logs persistants</strong> : Stockés dans <code class="px-1 py-0.5 bg-black/30 rounded font-mono text-xs">C:\API_ATF_MOBILE\DATA\logs</code> (conservés entre redéploiements)
               </div>
             </div>
             
-            <!-- En-tête du tableau (colonnes) -->
-            <div class="text-xs text-slate-400 mb-2 px-3 grid grid-cols-12 gap-2">
-              <div class="col-span-1">Time</div>
-              <div class="col-span-1">Source</div>
-              <div class="col-span-2">HTTP</div>
-              <div class="col-span-6">Message</div>
-              <div class="col-span-2 text-right">Duration</div>
-            </div>
-            
-            <!-- Liste des logs (virtualisation) -->
-            <div id="logsList" class="space-y-1 max-h-[600px] overflow-y-auto hide-scrollbar">
+            <!-- Liste des logs -->
+            <div id="dirisLogsContainer" class="space-y-1 max-h-[700px] overflow-y-auto hide-scrollbar">
               <!-- Dynamically populated -->
               <p class="text-center text-slate-400 py-8">Chargement...</p>
             </div>
@@ -1331,4 +1326,5 @@
   <script type="module" src="js/admin.js?v=20251003-1020"></script>
 </body>
 </html>
+
 

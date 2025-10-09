@@ -8,7 +8,7 @@ import { initSystemMonitor, updateSystemMetrics } from './system-monitor.js';
 import { initDatabaseManager, updateDatabaseStatus } from './database-manager.js';
 import { initS7Manager, updateS7Status } from './s7-manager.js';
 import { DirisManager } from './diris-manager.js';
-import { initLogsViewer, updateLogs } from './logs-viewer.js?v=20251003-1020';
+import dirisLogsViewer from './diris-logs-viewer.js';
 import { initConfigViewer } from './config-viewer.js';
 import { initApiViewer } from './api-viewer.js';
 import { initRequestsViewer, updateRequestsDisplay } from './requests-viewer.js?v=20251003-0940';
@@ -219,7 +219,7 @@ async function initApp() {
     window.dirisManager = new DirisManager(apiClient);
     window.dirisManager.init();
     
-    initLogsViewer();
+    dirisLogsViewer.init();
     initConfigViewer();
     initApiViewer();
     initRequestsViewer();
