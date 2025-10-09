@@ -803,16 +803,30 @@ export class DirisManager {
       const enabledSignals = Array.from(modal.querySelectorAll('.signal-enabled:checked'))
         .map(cb => cb.dataset.signal);
       
-      this.showInfo('💾 Sauvegarde des paramètres des signaux...');
+      // Récupérer aussi les fréquences pour les sauvegarder
+      const frequencies = Array.from(modal.querySelectorAll('.signal-frequency'))
+        .map(select => ({
+          signal: select.dataset.signal,
+          recordingFrequencyMs: parseInt(select.value)
+        }));
       
-      const response = await this.apiClient.updateDirisTagMappingsEnabled(deviceId, enabledSignals);
+      this.showInfo('💾 Sauvegarde des paramètres des signaux et fréquences...');
       
-      if (response.success) {
-        this.showSuccess(`✅ Paramètres des signaux sauvegardés pour device ${deviceId}`);
-        this.addHistoryEvent('success', 'Signaux mis à jour', `${enabledSignals.length} signaux activés pour device ${deviceId}`);
+      // Sauvegarder les signaux activés/désactivés
+      const response1 = await this.apiClient.updateDirisTagMappingsEnabled(deviceId, enabledSignals);
+      
+      // Sauvegarder les fréquences
+      const response2 = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}/bulk`, {
+        method: 'PUT',
+        body: JSON.stringify({ frequencies })
+      });
+      
+      if (response1.success && response2.success) {
+        this.showSuccess(`✅ Paramètres sauvegardés: ${enabledSignals.length} signaux activés, ${frequencies.length} fréquences mises à jour`);
+        this.addHistoryEvent('success', 'Signaux mis à jour', `${enabledSignals.length} signaux activés, ${frequencies.length} fréquences pour device ${deviceId}`);
         modal.remove();
       } else {
-        this.showError(`❌ Erreur: ${response.message || 'Impossible de sauvegarder les paramètres'}`);
+        this.showError(`❌ Erreur: ${response1.message || response2.message || 'Impossible de sauvegarder les paramètres'}`);
       }
     } catch (error) {
       console.error('Erreur sauvegarde signaux:', error);
