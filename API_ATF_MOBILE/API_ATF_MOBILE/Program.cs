@@ -56,6 +56,7 @@ builder.Services.AddSqlServerStorage(builder.Configuration);
 builder.Services.Configure<DirisAcquisitionOptions>(builder.Configuration.GetSection(DirisAcquisitionOptions.SectionName));
 builder.Services.AddSingleton<DirisAcquisitionControlService>();
 builder.Services.AddHostedService<DirisAcquisitionService>();
+builder.Services.AddHostedService<DirisSignalSchedulerService>(); // Nouveau service avec scheduling séparé
 builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollector>();
 
 // 3.4) DIRIS Services - Data Retention

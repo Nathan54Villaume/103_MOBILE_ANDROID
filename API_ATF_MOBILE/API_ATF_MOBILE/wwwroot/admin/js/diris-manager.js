@@ -638,10 +638,22 @@ export class DirisManager {
         return;
       }
 
-      // Récupérer les tagmaps existants
+      // Récupérer les tagmaps avec les fréquences
       const tagMappings = await this.apiClient.getDirisTagMappings(deviceId);
       
-      this.showSignalManagementModal(device, tagMappings || []);
+      // Récupérer les fréquences depuis l'API
+      const frequencies = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`);
+      
+      // Fusionner les données
+      const enrichedTagMappings = (tagMappings || []).map(tag => {
+        const frequencyData = frequencies?.frequencies?.find(f => f.signal === tag.signal);
+        return {
+          ...tag,
+          recordingFrequencyMs: frequencyData?.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)
+        };
+      });
+      
+      this.showSignalManagementModal(device, enrichedTagMappings);
     } catch (error) {
       console.error('Erreur gestion signaux:', error);
       this.showError(`Erreur lors de la récupération des signaux pour device ${deviceId}`);
@@ -672,6 +684,12 @@ export class DirisManager {
           <button id="btnSaveSignals" class="px-3 py-2 text-sm rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors">
             💾 Sauvegarder
           </button>
+          <button id="btnSaveFrequencies" class="px-3 py-2 text-sm rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 transition-colors">
+            ⏱️ Sauvegarder fréquences
+          </button>
+          <button id="btnApplyPresets" class="px-3 py-2 text-sm rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border border-indigo-500/30 transition-colors">
+            🎯 Appliquer presets
+          </button>
           <button id="btnCreateAllSignals" class="px-3 py-2 text-sm rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors">
             🔄 Recréer tous les signaux
           </button>
@@ -685,6 +703,7 @@ export class DirisManager {
                 <th class="px-3 py-2 text-left">Description</th>
                 <th class="px-3 py-2 text-left">Unité</th>
                 <th class="px-3 py-2 text-left">Échelle</th>
+                <th class="px-3 py-2 text-center">Fréquence</th>
                 <th class="px-3 py-2 text-center">Activé</th>
               </tr>
             </thead>
@@ -695,6 +714,18 @@ export class DirisManager {
                   <td class="px-3 py-2">${this.escapeHtml(tag.description || 'N/A')}</td>
                   <td class="px-3 py-2">${this.escapeHtml(tag.unit || '')}</td>
                   <td class="px-3 py-2">${tag.scale}</td>
+                  <td class="px-3 py-2 text-center">
+                    <select class="signal-frequency w-full px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white" data-signal="${this.escapeHtml(tag.signal)}">
+                      <option value="1000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 1000 ? 'selected' : ''}>1 seconde</option>
+                      <option value="2000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 2000 ? 'selected' : ''}>2 secondes</option>
+                      <option value="5000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 5000 ? 'selected' : ''}>5 secondes</option>
+                      <option value="10000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 10000 ? 'selected' : ''}>10 secondes</option>
+                      <option value="30000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 30000 ? 'selected' : ''}>30 secondes</option>
+                      <option value="60000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 60000 ? 'selected' : ''}>1 minute</option>
+                      <option value="300000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 300000 ? 'selected' : ''}>5 minutes</option>
+                      <option value="600000" ${(tag.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal)) === 600000 ? 'selected' : ''}>10 minutes</option>
+                    </select>
+                  </td>
                   <td class="px-3 py-2 text-center">
                     <input type="checkbox" class="signal-enabled" data-signal="${this.escapeHtml(tag.signal)}" ${tag.enabled ? 'checked' : ''}>
                   </td>
@@ -743,6 +774,14 @@ export class DirisManager {
     modal.querySelector('#btnCreateAllSignals').addEventListener('click', () => {
       this.discoverTags(device.deviceId);
       modal.remove();
+    });
+    
+    modal.querySelector('#btnSaveFrequencies').addEventListener('click', () => {
+      this.saveSignalFrequencies(device.deviceId, modal);
+    });
+    
+    modal.querySelector('#btnApplyPresets').addEventListener('click', () => {
+      this.applyFrequencyPresets(device.deviceId, modal);
     });
     
     // Mise à jour du compteur
@@ -1544,6 +1583,73 @@ export class DirisManager {
     const div = document.createElement('div');
     div.textContent = text || '';
     return div.innerHTML;
+  }
+
+  getDefaultFrequencyForSignal(signal) {
+    if (signal.startsWith('I_') || signal.startsWith('PV') || signal.startsWith('LV_') || signal === 'F_255') {
+      return 1000; // 1s - Critiques
+    } else if (signal.includes('RP') || signal.includes('IP') || signal.includes('AP')) {
+      return 2000; // 2s - Puissances
+    } else if (signal.startsWith('THD_')) {
+      return 5000; // 5s - THD
+    } else if (signal.startsWith('E') && signal.endsWith('_255')) {
+      return 30000; // 30s - Énergies
+    } else if (signal.startsWith('AVG_') || signal.startsWith('MAXAVG')) {
+      return 10000; // 10s - Moyennes/Max
+    } else {
+      return 5000; // 5s - Par défaut
+    }
+  }
+
+  async saveSignalFrequencies(deviceId, modal) {
+    try {
+      const frequencies = Array.from(modal.querySelectorAll('.signal-frequency'))
+        .map(select => ({
+          signal: select.dataset.signal,
+          recordingFrequencyMs: parseInt(select.value)
+        }));
+      
+      this.showInfo('⏱️ Sauvegarde des fréquences d\'enregistrement...');
+      
+      const response = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}/bulk`, {
+        method: 'PUT',
+        body: JSON.stringify({ frequencies })
+      });
+      
+      if (response.success) {
+        this.showSuccess(`✅ Fréquences sauvegardées pour ${response.updatedCount} signaux`);
+        this.addHistoryEvent('success', 'Fréquences mises à jour', `${response.updatedCount} fréquences mises à jour pour device ${deviceId}`);
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible de sauvegarder les fréquences'}`);
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde fréquences:', error);
+      this.showError('Erreur lors de la sauvegarde des fréquences');
+    }
+  }
+
+  async applyFrequencyPresets(deviceId, modal) {
+    try {
+      this.showInfo('🎯 Application des presets de fréquence...');
+      
+      const response = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}/apply-presets`, {
+        method: 'POST'
+      });
+      
+      if (response.success) {
+        this.showSuccess(`✅ Presets appliqués à ${response.updatedCount} signaux`);
+        this.addHistoryEvent('success', 'Presets appliqués', `${response.updatedCount} presets appliqués pour device ${deviceId}`);
+        
+        // Recharger la modal pour voir les nouvelles fréquences
+        modal.remove();
+        this.manageSignals(deviceId);
+      } else {
+        this.showError(`❌ Erreur: ${response.message || 'Impossible d\'appliquer les presets'}`);
+      }
+    } catch (error) {
+      console.error('Erreur application presets:', error);
+      this.showError('Erreur lors de l\'application des presets');
+    }
   }
 
   showSuccess(message) {
