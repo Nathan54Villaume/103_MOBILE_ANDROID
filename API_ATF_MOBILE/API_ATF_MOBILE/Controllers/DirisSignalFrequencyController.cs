@@ -50,9 +50,9 @@ public class DirisSignalFrequencyController : ControllerBase
                 tm.Description,
                 tm.Unit,
                 tm.Enabled,
-                RecordingFrequencyMs = GetRecordingFrequency(tm.Signal), // Valeur par défaut si la colonne n'existe pas encore
-                RecordingFrequencySeconds = GetRecordingFrequency(tm.Signal) / 1000.0,
-                FrequencyDescription = GetFrequencyDescription(GetRecordingFrequency(tm.Signal))
+                RecordingFrequencyMs = tm.RecordingFrequencyMs, // Utiliser la valeur de la base de données
+                RecordingFrequencySeconds = tm.RecordingFrequencyMs / 1000.0,
+                FrequencyDescription = GetFrequencyDescription(tm.RecordingFrequencyMs)
             }).ToList();
 
             return Ok(new
@@ -292,16 +292,6 @@ public class DirisSignalFrequencyController : ControllerBase
     }
 
     #region Helper Methods
-
-    /// <summary>
-    /// Obtient la fréquence par défaut pour un signal (valeur de fallback si la colonne n'existe pas encore)
-    /// </summary>
-    private int GetRecordingFrequency(string signal)
-    {
-        // Pour l'instant, retourner la fréquence par défaut
-        // Une fois la colonne ajoutée en base, cette méthode sera remplacée par une vraie requête
-        return GetDefaultFrequencyForSignal(signal);
-    }
 
     /// <summary>
     /// Obtient la fréquence par défaut selon le type de signal
