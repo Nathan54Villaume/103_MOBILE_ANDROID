@@ -94,7 +94,7 @@ class DirisLogsViewer {
             const response = await apiClient.request(endpoint, 'GET');
             
             if (response.success) {
-                this.logs = response.logs || [];
+                this.logs = (response.logs || []).reverse(); // Inverser l'ordre : derniers en haut
                 this.renderLogs();
                 this.updateCounters(response);
             } else {
@@ -160,9 +160,9 @@ class DirisLogsViewer {
         // Attacher les event listeners pour les détails
         this.attachDetailsListeners();
         
-        // Auto-scroll vers le bas si auto-refresh est activé
+        // Auto-scroll vers le haut si auto-refresh est activé (derniers logs en haut)
         if (this.autoRefresh) {
-            container.scrollTop = container.scrollHeight;
+            container.scrollTop = 0;
         }
     }
 
@@ -242,16 +242,22 @@ class DirisLogsViewer {
         
         // Convertir en format simplifié: 09/10/25 - 08:25:02
         const timestampStr = match[1];
-        const date = new Date(timestampStr);
         
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = String(date.getFullYear()).slice(-2);
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-        
-        return `${day}/${month}/${year} - ${hours}:${minutes}:${seconds}`;
+        try {
+            const date = new Date(timestampStr);
+            
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = String(date.getFullYear()).slice(-2);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${day}/${month}/${year} - ${hours}:${minutes}:${seconds}`;
+        } catch (error) {
+            // Si le parsing échoue, retourner la chaîne originale
+            return timestampStr;
+        }
     }
 
     /**
