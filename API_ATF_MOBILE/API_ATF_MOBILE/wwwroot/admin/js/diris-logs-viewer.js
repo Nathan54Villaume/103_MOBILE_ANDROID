@@ -91,7 +91,7 @@ class DirisLogsViewer {
                     break;
             }
 
-            const response = await apiClient.get(endpoint);
+            const response = await apiClient.request(endpoint, 'GET');
             
             if (response.success) {
                 this.logs = response.logs || [];

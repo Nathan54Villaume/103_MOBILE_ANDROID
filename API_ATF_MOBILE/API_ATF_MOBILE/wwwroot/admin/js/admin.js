@@ -341,7 +341,10 @@ async function refreshCurrentSection() {
                 }
                 break;
             case 'logs':
-                await updateLogs();
+                // DIRIS Logs Viewer gère son propre rafraîchissement
+                if (window.dirisLogsViewer) {
+                    await window.dirisLogsViewer.loadLogs();
+                }
                 break;
             case 'config':
                 await loadConfiguration();
@@ -441,9 +444,6 @@ function updateCharts(data, systemData) {
     
     // Chart CPU Serveur vs Machine
     updateCpuUsageChart(systemData);
-    
-    // Chart Logs
-    updateLogsChart(data.logStats);
 }
 
 function updateMemoryUsageChart(systemData) {
@@ -748,7 +748,8 @@ function startPolling() {
             } else if (state.currentSection === 's7') {
                 await updateS7Status();
             } else if (state.currentSection === 'logs') {
-                await updateLogs();
+                // DIRIS Logs Viewer gère son propre auto-refresh
+                // Pas besoin de rafraîchir ici
             } else if (state.currentSection === 'requests') {
                 updateRequestsDisplay();
             }
