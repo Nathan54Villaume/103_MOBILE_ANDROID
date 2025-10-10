@@ -72,7 +72,8 @@ export class DirisManager {
     // Configuration validation
     document.getElementById('configParallelism')?.addEventListener('input', (e) => this.validateConfigField('parallelism', e.target.value));
     document.getElementById('configPollInterval')?.addEventListener('input', (e) => this.validateConfigField('pollInterval', e.target.value));
-    document.getElementById('configMaxBatch')?.addEventListener('input', (e) => this.validateConfigField('maxBatch', e.target.value));
+    document.getElementById('configRequestTimeout')?.addEventListener('input', (e) => this.validateConfigField('requestTimeout', e.target.value));
+    document.getElementById('configMaxErrors')?.addEventListener('input', (e) => this.validateConfigField('maxErrors', e.target.value));
     document.getElementById('configRetentionDays')?.addEventListener('input', (e) => this.validateConfigField('retentionDays', e.target.value));
     document.getElementById('configCleanupHour')?.addEventListener('input', (e) => this.validateConfigField('cleanupHour', e.target.value));
     document.getElementById('configMaxDatabaseSize')?.addEventListener('input', (e) => this.validateConfigField('maxDatabaseSize', e.target.value));
@@ -353,7 +354,8 @@ export class DirisManager {
         if (config.acquisition) {
           document.getElementById('configParallelism').value = config.acquisition.parallelism || 6;
           document.getElementById('configPollInterval').value = config.acquisition.defaultPollIntervalMs || 1500;
-          document.getElementById('configMaxBatch').value = config.acquisition.maxBatchPoints || 1000;
+          document.getElementById('configRequestTimeout').value = config.acquisition.requestTimeoutMs || 2000;
+          document.getElementById('configMaxErrors').value = config.acquisition.maxConsecutiveErrors || 5;
         }
         
         if (config.dataRetention) {
@@ -368,7 +370,8 @@ export class DirisManager {
       // Set default values
       document.getElementById('configParallelism').value = 6;
       document.getElementById('configPollInterval').value = 1500;
-      document.getElementById('configMaxBatch').value = 1000;
+      document.getElementById('configRequestTimeout').value = 2000;
+      document.getElementById('configMaxErrors').value = 5;
       document.getElementById('configRetentionDays').value = 10;
       document.getElementById('configCleanupHour').value = 2;
       document.getElementById('configMaxDatabaseSize').value = 1024;
@@ -394,10 +397,16 @@ export class DirisManager {
           message = 'Intervalle de poll doit être entre 500ms et 10000ms';
         }
         break;
-      case 'maxBatch':
-        if (numValue < 100 || numValue > 5000) {
+      case 'requestTimeout':
+        if (numValue < 500 || numValue > 15000) {
           isValid = false;
-          message = 'Taille des lots doit être entre 100 et 5000';
+          message = 'Timeout doit être entre 500ms et 15000ms';
+        }
+        break;
+      case 'maxErrors':
+        if (numValue < 1 || numValue > 50) {
+          isValid = false;
+          message = 'Erreurs max. doit être entre 1 et 50';
         }
         break;
       case 'retentionDays':
@@ -437,9 +446,13 @@ export class DirisManager {
   async saveConfiguration() {
     try {
       // Validate all fields before saving
-      const fields = ['parallelism', 'pollInterval', 'maxBatch', 'retentionDays', 'cleanupHour', 'maxDatabaseSize'];
+      const fields = ['parallelism', 'pollInterval', 'requestTimeout', 'maxErrors', 'retentionDays', 'cleanupHour', 'maxDatabaseSize'];
       const allValid = fields.every(field => {
-        const value = document.getElementById(`config${field.charAt(0).toUpperCase() + field.slice(1)}`).value;
+        let elementId = `config${field.charAt(0).toUpperCase() + field.slice(1)}`;
+        if (field === 'maxErrors') elementId = 'configMaxErrors';
+        if (field === 'requestTimeout') elementId = 'configRequestTimeout';
+        
+        const value = document.getElementById(elementId).value;
         return this.validateConfigField(field, value);
       });
       
@@ -452,7 +465,8 @@ export class DirisManager {
         acquisition: {
           parallelism: parseInt(document.getElementById('configParallelism').value),
           defaultPollIntervalMs: parseInt(document.getElementById('configPollInterval').value),
-          maxBatchPoints: parseInt(document.getElementById('configMaxBatch').value)
+          requestTimeoutMs: parseInt(document.getElementById('configRequestTimeout').value),
+          maxConsecutiveErrors: parseInt(document.getElementById('configMaxErrors').value)
         },
         dataRetention: {
           enabled: document.getElementById('configRetentionEnabled').checked,
