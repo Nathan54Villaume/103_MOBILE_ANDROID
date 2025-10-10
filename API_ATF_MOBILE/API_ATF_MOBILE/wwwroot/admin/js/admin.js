@@ -451,8 +451,25 @@ function updateCharts(data, systemData) {
     // Chart CPU Serveur vs Machine
     updateCpuUsageChart(systemData);
     
-    // Chart Statistiques Logs
-    updateLogsChart(data.LogStats);
+    // Chart Statistiques Logs - Debug des données
+    console.log('🔍 [DEBUG] Dashboard data:', data);
+    console.log('🔍 [DEBUG] LogStats:', data.LogStats);
+    
+    // Vérifier que les données de logs existent avant d'appeler updateLogsChart
+    if (data && data.LogStats) {
+        updateLogsChart(data.LogStats);
+    } else {
+        console.warn('⚠️ LogStats non disponible dans les données du dashboard');
+        // Créer des données par défaut pour éviter l'erreur
+        const defaultLogStats = {
+            TotalLogs: 0,
+            InfoCount: 0,
+            WarningCount: 0,
+            ErrorCount: 0,
+            CriticalCount: 0
+        };
+        updateLogsChart(defaultLogStats);
+    }
 }
 
 function updateMemoryUsageChart(systemData) {
