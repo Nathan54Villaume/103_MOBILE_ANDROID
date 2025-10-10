@@ -1841,7 +1841,7 @@ export class DirisManager {
       });
     });
 
-    // Collapsible sections
+    // Collapsible sections for presets
     modal.querySelectorAll('.collapsible-header-preset').forEach(header => {
       header.addEventListener('click', () => {
         const content = header.closest('.collapsible-group-preset').nextElementSibling;
