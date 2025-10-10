@@ -328,6 +328,7 @@ async function refreshCurrentSection() {
                 break;
             case 'server':
                 await updateServerMetrics();
+                await updateSystemMetrics();
                 break;
             case 'database':
                 await updateDatabaseStatus();
