@@ -45,17 +45,49 @@ public class DirisSignalFrequencyController : ControllerBase
                 return NotFound(new { success = false, message = "Device not found" });
             }
 
-            var tagMappings = await _deviceRegistry.GetTagMappingsAsync(deviceId);
+            // LECTURE DIRECTE DEPUIS LA BASE DE DONNÉES pour éviter tout problème de cache
+            using var connection = new SqlConnection(_connectionString);
+            var sql = @"
+                SELECT 
+                    Signal, 
+                    Description, 
+                    Unit, 
+                    Enabled, 
+                    RecordingFrequencyMs,
+                    Scale
+                FROM [DIRIS].[TagMap]
+                WHERE DeviceId = @DeviceId
+                ORDER BY Signal";
             
-            var frequencies = tagMappings.Select(tm => new
+            var tagMappings = await connection.QueryAsync<dynamic>(sql, new { DeviceId = deviceId });
+            var tagMappingsList = tagMappings.ToList();
+            
+            // Logs de debug désactivés par défaut pour les performances
+            // Pour activer : décommentez les lignes suivantes
+            /*
+            _logger.LogInformation("[FREQ-DEBUG-API] Device {DeviceId}: Chargé {Count} signaux depuis la BDD", 
+                deviceId, tagMappingsList.Count);
+            
+            // Log des 3 premiers pour debug
+            foreach (var tm in tagMappingsList.Take(3))
             {
-                tm.Signal,
-                tm.Description,
-                tm.Unit,
-                tm.Enabled,
-                RecordingFrequencyMs = tm.RecordingFrequencyMs, // Utiliser la valeur de la base de données
-                RecordingFrequencySeconds = tm.RecordingFrequencyMs / 1000.0,
-                FrequencyDescription = GetFrequencyDescription(tm.RecordingFrequencyMs)
+                var signal = (string)tm.Signal;
+                var freq = (int)tm.RecordingFrequencyMs;
+                var enabled = (bool)tm.Enabled;
+                _logger.LogInformation("[FREQ-DEBUG-API] Signal: {Signal}, Freq: {Freq}ms, Enabled: {Enabled}", 
+                    signal, freq, enabled);
+            }
+            */
+            
+            var frequencies = tagMappingsList.Select(tm => new
+            {
+                Signal = (string)tm.Signal,
+                Description = (string)tm.Description,
+                Unit = (string)tm.Unit,
+                Enabled = (bool)tm.Enabled,
+                RecordingFrequencyMs = (int)tm.RecordingFrequencyMs,
+                RecordingFrequencySeconds = (int)tm.RecordingFrequencyMs / 1000.0,
+                FrequencyDescription = GetFrequencyDescription((int)tm.RecordingFrequencyMs)
             }).ToList();
 
             return Ok(new

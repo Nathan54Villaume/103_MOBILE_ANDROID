@@ -2,10 +2,35 @@
 // DIRIS Manager Module
 // Gestion de l'onglet DIRIS
 // ========================================
+//
+// 🔍 MODE DEBUG :
+// Les logs détaillés sont désactivés par défaut pour économiser les ressources.
+// 
+// Pour activer les logs de debug dans la console du navigateur (F12) :
+//   1. Tapez : localStorage.setItem('DIRIS_DEBUG', 'true')
+//   2. Appuyez sur F5 pour rafraîchir
+//   3. Filtrez la console avec : [FREQ-DEBUG]
+// 
+// Pour désactiver :
+//   1. Tapez : localStorage.removeItem('DIRIS_DEBUG')
+//   2. Appuyez sur F5 pour rafraîchir
+//
+// ========================================
 
 export class DirisManager {
   constructor(apiClient) {
     this.apiClient = apiClient;
+    
+    // Mode debug pour les logs détaillés (désactivé par défaut)
+    // Pour activer : localStorage.setItem('DIRIS_DEBUG', 'true'); puis rafraîchir
+    // Pour désactiver : localStorage.removeItem('DIRIS_DEBUG'); puis rafraîchir
+    this.debugMode = localStorage.getItem('DIRIS_DEBUG') === 'true';
+    
+    if (this.debugMode) {
+      console.log('%c🔍 MODE DEBUG ACTIVÉ pour DIRIS', 'color: #10b981; font-weight: bold; font-size: 14px;');
+      console.log('%cPour désactiver: localStorage.removeItem("DIRIS_DEBUG"); puis F5', 'color: #94a3b8; font-size: 12px;');
+    }
+    
     this.autoRefreshInterval = null;
     this.charts = {};
     this.chartData = {
@@ -652,34 +677,103 @@ export class DirisManager {
 
   async manageSignals(deviceId) {
     try {
+      if (this.debugMode) {
+        console.log('╔═══════════════════════════════════════════════════════════════╗');
+        console.log('║ [FREQ-DEBUG] Chargement de la modal "Gestion des signaux"    ║');
+        console.log('╚═══════════════════════════════════════════════════════════════╝');
+        console.log('[FREQ-DEBUG] Device ID:', deviceId);
+      }
+      
       // Récupérer les informations du device
       const device = await this.apiClient.request(`/api/diris/devices/${deviceId}`);
       if (!device) {
         this.showError(`Device ${deviceId} introuvable`);
         return;
       }
+      
+      if (this.debugMode) console.log('[FREQ-DEBUG] Device trouvé:', device.name);
 
-      // Récupérer les tagmaps avec les fréquences
-      const tagMappings = await this.apiClient.getDirisTagMappings(deviceId);
+      // Récupérer TOUTES les données depuis l'endpoint frequency qui contient :
+      // - Signal, Description, Unit, Enabled, RecordingFrequencyMs
+      // (avec cache busting pour forcer le rechargement des données fraîches)
+      const url = `/api/diris/signals/frequency/device/${deviceId}?_=${Date.now()}`;
+      if (this.debugMode) console.log('[FREQ-DEBUG] Chargement depuis URL:', url);
       
-      // Récupérer les fréquences depuis l'API
-      const frequencies = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`);
+      const response = await this.apiClient.request(url);
       
-      // Fusionner les données
-      const enrichedTagMappings = (tagMappings || []).map(tag => {
-        const frequencyData = frequencies?.frequencies?.find(f => f.signal === tag.signal);
-        const finalFrequency = frequencyData?.recordingFrequencyMs || this.getDefaultFrequencyForSignal(tag.signal);
+      if (this.debugMode) console.log('[FREQ-DEBUG] Réponse API complète:', response);
+      
+      if (!response.success || !response.frequencies) {
+        if (this.debugMode) console.error('[FREQ-DEBUG] ❌ ERREUR: Réponse invalide de l\'API');
+        this.showError('Erreur lors du chargement des signaux');
+        return;
+      }
+      
+      if (this.debugMode) {
+        console.log('[FREQ-DEBUG] ✅ Nombre de signaux reçus:', response.frequencies.length);
         
-        
-        return {
-          ...tag,
-          recordingFrequencyMs: finalFrequency
-        };
-      });
+        // Log des 3 premiers signaux bruts pour voir la structure exacte
+        console.log('[FREQ-DEBUG] Structure des 3 premiers signaux bruts:');
+        response.frequencies.slice(0, 3).forEach((freq, index) => {
+          console.log(`[FREQ-DEBUG] Signal ${index + 1}:`, {
+            Signal: freq.Signal,
+            signal: freq.signal,
+            RecordingFrequencyMs: freq.RecordingFrequencyMs,
+            recordingFrequencyMs: freq.recordingFrequencyMs,
+            Enabled: freq.Enabled,
+            enabled: freq.enabled,
+            toutes_props: Object.keys(freq)
+          });
+        });
+      }
       
-      this.showSignalManagementModal(device, enrichedTagMappings);
+      // Utiliser directement les données de l'API frequency qui sont complètes et à jour
+      const tagMappings = response.frequencies.map(freq => ({
+        signal: freq.Signal || freq.signal,
+        description: freq.Description || freq.description,
+        unit: freq.Unit || freq.unit,
+        enabled: freq.Enabled !== undefined ? freq.Enabled : freq.enabled,
+        recordingFrequencyMs: freq.RecordingFrequencyMs || freq.recordingFrequencyMs || 1000,
+        scale: 1 // Valeur par défaut
+      }));
+      
+      if (this.debugMode) {
+        // Log DÉTAILLÉ des fréquences mappées
+        console.log('[FREQ-DEBUG] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('[FREQ-DEBUG] 📊 FRÉQUENCES FINALES (10 premiers signaux):');
+        tagMappings.slice(0, 10).forEach(tag => {
+          const freqLabel = tag.recordingFrequencyMs === 1000 ? '1s' :
+                           tag.recordingFrequencyMs === 2000 ? '2s' :
+                           tag.recordingFrequencyMs === 5000 ? '5s' :
+                           tag.recordingFrequencyMs === 10000 ? '10s' :
+                           `${tag.recordingFrequencyMs}ms`;
+          console.log(`[FREQ-DEBUG]   ${tag.signal}: ${tag.recordingFrequencyMs}ms (${freqLabel}) | Enabled: ${tag.enabled}`);
+        });
+        console.log('[FREQ-DEBUG] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        
+        // Compter les différentes fréquences
+        const freqCounts = {};
+        tagMappings.forEach(tag => {
+          freqCounts[tag.recordingFrequencyMs] = (freqCounts[tag.recordingFrequencyMs] || 0) + 1;
+        });
+        console.log('[FREQ-DEBUG] 📈 Répartition des fréquences:');
+        Object.entries(freqCounts).sort().forEach(([freq, count]) => {
+          console.log(`[FREQ-DEBUG]   ${freq}ms: ${count} signaux`);
+        });
+        
+        console.log('[FREQ-DEBUG] 🚀 Affichage de la modal...');
+      }
+      
+      this.showSignalManagementModal(device, tagMappings);
+      
+      if (this.debugMode) {
+        console.log('[FREQ-DEBUG] ✅ Modal affichée');
+        console.log('╔═══════════════════════════════════════════════════════════════╗');
+        console.log('║ [FREQ-DEBUG] FIN du chargement                                ║');
+        console.log('╚═══════════════════════════════════════════════════════════════╝');
+      }
     } catch (error) {
-      console.error('Erreur gestion signaux:', error);
+      if (this.debugMode) console.error('[FREQ-DEBUG] ❌ EXCEPTION:', error);
       this.showError(`Erreur lors de la récupération des signaux pour device ${deviceId}`);
     }
   }
@@ -776,7 +870,7 @@ export class DirisManager {
           <button id="btnDeselectAll" class="px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
             ❌ Tout désélectionner
           </button>
-          <button id="btnApplyPresets" class="px-3 py-2 text-sm rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border border-indigo-500/30 transition-colors">
+          <button id="btnApplyPresets" class="px-3 py-2 text-sm rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border border-indigo-500/30 transition-colors" data-tooltip="Applique les presets universels configurés à ce device">
             🎯 Appliquer presets
           </button>
         </div>
@@ -1716,28 +1810,74 @@ export class DirisManager {
 
 
   async applyFrequencyPresets(deviceId, modal) {
+    if (this.debugMode) {
+      console.log('╔═══════════════════════════════════════════════════════════════╗');
+      console.log('║ [FREQ-DEBUG] APPLICATION DES PRESETS                          ║');
+      console.log('╚═══════════════════════════════════════════════════════════════╝');
+      console.log('[FREQ-DEBUG] Device ID:', deviceId);
+    }
+    
+    // Créer et afficher le spinner
+    const spinner = this.createLoadingSpinner('Application des presets en cours...');
+    document.body.appendChild(spinner);
+    
     try {
-      this.showInfo('🎯 Application des presets de fréquence...');
+      this.showInfo('🎯 Application des presets de fréquence et activation des signaux...');
+      
+      if (this.debugMode) {
+        console.log('[FREQ-DEBUG] Appel API: POST /api/diris/signals/frequency/device/' + deviceId + '/apply-presets');
+      }
       
       const response = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}/apply-presets`, {
         method: 'POST'
       });
       
+      if (this.debugMode) {
+        console.log('[FREQ-DEBUG] Réponse de l\'API apply-presets:', response);
+      }
+      
       if (response.success) {
-        this.showSuccess(`✅ Presets appliqués à ${response.updatedCount} signaux`);
-        this.addHistoryEvent('success', 'Presets appliqués', `${response.updatedCount} presets appliqués pour device ${deviceId}`);
+        if (this.debugMode) {
+          console.log('[FREQ-DEBUG] ✅ Presets appliqués avec succès:', response.updatedCount, 'signaux');
+        }
         
-        // Recharger la modal pour voir les nouvelles fréquences
+        // Mise à jour du spinner
+        this.updateLoadingSpinner(spinner, 'Rechargement des données...', 'success');
+        
+        this.showSuccess(`✅ Presets appliqués : ${response.updatedCount} signaux mis à jour (fréquences + activation)`);
+        this.addHistoryEvent('success', 'Presets appliqués', `${response.updatedCount} signaux mis à jour pour device ${deviceId} (fréquences + statuts enabled)`);
+        
+        if (this.debugMode) console.log('[FREQ-DEBUG] Rechargement de la liste des devices...');
+        // Forcer le rechargement des devices pour synchroniser l'interface
+        await this.loadDevices();
+        if (this.debugMode) console.log('[FREQ-DEBUG] ✅ Liste des devices rechargée');
+        
+        // Recharger la modal pour voir les nouvelles fréquences et statuts
         modal.remove();
+        
+        if (this.debugMode) console.log('[FREQ-DEBUG] Attente de 1 seconde avant de recharger la modal...');
+        // Masquer le spinner avec un délai pour que l'utilisateur voie la confirmation
+        // et pour laisser le temps à la base de données de se mettre à jour
         setTimeout(() => {
+          if (this.debugMode) console.log('[FREQ-DEBUG] 🔄 Rechargement de la modal "Gestion des signaux"...');
+          spinner.remove();
           this.manageSignals(deviceId);
-        }, 100);
+        }, 1000);
       } else {
+        if (this.debugMode) console.error('[FREQ-DEBUG] ❌ Échec de l\'application des presets:', response.message);
+        spinner.remove();
         this.showError(`❌ Erreur: ${response.message || 'Impossible d\'appliquer les presets'}`);
       }
     } catch (error) {
-      console.error('Erreur application presets:', error);
-      this.showError('Erreur lors de l\'application des presets');
+      if (this.debugMode) console.error('[FREQ-DEBUG] ❌ EXCEPTION lors de l\'application des presets:', error);
+      spinner.remove();
+      
+      // Si l'erreur est due à l'absence de presets, afficher un message spécifique
+      if (error.message && error.message.includes('No presets configured')) {
+        this.showWarning('⚠️ Aucun preset configuré. Cliquez sur "⚙️ Configurer presets" pour créer une configuration universelle.');
+      } else {
+        this.showError('Erreur lors de l\'application des presets');
+      }
     }
   }
 
@@ -1764,7 +1904,7 @@ export class DirisManager {
               Configuration des presets pour les signaux universels.
             </div>
             <div class="text-sm text-slate-400">
-              <span id="totalSignals">0</span> signaux au total
+              <span id="totalSignalsEnabled" class="font-semibold text-brand-400">0</span> / <span id="totalSignals">0</span> signaux activés
             </div>
           </div>
           <div class="relative mb-4">
@@ -1832,22 +1972,16 @@ export class DirisManager {
         
         // If searching, expand groups that have matches
         if (query.length > 0 && hasVisibleRows) {
-            content.classList.remove('hidden');
-            group.querySelector('.chevron-icon').classList.add('rotate-180');
+            content.classList.remove('collapsed');
+            content.classList.add('expanded');
+            const icon = group.querySelector('.chevron-icon');
+            if (icon) icon.style.transform = 'rotate(180deg)';
         } else if (query.length === 0) {
-            content.classList.add('hidden');
-            group.querySelector('.chevron-icon').classList.remove('rotate-180');
+            content.classList.remove('expanded');
+            content.classList.add('collapsed');
+            const icon = group.querySelector('.chevron-icon');
+            if (icon) icon.style.transform = 'rotate(0deg)';
         }
-      });
-    });
-
-    // Collapsible sections for presets
-    modal.querySelectorAll('.collapsible-header-preset').forEach(header => {
-      header.addEventListener('click', () => {
-        const content = header.closest('.collapsible-group-preset').nextElementSibling;
-        const icon = header.querySelector('.chevron-icon');
-        content.classList.toggle('hidden');
-        icon.classList.toggle('rotate-180');
       });
     });
 
@@ -1855,53 +1989,123 @@ export class DirisManager {
     this.loadCurrentSignalsForPresets(modal);
   }
 
-  loadCurrentSignalsForPresets(modal) {
-    // Charger les signaux du premier device disponible comme modèle de preset universel
-    this.apiClient.request('/api/diris/devices')
-      .then(devicesResponse => {
-        // Vérifier la structure de la réponse
-        let devices = [];
-        if (Array.isArray(devicesResponse)) {
-          devices = devicesResponse;
-        } else if (devicesResponse.value && Array.isArray(devicesResponse.value)) {
-          devices = devicesResponse.value;
-        }
-        
-        if (devices.length > 0) {
-          // Utiliser le premier device comme modèle
-          const firstDevice = devices[0];
-          const deviceId = firstDevice.deviceId;
-          
-          return this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`);
+  async loadCurrentSignalsForPresets(modal) {
+    try {
+      // Charger d'abord les presets sauvegardés
+      const presetsResponse = await this.apiClient.request('/api/diris/signals/frequency/presets');
+      const savedPresets = presetsResponse.success && presetsResponse.currentPresets 
+        ? presetsResponse.currentPresets 
+        : null;
+      
+      if (this.debugMode) {
+        if (savedPresets) {
+          console.log('[FREQ-DEBUG] ✅ Presets chargés:', Object.keys(savedPresets).length, 'signaux configurés');
         } else {
-          throw new Error('Aucun device trouvé');
+          console.log('[FREQ-DEBUG] ⚠️ Aucun preset sauvegardé trouvé, utilisation des valeurs par défaut');
         }
-      })
-      .then(response => {
-        if (response.success && response.frequencies) {
-          const signals = response.frequencies.map(freq => ({
+      }
+      
+      // Charger les signaux du premier device disponible comme modèle
+      const devicesResponse = await this.apiClient.request('/api/diris/devices');
+      
+      // Vérifier la structure de la réponse
+      let devices = [];
+      if (Array.isArray(devicesResponse)) {
+        devices = devicesResponse;
+      } else if (devicesResponse.value && Array.isArray(devicesResponse.value)) {
+        devices = devicesResponse.value;
+      }
+      
+      if (devices.length === 0) {
+        throw new Error('Aucun device trouvé');
+      }
+      
+      // Utiliser le premier device comme modèle
+      const firstDevice = devices[0];
+      const deviceId = firstDevice.deviceId;
+      
+      const response = await this.apiClient.request(`/api/diris/signals/frequency/device/${deviceId}`);
+      
+      if (response.success && response.frequencies) {
+        // Appliquer les presets sauvegardés aux signaux chargés
+        const signals = response.frequencies.map(freq => {
+          const signal = {
             ...freq,
             deviceId: 'preset' // Marquer comme preset universel
-          }));
-          this.renderPresetSignalsTable(modal, signals);
-        } else {
-          this.renderPresetSignalsTable(modal, []);
-        }
-
-        // Attach event listeners AFTER the content is rendered
-        modal.querySelectorAll('.collapsible-header-preset').forEach(header => {
-          header.addEventListener('click', () => {
-            const content = header.closest('.collapsible-group-preset').nextElementSibling;
-            const icon = header.querySelector('.chevron-icon');
-            content.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
-          });
+          };
+          
+          // Si des presets sont sauvegardés, appliquer les valeurs
+          if (savedPresets && savedPresets[freq.signal]) {
+            const preset = savedPresets[freq.signal];
+            // Les propriétés de l'API C# sont en PascalCase
+            signal.recordingFrequencyMs = preset.RecordingFrequencyMs || preset.recordingFrequencyMs;
+            signal.enabled = preset.Enabled !== undefined ? preset.Enabled : preset.enabled;
+          }
+          
+          return signal;
         });
-      })
-      .catch(error => {
-        console.error('Erreur chargement signaux:', error);
-        this.showError('Erreur lors du chargement des signaux');
+        
+        this.renderPresetSignalsTable(modal, signals);
+      } else {
+        this.renderPresetSignalsTable(modal, []);
+      }
+
+      // Attach event listeners AFTER the content is rendered
+      modal.querySelectorAll('.collapsible-header-preset').forEach(header => {
+        header.addEventListener('click', () => {
+          const content = header.closest('.collapsible-group-preset').nextElementSibling;
+          const icon = header.querySelector('.chevron-icon');
+          
+          if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            content.classList.add('expanded');
+            icon.style.transform = 'rotate(180deg)';
+          } else {
+            content.classList.remove('expanded');
+            content.classList.add('collapsed');
+            icon.style.transform = 'rotate(0deg)';
+          }
+        });
       });
+      
+      // Add event listeners to checkboxes to update counters dynamically
+      modal.querySelectorAll('.signal-enabled-preset').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+          this.updatePresetGroupCounters(modal);
+        });
+      });
+    } catch (error) {
+      console.error('Erreur chargement signaux:', error);
+      this.showError('Erreur lors du chargement des signaux');
+    }
+  }
+
+  updatePresetGroupCounters(modal) {
+    let totalChecked = 0;
+    let totalSignals = 0;
+    
+    // Update counters for each collapsible group
+    modal.querySelectorAll('.collapsible-group-preset').forEach(groupHeader => {
+      const contentBody = groupHeader.nextElementSibling;
+      const badge = groupHeader.querySelector('.group-counter-badge');
+      
+      if (contentBody && badge) {
+        // Count total checkboxes in this group
+        const allCheckboxes = contentBody.querySelectorAll('.signal-enabled-preset');
+        const checkedCheckboxes = contentBody.querySelectorAll('.signal-enabled-preset:checked');
+        
+        totalSignals += allCheckboxes.length;
+        totalChecked += checkedCheckboxes.length;
+        
+        badge.textContent = `${checkedCheckboxes.length} / ${allCheckboxes.length} activés`;
+      }
+    });
+    
+    // Update global counter in header
+    const totalSignalsElem = modal.querySelector('#totalSignals');
+    const totalSignalsEnabledElem = modal.querySelector('#totalSignalsEnabled');
+    if (totalSignalsElem) totalSignalsElem.textContent = totalSignals;
+    if (totalSignalsEnabledElem) totalSignalsEnabledElem.textContent = totalChecked;
   }
 
   renderPresetSignalsTable(modal, signals) {
@@ -1944,7 +2148,7 @@ export class DirisManager {
               <div class="flex justify-between items-center">
                 <span>${this.getUnitDescription(unit)}</span>
                 <div class="flex items-center gap-3">
-                  <span class="px-2 py-1 text-xs rounded-full bg-slate-600 text-slate-300 font-medium">
+                  <span class="group-counter-badge px-2 py-1 text-xs rounded-full bg-slate-600 text-slate-300 font-medium">
                     ${activeSignalsInGroup} / ${signalsInGroup.length} activés
                   </span>
                   <svg class="w-5 h-5 transform transition-transform duration-200 chevron-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
@@ -1953,7 +2157,7 @@ export class DirisManager {
             </td>
           </tr>
         </tbody>
-        <tbody class="collapsible-content hidden bg-slate-800">
+        <tbody class="collapsible-content collapsed bg-slate-800">
       `;
       signalsHtml += signalsInGroup.map(signal => `
         <tr class="preset-signal-row hover:bg-slate-600/50">
@@ -1981,6 +2185,13 @@ export class DirisManager {
     }
     
     tbody.innerHTML = signalsHtml;
+    
+    // Initialize counters after rendering
+    const totalEnabledSignals = signals.filter(s => s.enabled).length;
+    const totalSignalsEnabledElem = modal.querySelector('#totalSignalsEnabled');
+    if (totalSignalsEnabledElem) {
+      totalSignalsEnabledElem.textContent = totalEnabledSignals;
+    }
   }
 
   loadCurrentPresets(modal) {
@@ -2003,6 +2214,10 @@ export class DirisManager {
   }
 
   async savePresetConfiguration(modal) {
+    // Créer et afficher le spinner
+    const spinner = this.createLoadingSpinner('Sauvegarde de la configuration...');
+    document.body.appendChild(spinner);
+    
     try {
       // Collecter tous les signaux avec leurs nouvelles fréquences et leur statut
       const allSignals = [];
@@ -2017,6 +2232,7 @@ export class DirisManager {
       });
 
       if (allSignals.length === 0) {
+        spinner.remove();
         this.showWarning('⚠️ Aucun signal trouvé à configurer');
         return;
       }
@@ -2032,13 +2248,23 @@ export class DirisManager {
       });
       
       if (response.success) {
+        // Mise à jour du spinner
+        this.updateLoadingSpinner(spinner, 'Configuration sauvegardée !', 'success');
+        
         this.showSuccess(`✅ Preset universel sauvegardé (${allSignals.length} signaux configurés)`);
         this.addHistoryEvent('success', 'Preset universel configuré', `${allSignals.length} signaux configurés pour tous les devices`);
-        modal.remove();
+        
+        // Masquer le spinner avec un délai pour que l'utilisateur voie la confirmation
+        setTimeout(() => {
+          spinner.remove();
+          modal.remove();
+        }, 800);
       } else {
+        spinner.remove();
         this.showError(`❌ Erreur lors de la sauvegarde du preset: ${response.message}`);
       }
     } catch (error) {
+      spinner.remove();
       console.error('Erreur sauvegarde presets:', error);
       this.showError('Erreur lors de la sauvegarde de la configuration');
     }
@@ -2091,6 +2317,55 @@ export class DirisManager {
       notification.style.opacity = '0';
       setTimeout(() => notification.remove(), 300);
     }, 5000);
+  }
+
+  createLoadingSpinner(message = 'Chargement...') {
+    const spinner = document.createElement('div');
+    spinner.className = 'fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center';
+    spinner.innerHTML = `
+      <div class="bg-slate-800 rounded-2xl p-8 shadow-2xl border border-white/10 flex flex-col items-center gap-4 min-w-[300px]">
+        <div class="relative">
+          <div class="w-16 h-16 border-4 border-slate-600 border-t-brand-500 rounded-full animate-spin"></div>
+          <div class="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-brand-400 rounded-full animate-spin" style="animation-duration: 1.5s;"></div>
+        </div>
+        <div class="text-center">
+          <p class="spinner-message text-white font-semibold text-lg">${message}</p>
+          <p class="spinner-submessage text-slate-400 text-sm mt-1">Veuillez patienter...</p>
+        </div>
+        <div class="spinner-icon text-4xl">⚙️</div>
+      </div>
+    `;
+    return spinner;
+  }
+
+  updateLoadingSpinner(spinner, message, status = 'loading') {
+    const messageElement = spinner.querySelector('.spinner-message');
+    const submessageElement = spinner.querySelector('.spinner-submessage');
+    const iconElement = spinner.querySelector('.spinner-icon');
+    
+    if (messageElement) {
+      messageElement.textContent = message;
+    }
+    
+    if (status === 'success') {
+      if (submessageElement) {
+        submessageElement.textContent = 'Opération réussie !';
+        submessageElement.classList.remove('text-slate-400');
+        submessageElement.classList.add('text-green-400');
+      }
+      if (iconElement) {
+        iconElement.textContent = '✅';
+      }
+    } else if (status === 'error') {
+      if (submessageElement) {
+        submessageElement.textContent = 'Une erreur est survenue';
+        submessageElement.classList.remove('text-slate-400');
+        submessageElement.classList.add('text-red-400');
+      }
+      if (iconElement) {
+        iconElement.textContent = '❌';
+      }
+    }
   }
 
   /**
