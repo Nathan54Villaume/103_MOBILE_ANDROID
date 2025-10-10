@@ -7,17 +7,18 @@ using Dapper;
 namespace API_ATF_MOBILE.Services;
 
 /// <summary>
-/// Service de scheduling séparé pour les signaux DIRIS
-/// Chaque signal a son propre timer indépendant basé sur sa fréquence d'enregistrement
+/// Service DIRIS unifié qui combine :
+/// - Acquisition respectant RecordingFrequencyMs (de DirisSignalSchedulerService)
+/// - Toutes les fonctionnalités de monitoring et métriques (de DirisAcquisitionService)
 /// </summary>
-public class DirisSignalSchedulerService : BackgroundService
+public class DirisUnifiedAcquisitionService : BackgroundService
 {
     private readonly IDeviceRegistry _deviceRegistry;
     private readonly IDeviceReader _deviceReader;
     private readonly IMeasurementWriter _measurementWriter;
     private readonly ISystemMetricsCollector _metricsCollector;
-    private readonly ILogger<DirisSignalSchedulerService> _logger;
-    private readonly DirisAcquisitionOptions _options;
+    private readonly ILogger<DirisUnifiedAcquisitionService> _logger;
+    private DirisAcquisitionOptions _options;
     private readonly DirisAcquisitionControlService _controlService;
     private readonly string _connectionString;
 
@@ -29,13 +30,18 @@ public class DirisSignalSchedulerService : BackgroundService
     private DateTime _lastFrequencyRefresh = DateTime.MinValue;
     private readonly TimeSpan _frequencyRefreshInterval = TimeSpan.FromMinutes(5);
 
-    public DirisSignalSchedulerService(
+    // Health tracking (de DirisAcquisitionService)
+    private DateTime _lastSuccessfulCycle = DateTime.UtcNow;
+    private int _consecutiveErrors = 0;
+    private int _totalCyclesCompleted = 0;
+
+    public DirisUnifiedAcquisitionService(
         IDeviceRegistry deviceRegistry,
         IDeviceReader deviceReader,
         IMeasurementWriter measurementWriter,
         ISystemMetricsCollector metricsCollector,
-        ILogger<DirisSignalSchedulerService> logger,
-        IOptions<DirisAcquisitionOptions> options,
+        ILogger<DirisUnifiedAcquisitionService> logger,
+        IOptionsMonitor<DirisAcquisitionOptions> optionsMonitor,
         DirisAcquisitionControlService controlService,
         IConfiguration configuration)
     {
@@ -44,17 +50,26 @@ public class DirisSignalSchedulerService : BackgroundService
         _measurementWriter = measurementWriter;
         _metricsCollector = metricsCollector;
         _logger = logger;
-        _options = options.Value;
         _controlService = controlService;
+        _options = optionsMonitor.CurrentValue;
         _connectionString = configuration.GetConnectionString("SqlAiAtr")
             ?? throw new InvalidOperationException("ConnectionStrings:SqlAiAtr manquante");
+
+        optionsMonitor.OnChange(newOptions =>
+        {
+            _logger.LogInformation("DIRIS configuration reloaded. New Poll Interval: {Interval}ms, Parallelism: {Parallelism}",
+                newOptions.DefaultPollIntervalMs, newOptions.Parallelism);
+            _options = newOptions;
+        });
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("========================================");
-        _logger.LogInformation("DIRIS Signal Scheduler service STARTED");
-        _logger.LogInformation("Using individual timers for each signal");
+        _logger.LogInformation("DIRIS Unified Acquisition service STARTED");
+        _logger.LogInformation("Combining signal-based scheduling with comprehensive monitoring");
+        _logger.LogInformation("Parallelism: {Parallelism}, Request Timeout: {Timeout}ms", 
+            _options.Parallelism, _options.RequestTimeoutMs);
         _logger.LogInformation("========================================");
 
         while (!stoppingToken.IsCancellationRequested)
@@ -65,24 +80,44 @@ public class DirisSignalSchedulerService : BackgroundService
                 if (_controlService.IsRunning)
                 {
                     await RefreshSignalTimersAsync(stoppingToken);
+                    
+                    _totalCyclesCompleted++;
+                    _lastSuccessfulCycle = DateTime.UtcNow;
+                    _consecutiveErrors = 0;
+                    
+                    // Log toutes les 100 cycles
+                    if (_totalCyclesCompleted % 100 == 0)
+                    {
+                        _logger.LogInformation("DIRIS Unified Acquisition: {Cycles} cycles completed, Active timers: {Timers}, Last success: {LastSuccess}", 
+                            _totalCyclesCompleted, _signalTimers.Count, _lastSuccessfulCycle);
+                    }
                 }
                 else
                 {
                     _logger.LogDebug("Acquisition is PAUSED by control service");
                 }
 
-                // Attendre avant la prochaine vérification
+                // Attendre avant la prochaine vérification (plus court pour réactivité)
                 await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation("DIRIS Signal Scheduler service is STOPPING");
+                _logger.LogInformation("DIRIS Unified Acquisition service is STOPPING (CancellationRequested)");
                 break;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in DIRIS Signal Scheduler service");
-                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                _consecutiveErrors++;
+                _logger.LogError(ex, "!!! ERROR in DIRIS unified acquisition cycle {CycleNumber} (consecutive errors: {ConsecutiveErrors}) !!!", 
+                    _totalCyclesCompleted + 1, _consecutiveErrors);
+                
+                if (_consecutiveErrors >= 10)
+                {
+                    _logger.LogCritical("!!! CRITICAL: {ConsecutiveErrors} consecutive errors in DIRIS unified acquisition. Last success: {LastSuccess} !!!", 
+                        _consecutiveErrors, _lastSuccessfulCycle);
+                }
+                
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
 
@@ -90,7 +125,9 @@ public class DirisSignalSchedulerService : BackgroundService
         await StopAllTimersAsync();
         
         _logger.LogInformation("========================================");
-        _logger.LogInformation("DIRIS Signal Scheduler service STOPPED");
+        _logger.LogInformation("DIRIS Unified Acquisition service STOPPED");
+        _logger.LogInformation("Total cycles completed: {Cycles}, Last success: {LastSuccess}", 
+            _totalCyclesCompleted, _lastSuccessfulCycle);
         _logger.LogInformation("========================================");
     }
 
@@ -240,7 +277,8 @@ public class DirisSignalSchedulerService : BackgroundService
                 mapping.Signal, mapping.Signal, device.DeviceId);
 
             // Lire le device (le service de lecture retourne toutes les mesures du device)
-            var reading = await _deviceReader.ReadAsync(device);
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(_options.RequestTimeoutMs));
+            var reading = await _deviceReader.ReadAsync(device, cts.Token);
             
             if (reading.IsSuccess)
             {
@@ -275,6 +313,12 @@ public class DirisSignalSchedulerService : BackgroundService
                     mapping.Signal, device.DeviceId, reading.ErrorMessage);
                 _metricsCollector.RecordFailedReading(device.DeviceId, reading.ErrorMessage ?? "Unknown error");
             }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("[SIGNAL {Signal}] Timeout while reading from device {DeviceId} ({IpAddress}) after {Timeout}ms",
+                mapping.Signal, device.DeviceId, device.IpAddress, _options.RequestTimeoutMs);
+            _metricsCollector.RecordFailedReading(device.DeviceId, "Request timed out");
         }
         catch (Exception ex)
         {
@@ -322,12 +366,13 @@ public class DirisSignalSchedulerService : BackgroundService
     }
 
     /// <summary>
-    /// Obtient les statistiques du scheduler
+    /// Obtient les statistiques complètes du service unifié
     /// </summary>
-    public object GetSchedulerStats()
+    public object GetServiceStats()
     {
         return new
         {
+            // Statistiques du scheduler
             ActiveTimers = _signalTimers.Count,
             CachedFrequencies = _signalFrequencies.Count,
             LastFrequencyRefresh = _lastFrequencyRefresh,
@@ -335,7 +380,40 @@ public class DirisSignalSchedulerService : BackgroundService
             TimersByFrequency = _signalTimers.Keys
                 .Select(key => new { Signal = key, Frequency = GetSignalFrequency(key, key.Split('.')[1]) })
                 .GroupBy(t => t.Frequency)
-                .ToDictionary(g => g.Key, g => g.Count())
+                .ToDictionary(g => g.Key, g => g.Count()),
+            
+            // Statistiques de health tracking (de DirisAcquisitionService)
+            TotalCyclesCompleted = _totalCyclesCompleted,
+            LastSuccessfulCycle = _lastSuccessfulCycle,
+            ConsecutiveErrors = _consecutiveErrors,
+            IsHealthy = _consecutiveErrors < _options.MaxConsecutiveErrors,
+            
+            // Configuration
+            Parallelism = _options.Parallelism,
+            RequestTimeoutMs = _options.RequestTimeoutMs,
+            MaxConsecutiveErrors = _options.MaxConsecutiveErrors
+        };
+    }
+
+    /// <summary>
+    /// Obtient l'état de santé du service
+    /// </summary>
+    public object GetHealthStatus()
+    {
+        var isHealthy = _consecutiveErrors < _options.MaxConsecutiveErrors;
+        var lastSuccessAge = DateTime.UtcNow - _lastSuccessfulCycle;
+        
+        return new
+        {
+            IsHealthy = isHealthy,
+            Status = isHealthy ? "Healthy" : "Unhealthy",
+            LastSuccessfulCycle = _lastSuccessfulCycle,
+            LastSuccessAgeSeconds = lastSuccessAge.TotalSeconds,
+            ConsecutiveErrors = _consecutiveErrors,
+            MaxConsecutiveErrors = _options.MaxConsecutiveErrors,
+            TotalCyclesCompleted = _totalCyclesCompleted,
+            ActiveTimers = _signalTimers.Count,
+            IsRunning = _controlService.IsRunning
         };
     }
 }

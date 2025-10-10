@@ -55,8 +55,8 @@ builder.Services.AddSqlServerStorage(builder.Configuration);
 // 3.3) DIRIS Services - Acquisition et Métriques
 builder.Services.Configure<DirisAcquisitionOptions>(builder.Configuration.GetSection(DirisAcquisitionOptions.SectionName));
 builder.Services.AddSingleton<DirisAcquisitionControlService>();
-builder.Services.AddHostedService<DirisAcquisitionService>();
-builder.Services.AddHostedService<DirisSignalSchedulerService>(); // Nouveau service avec scheduling séparé
+// ✅ Service unifié qui combine le meilleur des deux services précédents
+builder.Services.AddHostedService<DirisUnifiedAcquisitionService>(); // Respecte RecordingFrequencyMs + toutes les fonctionnalités
 builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollector>();
 
 // 3.4) DIRIS Services - Data Retention

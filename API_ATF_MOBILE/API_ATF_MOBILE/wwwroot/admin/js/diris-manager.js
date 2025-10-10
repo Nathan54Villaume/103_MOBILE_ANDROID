@@ -2284,6 +2284,78 @@ export class DirisManager {
     return { signals: presets };
   }
 
+  // ========================================
+  // Méthodes de contrôle (cohérence et alertes)
+  // ========================================
+  resetCoherence() {
+    if (confirm('Réinitialiser le calcul de cohérence ?\n\n• Les statistiques seront recalculées depuis maintenant\n• L\'historique précédent sera ignoré\n• Nouveau point de départ pour le score')) {
+      // Marquer le nouveau point de départ
+      this.coherenceStartTime = new Date().toISOString();
+      localStorage.setItem('dirisCoherenceStartTime', this.coherenceStartTime);
+      
+      // Réinitialiser les KPIs
+      document.getElementById('coherenceQuality').textContent = '-%';
+      document.getElementById('coherenceQuality').className = 'text-2xl font-bold text-slate-400';
+      
+      document.getElementById('coherenceFrequency').textContent = '-';
+      document.getElementById('coherenceFrequency').className = 'text-sm text-slate-400';
+      
+      document.getElementById('coherenceGaps').innerHTML = '<p class="text-center text-slate-400 py-4">Données réinitialisées</p>';
+      
+      // Nettoyer les écarts
+      this.clearGaps();
+      
+      this.showSuccess('✅ Nouveau point de départ défini pour le calcul de cohérence');
+      this.addHistoryEvent('info', 'Cohérence réinitialisée', 'Nouveau calcul depuis ' + new Date(this.coherenceStartTime).toLocaleString());
+      
+      // Recharger immédiatement avec le nouveau point de départ
+      this.loadCoherenceStats();
+    }
+  }
+
+  async clearCoherenceData() {
+    if (confirm('⚠️ ATTENTION : Supprimer les données de cohérence de la base ?\n\n' +
+                '• Cela va supprimer les mesures anciennes\n' +
+                '• Seules les 5 dernières minutes seront conservées\n' +
+                '• Le score de cohérence sera recalculé\n\n' +
+                'Continuer ?')) {
+      
+      try {
+        const response = await this.apiClient.request('/api/diris/coherence/clear-data?minutesToKeep=5', { method: 'POST' });
+        
+        if (response.success) {
+          this.showSuccess('✅ Données de cohérence nettoyées');
+          this.addHistoryEvent('success', 'Nettoyage cohérence', 'Données anciennes supprimées (conservé 5min)');
+          
+          // Recharger les données
+          this.loadCoherenceStats();
+        } else {
+          this.addHistoryEvent('error', 'Erreur nettoyage', response.error || 'Erreur inconnue');
+        }
+      } catch (error) {
+        console.error('Erreur nettoyage cohérence:', error);
+        this.addHistoryEvent('error', 'Erreur nettoyage', error.message);
+      }
+    }
+  }
+
+  clearGaps() {
+    const container = document.getElementById('coherenceGaps');
+    if (container) {
+      container.innerHTML = '<p class="text-center text-green-400 py-4">✅ Affichage vidé (actualiser pour recharger)</p>';
+    }
+  }
+
+  clearAlerts() {
+    const container = document.getElementById('dirisAlertsList');
+    if (container) {
+      this.alerts = [];
+      container.innerHTML = '<p class="text-center text-slate-400 py-4">Aucune alerte récente</p>';
+      document.getElementById('dirisAlertsCount').textContent = '0';
+      this.showSuccess('Alertes vidées');
+    }
+  }
+
   showSuccess(message) {
     this.showNotification(message, 'success');
   }
