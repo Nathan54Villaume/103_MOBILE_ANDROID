@@ -2226,3 +2226,55 @@ export class DirisManager {
     }
 
     container.innerHTML = deviceStats.map(device => `
+      <div class="p-3 bg-white/5 rounded-lg border border-white/10">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-3">
+            <div class="status-dot ${device.enabled ? 'online' : 'offline'}"></div>
+            <div>
+              <p class="font-medium text-sm">${this.escapeHtml(device.name || `Device ${device.deviceId}`)}</p>
+              <p class="text-xs text-slate-400">${this.escapeHtml(device.ipAddress || 'N/A')}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="text-sm font-medium">${device.activeSignalCount} / ${device.totalSignalCount}</p>
+                <p class="text-xs text-slate-400">Signaux activés</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="window.dirisManager.testDevice(${device.deviceId})" 
+                      class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors" title="Tester la connexion">
+                🔍 Test
+              </button>
+              <button onclick="window.dirisManager.manageSignals(${device.deviceId})" 
+                      class="px-2 py-1 text-xs rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors" title="Gérer les signaux (activer/désactiver)">
+                🏷️ Signaux
+              </button>
+              <button onclick="window.dirisManager.toggleDevice(${device.deviceId}, ${!device.enabled})" 
+                      class="px-2 py-1 text-xs rounded ${device.enabled ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'} hover:opacity-80 transition-colors">
+                ${device.enabled ? '⏸️ Désactiver' : '▶️ Activer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  getUnitDescription(unit) {
+    const descriptions = {
+      'V': 'Tensions (V)',
+      'A': 'Courants (A)',
+      'Hz': 'Fréquence (Hz)',
+      'kW': 'Puissances Actives (kW)',
+      'kVAR': 'Puissances Réactives (kVAR)',
+      'kVA': 'Puissances Apparentes (kVA)',
+      '%': 'Facteurs de Puissance & THD (%)',
+      'kWh': 'Énergies (kWh)',
+      '': 'Autres'
+    };
+    return descriptions[unit] || `Autres (${unit})`;
+  }
+}
+
+// Make it globally accessible for inline onclick handlers
+window.dirisManager = null;
