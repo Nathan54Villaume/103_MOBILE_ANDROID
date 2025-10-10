@@ -747,7 +747,6 @@ function startPolling() {
                 await loadDashboard();
             } else if (state.currentSection === 'server') {
                 await updateServerMetrics();
-            } else if (state.currentSection === 'system') {
                 await updateSystemMetrics();
             } else if (state.currentSection === 'database') {
                 await updateDatabaseStatus();
