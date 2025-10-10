@@ -595,15 +595,21 @@ function updateLogsChart(logStats) {
     const ctx = document.getElementById('chartLogs');
     if (!ctx) return;
     
+    // Vérifier que logStats existe et a les propriétés attendues
+    if (!logStats || typeof logStats.InfoCount === 'undefined') {
+        console.warn('LogStats manquant ou invalide:', logStats);
+        return;
+    }
+    
     // Nouvelle logique basée sur la performance et les erreurs HTTP
     // Pour l'instant, on utilise les données existantes mais avec une nouvelle légende
-    const totalLogs = logStats.infoCount + logStats.warningCount + logStats.errorCount + logStats.criticalCount;
+    const totalLogs = logStats.InfoCount + logStats.WarningCount + logStats.ErrorCount + logStats.CriticalCount;
     
     // Estimation basée sur les niveaux existants (à améliorer avec de vraies données HTTP)
-    const fastRequests = Math.floor(logStats.infoCount * 0.7); // 70% des infos = requêtes rapides
-    const normalRequests = Math.floor(logStats.infoCount * 0.3); // 30% des infos = requêtes normales
-    const slowRequests = logStats.warningCount; // Warnings = requêtes lentes
-    const errorRequests = logStats.errorCount + logStats.criticalCount; // Erreurs = erreurs HTTP
+    const fastRequests = Math.floor(logStats.InfoCount * 0.7); // 70% des infos = requêtes rapides
+    const normalRequests = Math.floor(logStats.InfoCount * 0.3); // 30% des infos = requêtes normales
+    const slowRequests = logStats.WarningCount; // Warnings = requêtes lentes
+    const errorRequests = logStats.ErrorCount + logStats.CriticalCount; // Erreurs = erreurs HTTP
     
     // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.logs) {
