@@ -231,6 +231,10 @@ async function initApp() {
     
     // Démarrer le polling
     startPolling();
+    
+    // Exposer les fonctions pour les sous-onglets
+    window.updateS7Status = updateS7Status;
+    window.updateDatabaseStatus = updateDatabaseStatus;
 }
 
 function initNavigation() {
@@ -304,6 +308,7 @@ function updatePageTitle(section) {
     const titles = {
         dashboard: { title: 'Dashboard', subtitle: 'Vue d\'ensemble du système' },
         server: { title: 'Serveur', subtitle: 'Informations et métriques' },
+        connections: { title: 'Connexions', subtitle: 'PLC S7 et Bases de données' },
         database: { title: 'Bases de données', subtitle: 'État et statistiques' },
         s7: { title: 'PLC S7', subtitle: 'Connexion et variables' },
         diris: { title: 'DIRIS', subtitle: 'Acquisition et gestion des données' },
@@ -329,6 +334,21 @@ async function refreshCurrentSection() {
             case 'server':
                 await updateServerMetrics();
                 await updateSystemMetrics();
+                break;
+            case 'connections':
+                // Pour l'onglet Connexions, on rafraîchit selon le sous-onglet actif
+                const activeTab = document.querySelector('.connections-tab-btn.active');
+                if (activeTab) {
+                    const tabName = activeTab.getAttribute('data-connections-tab');
+                    if (tabName === 's7') {
+                        await updateS7Status();
+                    } else if (tabName === 'database') {
+                        await updateDatabaseStatus();
+                    }
+                } else {
+                    // Par défaut, rafraîchir S7 (premier onglet)
+                    await updateS7Status();
+                }
                 break;
             case 'database':
                 await updateDatabaseStatus();
@@ -777,6 +797,20 @@ function startPolling() {
             } else if (state.currentSection === 'server') {
                 await updateServerMetrics();
                 await updateSystemMetrics();
+            } else if (state.currentSection === 'connections') {
+                // Pour l'onglet Connexions, on rafraîchit selon le sous-onglet actif
+                const activeTab = document.querySelector('.connections-tab-btn.active');
+                if (activeTab) {
+                    const tabName = activeTab.getAttribute('data-connections-tab');
+                    if (tabName === 's7') {
+                        await updateS7Status();
+                    } else if (tabName === 'database') {
+                        await updateDatabaseStatus();
+                    }
+                } else {
+                    // Par défaut, rafraîchir S7 (premier onglet)
+                    await updateS7Status();
+                }
             } else if (state.currentSection === 'database') {
                 await updateDatabaseStatus();
             } else if (state.currentSection === 's7') {
