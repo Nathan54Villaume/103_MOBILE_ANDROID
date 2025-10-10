@@ -453,20 +453,22 @@ function updateCharts(data, systemData) {
     
     // Chart Statistiques Logs - Debug des données
     console.log('🔍 [DEBUG] Dashboard data:', data);
-    console.log('🔍 [DEBUG] LogStats:', data.LogStats);
+    console.log('🔍 [DEBUG] LogStats:', data.LogStats || data.logStats);
     
     // Vérifier que les données de logs existent avant d'appeler updateLogsChart
-    if (data && data.LogStats) {
-        updateLogsChart(data.LogStats);
+    // Note: C# sérialise LogStats en logStats (minuscule) en JSON
+    const logStats = data?.LogStats || data?.logStats;
+    if (data && logStats) {
+        updateLogsChart(logStats);
     } else {
         console.warn('⚠️ LogStats non disponible dans les données du dashboard');
         // Créer des données par défaut pour éviter l'erreur
         const defaultLogStats = {
-            TotalLogs: 0,
-            InfoCount: 0,
-            WarningCount: 0,
-            ErrorCount: 0,
-            CriticalCount: 0
+            totalLogs: 0,
+            infoCount: 0,
+            warningCount: 0,
+            errorCount: 0,
+            criticalCount: 0
         };
         updateLogsChart(defaultLogStats);
     }
@@ -613,20 +615,21 @@ function updateLogsChart(logStats) {
     if (!ctx) return;
     
     // Vérifier que logStats existe et a les propriétés attendues
-    if (!logStats || typeof logStats.InfoCount === 'undefined') {
+    // Note: JSON utilise la casse minuscule (infoCount, not InfoCount)
+    if (!logStats || typeof logStats.infoCount === 'undefined') {
         console.warn('LogStats manquant ou invalide:', logStats);
         return;
     }
     
     // Nouvelle logique basée sur la performance et les erreurs HTTP
     // Pour l'instant, on utilise les données existantes mais avec une nouvelle légende
-    const totalLogs = logStats.InfoCount + logStats.WarningCount + logStats.ErrorCount + logStats.CriticalCount;
+    const totalLogs = logStats.infoCount + logStats.warningCount + logStats.errorCount + logStats.criticalCount;
     
     // Estimation basée sur les niveaux existants (à améliorer avec de vraies données HTTP)
-    const fastRequests = Math.floor(logStats.InfoCount * 0.7); // 70% des infos = requêtes rapides
-    const normalRequests = Math.floor(logStats.InfoCount * 0.3); // 30% des infos = requêtes normales
-    const slowRequests = logStats.WarningCount; // Warnings = requêtes lentes
-    const errorRequests = logStats.ErrorCount + logStats.CriticalCount; // Erreurs = erreurs HTTP
+    const fastRequests = Math.floor(logStats.infoCount * 0.7); // 70% des infos = requêtes rapides
+    const normalRequests = Math.floor(logStats.infoCount * 0.3); // 30% des infos = requêtes normales
+    const slowRequests = logStats.warningCount; // Warnings = requêtes lentes
+    const errorRequests = logStats.errorCount + logStats.criticalCount; // Erreurs = erreurs HTTP
     
     // Si le graphique existe déjà, mettre à jour les données
     if (state.charts.logs) {
