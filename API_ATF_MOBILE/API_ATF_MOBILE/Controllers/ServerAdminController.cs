@@ -663,7 +663,7 @@ namespace API_ATF_MOBILE.Controllers
                     ServerMetrics = _serverMonitor.GetServerMetrics(),
                     DatabaseHealth = await _databaseHealth.CheckAllDatabasesAsync(),
                     S7Status = await _s7Monitor.GetConnectionStatusAsync(),
-                    LogStats = await _logReader.GetLogStatisticsAsync(),
+                    LogStats = await GetLogStatsSafely(),
                     Timestamp = DateTime.Now
                 };
 
@@ -673,6 +673,41 @@ namespace API_ATF_MOBILE.Controllers
             {
                 _logger.LogError(ex, "Erreur lors de la récupération du dashboard");
                 return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        private async Task<LogStatistics> GetLogStatsSafely()
+        {
+            try
+            {
+                if (_logReader == null)
+                {
+                    _logger.LogWarning("LogReaderService est null");
+                    return new LogStatistics
+                    {
+                        TotalLogs = 0,
+                        InfoCount = 0,
+                        WarningCount = 0,
+                        ErrorCount = 0,
+                        CriticalCount = 0,
+                        CollectedAt = DateTime.Now
+                    };
+                }
+                
+                return await _logReader.GetLogStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération des statistiques de logs");
+                return new LogStatistics
+                {
+                    TotalLogs = 0,
+                    InfoCount = 0,
+                    WarningCount = 0,
+                    ErrorCount = 0,
+                    CriticalCount = 0,
+                    CollectedAt = DateTime.Now
+                };
             }
         }
 
