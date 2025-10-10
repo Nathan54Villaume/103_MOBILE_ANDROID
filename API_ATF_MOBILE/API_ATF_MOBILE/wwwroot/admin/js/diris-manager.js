@@ -1802,9 +1802,9 @@ export class DirisManager {
             ...freq,
             deviceId: 'preset' // Marquer comme preset universel
           }));
-          this.renderSignalsTable(modal, signals);
+          this.renderSignalsTable(modal, "Preset Universel", signals);
         } else {
-          this.renderSignalsTable(modal, []);
+          this.renderSignalsTable(modal, "Preset Universel", []);
         }
       })
       .catch(error => {
@@ -1813,10 +1813,15 @@ export class DirisManager {
       });
   }
 
-  renderSignalsTable(modal, signals) {
+  renderSignalsTable(modal, deviceName, signals) {
     const tbody = modal.querySelector('#presetSignalsTableBody');
     const totalCount = modal.querySelector('#totalSignals');
+    const title = modal.querySelector('h3');
     
+    if (title) {
+        title.textContent = `⚙️ Configuration du Preset Universel - ${deviceName}`;
+    }
+
     totalCount.textContent = signals.length;
 
     // Group signals by unit
