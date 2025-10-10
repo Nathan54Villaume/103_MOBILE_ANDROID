@@ -1802,9 +1802,9 @@ export class DirisManager {
             ...freq,
             deviceId: 'preset' // Marquer comme preset universel
           }));
-          this.renderSignalsTable(modal, "Preset Universel", signals);
+          this.renderPresetSignalsTable(modal, signals);
         } else {
-          this.renderSignalsTable(modal, "Preset Universel", []);
+          this.renderPresetSignalsTable(modal, []);
         }
       })
       .catch(error => {
@@ -1813,15 +1813,10 @@ export class DirisManager {
       });
   }
 
-  renderSignalsTable(modal, deviceName, signals) {
+  renderPresetSignalsTable(modal, signals) {
     const tbody = modal.querySelector('#presetSignalsTableBody');
     const totalCount = modal.querySelector('#totalSignals');
-    const title = modal.querySelector('h3');
     
-    if (title) {
-        title.textContent = `⚙️ Configuration du Preset Universel - ${deviceName}`;
-    }
-
     totalCount.textContent = signals.length;
 
     // Group signals by unit
@@ -1848,144 +1843,36 @@ export class DirisManager {
 
     let signalsHtml = '';
     for (const unit of sortedUnits) {
-      const signalsInGroup = groupedSignals[unit];
-      const activeSignalsInGroup = signalsInGroup.filter(s => s.enabled).length;
-
       signalsHtml += `
-        <tbody class="collapsible-group border-b-8 border-slate-800">
-          <tr class="collapsible-header bg-white/10 cursor-pointer hover:bg-white/20 transition-colors">
-            <td colspan="6" class="px-3 py-3 text-sm font-semibold text-white">
-              <div class="flex justify-between items-center">
-                <span>${this.getUnitDescription(unit)}</span>
-                <span class="px-2 py-1 text-xs rounded-full bg-slate-700 text-slate-300">
-                  ${activeSignalsInGroup} / ${signalsInGroup.length} activés
-                </span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-        <tbody class="collapsible-content hidden">
+        <tr class="bg-slate-600/50 sticky top-0">
+          <td colspan="5" class="px-3 py-2 text-sm font-semibold text-white">${this.getUnitDescription(unit)}</td>
+        </tr>
       `;
-      signalsHtml += signalsInGroup.map(tag => `
-        <tr class="border-b border-white/5 hover:bg-white/5">
-          <td class="px-3 py-2 font-mono text-xs">${this.escapeHtml(tag.signal)}</td>
-          <td class="px-3 py-2">${this.escapeHtml(tag.description || 'N/A')}</td>
-          <td class="px-3 py-2">${this.escapeHtml(tag.unit || '')}</td>
-          <td class="px-3 py-2">${tag.scale}</td>
-          <td class="px-3 py-2 text-center">
-            <select class="signal-frequency w-full px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white" data-signal="${this.escapeHtml(tag.signal)}">
-              <option value="1000" ${tag.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
-              <option value="2000" ${tag.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
-              <option value="5000" ${tag.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
-              <option value="10000" ${tag.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
-              <option value="30000" ${tag.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
-              <option value="60000" ${tag.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
-              <option value="300000" ${tag.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
-              <option value="600000" ${tag.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
+      signalsHtml += groupedSignals[unit].map(signal => `
+        <tr class="hover:bg-slate-600/50">
+          <td class="px-4 py-3 text-sm text-white font-mono">${signal.signal}</td>
+          <td class="px-4 py-3 text-sm text-slate-300">${signal.description || '-'}</td>
+          <td class="px-4 py-3 text-sm text-slate-400">${signal.unit || '-'}</td>
+          <td class="px-4 py-3">
+            <select class="signal-frequency-select px-2 py-1 bg-slate-700 border border-slate-500 rounded text-white text-sm" data-signal="${signal.signal}">
+              <option value="1000" ${signal.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
+              <option value="2000" ${signal.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
+              <option value="5000" ${signal.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
+              <option value="10000" ${signal.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
+              <option value="30000" ${signal.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
+              <option value="60000" ${signal.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
+              <option value="300000" ${signal.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
+              <option value="600000" ${signal.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
             </select>
           </td>
-          <td class="px-3 py-2 text-center">
-            <input type="checkbox" class="signal-enabled" data-signal="${this.escapeHtml(tag.signal)}" ${tag.enabled ? 'checked' : ''}>
+          <td class="px-4 py-3 text-center">
+            <input type="checkbox" class="signal-enabled-preset" data-signal="${signal.signal}" ${signal.enabled ? 'checked' : ''}>
           </td>
         </tr>
       `).join('');
-      signalsHtml += `</tbody>`;
     }
-
-    modal.innerHTML = `
-      <div class="bg-slate-800 rounded-xl p-6 w-full max-w-6xl max-h-[90vh] border border-white/10 overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-lg font-semibold">Gestion des signaux - ${this.escapeHtml(device.name)}</h3>
-            <p class="text-sm text-slate-400">${this.escapeHtml(device.ipAddress)} • ${tagMappings.length} signaux configurés</p>
-          </div>
-          <button class="close-modal text-slate-400 hover:text-white text-xl">✕</button>
-        </div>
-        
-        <div class="flex gap-4 mb-4">
-          <button id="btnSelectAll" class="px-3 py-2 text-sm rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 transition-colors">
-            ✅ Tout sélectionner
-          </button>
-          <button id="btnDeselectAll" class="px-3 py-2 text-sm rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 transition-colors">
-            ❌ Tout désélectionner
-          </button>
-          <button id="btnApplyPresets" class="px-3 py-2 text-sm rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border border-indigo-500/30 transition-colors">
-            🎯 Appliquer presets
-          </button>
-        </div>
-        
-        <div class="overflow-y-auto max-h-[60vh] border border-white/10 rounded-lg">
-          <table class="w-full text-sm">
-            <thead class="bg-white/5 sticky top-0 z-10">
-              <tr>
-                <th class="px-3 py-2 text-left">Signal</th>
-                <th class="px-3 py-2 text-left">Description</th>
-                <th class="px-3 py-2 text-left">Unité</th>
-                <th class="px-3 py-2 text-left">Échelle</th>
-                <th class="px-3 py-2 text-center">Fréquence</th>
-                <th class="px-3 py-2 text-center">Activé</th>
-              </tr>
-            </thead>
-            <tbody id="signalsTableBody">
-              ${signalsHtml}
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="flex justify-between items-center mt-4 pt-4 border-t border-white/10">
-          <div class="text-sm text-slate-400">
-            <span id="enabledCount">${tagMappings.filter(t => t.enabled).length}</span> / ${tagMappings.length} signaux activés
-          </div>
-          <div class="flex gap-2">
-            <button id="btnSaveSignals" class="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg text-sm transition-colors">
-              💾 Sauvegarder
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
     
-    document.body.appendChild(modal);
-    
-    // Event listeners
-    modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.remove();
-    });
-    
-    // Collapsible sections
-    modal.querySelectorAll('.collapsible-header').forEach(header => {
-      header.addEventListener('click', () => {
-        const content = header.closest('.collapsible-group').nextElementSibling;
-        content.classList.toggle('hidden');
-      });
-    });
-    
-    // Gestion des boutons
-    modal.querySelector('#btnSelectAll').addEventListener('click', () => {
-      modal.querySelectorAll('.signal-enabled').forEach(cb => cb.checked = true);
-      this.updateEnabledCount(modal);
-    });
-    
-    modal.querySelector('#btnDeselectAll').addEventListener('click', () => {
-      modal.querySelectorAll('.signal-enabled').forEach(cb => cb.checked = false);
-      this.updateEnabledCount(modal);
-    });
-    
-    modal.querySelector('#btnSaveSignals').addEventListener('click', () => {
-      this.saveSignalSettings(device.deviceId, modal);
-    });
-    
-    modal.querySelector('#btnApplyPresets').addEventListener('click', () => {
-      this.applyFrequencyPresets(device.deviceId, modal);
-    });
-    
-    // Mise à jour du compteur
-    modal.querySelectorAll('.signal-enabled').forEach(cb => {
-      cb.addEventListener('change', () => this.updateEnabledCount(modal));
-    });
-    
-    this.updateEnabledCount(modal);
+    tbody.innerHTML = signalsHtml;
   }
 
   loadCurrentPresets(modal) {
