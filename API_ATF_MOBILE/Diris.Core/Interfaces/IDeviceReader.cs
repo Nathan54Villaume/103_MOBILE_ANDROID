@@ -10,7 +10,7 @@ public interface IDeviceReader
     /// <summary>
     /// Reads data from a specific device
     /// </summary>
-    Task<DeviceReading> ReadAsync(Device device);
+    Task<DeviceReading> ReadAsync(Device device, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Checks if a device is healthy and reachable

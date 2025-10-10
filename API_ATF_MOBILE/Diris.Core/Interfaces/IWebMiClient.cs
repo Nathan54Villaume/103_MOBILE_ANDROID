@@ -1,7 +1,7 @@
 namespace Diris.Core.Interfaces;
 
 /// <summary>
-/// WebMI client interface for communicating with DIRIS devices
+/// WebMI client interface for DIRIS devices
 /// </summary>
 public interface IWebMiClient
 {
@@ -11,7 +11,7 @@ public interface IWebMiClient
     /// <param name="endpoint">The WebMI endpoint URL</param>
     /// <param name="addresses">List of WebMI addresses to read</param>
     /// <returns>Dictionary of address -> value mappings</returns>
-    Task<Dictionary<string, double?>> ReadAsync(string endpoint, IEnumerable<string> addresses);
+    Task<Dictionary<string, double?>> ReadAsync(string endpoint, IEnumerable<string> addresses, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Tests connectivity to a WebMI endpoint

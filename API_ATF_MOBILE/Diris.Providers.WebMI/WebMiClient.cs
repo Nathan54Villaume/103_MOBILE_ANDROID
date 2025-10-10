@@ -32,7 +32,7 @@ public class WebMiClient : IWebMiClient
         };
     }
 
-    public async Task<Dictionary<string, double?>> ReadAsync(string endpoint, IEnumerable<string> addresses)
+    public async Task<Dictionary<string, double?>> ReadAsync(string endpoint, IEnumerable<string> addresses, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -50,10 +50,10 @@ public class WebMiClient : IWebMiClient
             var content = new StringContent(body, Encoding.UTF8, "application/x-www-form-urlencoded");
 
             // Send the request
-            var response = await _httpClient.PostAsync(endpoint, content);
+            var response = await _httpClient.PostAsync(endpoint, content, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var jsonContent = await response.Content.ReadAsStringAsync();
+            var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
             var webMiResponse = JsonSerializer.Deserialize<WebMiResponse>(jsonContent, _jsonOptions);
 
             if (webMiResponse?.Result == null)

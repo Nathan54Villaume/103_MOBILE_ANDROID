@@ -1149,10 +1149,17 @@
                   </div>
                   <div>
                     <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
-                      Taille max des lots
-                      <span class="config-info-icon" data-tooltip="Nombre maximum de mesures traitées par lot en base. Plus élevé = plus efficace mais plus de mémoire. Recommandé: 500-2000">ℹ️</span>
+                      Timeout par requête (ms)
+                      <span class="config-info-icon" data-tooltip="Délai maximum d'attente pour une réponse d'un device. Empêche le blocage sur un appareil lent. Recommandé: 1000-5000ms">ℹ️</span>
                     </label>
-                    <input type="number" id="configMaxBatch" min="100" max="5000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="1000">
+                    <input type="number" id="configRequestTimeout" min="500" max="15000" step="100" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="2000">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1 flex items-center gap-2">
+                      Erreurs max. consécutives
+                      <span class="config-info-icon" data-tooltip="Nombre d'échecs de lecture consécutifs avant de marquer un device comme 'en erreur'. Recommandé: 3-10">ℹ️</span>
+                    </label>
+                    <input type="number" id="configMaxErrors" min="1" max="50" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm" value="5">
                   </div>
                 </div>
               </div>

@@ -14,7 +14,7 @@ public class DirisAcquisitionService : BackgroundService
     private readonly IMeasurementWriter _measurementWriter;
     private readonly ISystemMetricsCollector _metricsCollector;
     private readonly ILogger<DirisAcquisitionService> _logger;
-    private readonly DirisAcquisitionOptions _options;
+    private DirisAcquisitionOptions _options;
     private readonly DirisAcquisitionControlService _controlService;
     
     // Health tracking
@@ -28,7 +28,7 @@ public class DirisAcquisitionService : BackgroundService
         IMeasurementWriter measurementWriter,
         ISystemMetricsCollector metricsCollector,
         ILogger<DirisAcquisitionService> logger,
-        IOptions<DirisAcquisitionOptions> options,
+        IOptionsMonitor<DirisAcquisitionOptions> optionsMonitor,
         DirisAcquisitionControlService controlService)
     {
         _deviceRegistry = deviceRegistry;
@@ -36,8 +36,15 @@ public class DirisAcquisitionService : BackgroundService
         _measurementWriter = measurementWriter;
         _metricsCollector = metricsCollector;
         _logger = logger;
-        _options = options.Value;
         _controlService = controlService;
+        _options = optionsMonitor.CurrentValue;
+
+        optionsMonitor.OnChange(newOptions =>
+        {
+            _logger.LogInformation("DIRIS configuration reloaded. New Poll Interval: {Interval}ms, Parallelism: {Parallelism}",
+                newOptions.DefaultPollIntervalMs, newOptions.Parallelism);
+            _options = newOptions;
+        });
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -160,7 +167,10 @@ public class DirisAcquisitionService : BackgroundService
             _logger.LogDebug("[DEVICE {DeviceId}] Reading from {Name} ({IpAddress})...", 
                 device.DeviceId, device.Name, device.IpAddress);
             
-            var reading = await _deviceReader.ReadAsync(device);
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(_options.RequestTimeoutMs));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+            var reading = await _deviceReader.ReadAsync(device, linkedCts.Token);
             var duration = DateTime.UtcNow - startTime;
 
             // Update device last seen
@@ -196,6 +206,12 @@ public class DirisAcquisitionService : BackgroundService
                     device.DeviceId, device.Name, reading.ErrorMessage);
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("[DEVICE {DeviceId}] !!! Timeout while reading from device {Name} ({IpAddress}) after {Timeout}ms",
+                device.DeviceId, device.Name, device.IpAddress, _options.RequestTimeoutMs);
+            _metricsCollector.RecordFailedReading(device.DeviceId, "Request timed out");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[DEVICE {DeviceId}] !!! EXCEPTION while processing device {Name} ({IpAddress})", 
@@ -228,13 +244,13 @@ public class DirisAcquisitionOptions
     public int DefaultPollIntervalMs { get; set; } = 1500;
 
     /// <summary>
-    /// Maximum batch size for measurements
+    /// Timeout for each device request in milliseconds
     /// </summary>
-    public int MaxBatchPoints { get; set; } = 1000;
+    public int RequestTimeoutMs { get; set; } = 2000;
 
     /// <summary>
-    /// Jitter percentage for poll intervals
+    /// Max consecutive errors before flagging a device as unavailable
     /// </summary>
-    public double JitterPct { get; set; } = 0.1;
+    public int MaxConsecutiveErrors { get; set; } = 5;
 }
 

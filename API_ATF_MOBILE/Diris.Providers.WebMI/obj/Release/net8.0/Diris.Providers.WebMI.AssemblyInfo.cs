@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Diris.Providers.WebMI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9e2bf86f741ff39b9749eb0711d1940445e2d184")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d9e3b516332365a75a4dec2d5ac0ac5dc6db702e")]
 [assembly: System.Reflection.AssemblyProductAttribute("Diris.Providers.WebMI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Diris.Providers.WebMI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

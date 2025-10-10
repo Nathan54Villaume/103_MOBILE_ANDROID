@@ -25,7 +25,7 @@ public class WebMiReaderSimple : IDeviceReader
         _logger = logger;
     }
 
-    public async Task<DeviceReading> ReadAsync(Device device)
+    public async Task<DeviceReading> ReadAsync(Device device, CancellationToken cancellationToken = default)
     {
         var startTime = DateTime.UtcNow;
         var reading = new DeviceReading
@@ -49,7 +49,7 @@ public class WebMiReaderSimple : IDeviceReader
 
             // Read from WebMI
             var addresses = enabledMappings.Select(t => t.WebMiKey).ToList();
-            var webMiResults = await _webMiClient.ReadAsync(device.GetWebMiEndpoint(), addresses);
+            var webMiResults = await _webMiClient.ReadAsync(device.GetWebMiEndpoint(), addresses, cancellationToken);
 
             // Convert to measurements
             var measurements = new List<Measurement>();

@@ -1,5 +1,6 @@
 using Diris.Core.Interfaces;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
 
 namespace API_ATF_MOBILE.Services;
 
@@ -11,23 +12,32 @@ public class DirisDataRetentionService : BackgroundService
     private readonly ILogger<DirisDataRetentionService> _logger;
     private readonly IConfiguration _configuration;
     private readonly IMeasurementWriter _measurementWriter;
-    private readonly Timer _cleanupTimer;
-    private readonly DirisDataRetentionOptions _options;
+    private Timer _cleanupTimer;
+    private DirisDataRetentionOptions _options;
 
     public DirisDataRetentionService(
         ILogger<DirisDataRetentionService> logger,
         IConfiguration configuration,
-        IMeasurementWriter measurementWriter)
+        IMeasurementWriter measurementWriter,
+        IOptionsMonitor<DirisDataRetentionOptions> optionsMonitor)
     {
         _logger = logger;
         _configuration = configuration;
         _measurementWriter = measurementWriter;
-        
-        _options = new DirisDataRetentionOptions();
-        _configuration.GetSection("DataRetention").Bind(_options);
+        _options = optionsMonitor.CurrentValue;
 
         // Créer un timer pour le nettoyage quotidien
         _cleanupTimer = new Timer(ExecuteCleanup, null, Timeout.Infinite, Timeout.Infinite);
+
+        optionsMonitor.OnChange(newOptions =>
+        {
+            _logger.LogInformation("DIRIS Data Retention configuration reloaded. New Retention: {RetentionDays} days, Cleanup Hour: {CleanupHour}",
+                newOptions.RetentionDays, newOptions.CleanupHour);
+            _options = newOptions;
+            
+            // Re-programmer le nettoyage avec les nouvelles options
+            ScheduleNextCleanup();
+        });
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

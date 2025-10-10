@@ -60,6 +60,7 @@ builder.Services.AddHostedService<DirisSignalSchedulerService>(); // Nouveau ser
 builder.Services.AddSingleton<ISystemMetricsCollector, DirisSystemMetricsCollector>();
 
 // 3.4) DIRIS Services - Data Retention
+builder.Services.Configure<DirisDataRetentionOptions>(builder.Configuration.GetSection("DataRetention"));
 builder.Services.AddSingleton<DirisDataRetentionService>();
 builder.Services.AddHostedService<DirisDataRetentionService>(provider => provider.GetRequiredService<DirisDataRetentionService>());
 
