@@ -1759,6 +1759,14 @@ export class DirisManager {
         </div>
         
         <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div class="flex justify-between items-center mb-4">
+            <div class="text-sm text-slate-400">
+              Configuration des presets pour les signaux universels.
+            </div>
+            <div class="text-sm text-slate-400">
+              <span id="totalSignals">0</span> signaux au total
+            </div>
+          </div>
           <div class="relative mb-4">
             <input type="text" id="presetSearchInput" class="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Rechercher un signal par nom ou description...">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -2227,37 +2235,72 @@ export class DirisManager {
 
     container.innerHTML = deviceStats.map(device => `
       <div class="p-3 bg-white/5 rounded-lg border border-white/10">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-3">
-            <div class="status-dot ${device.enabled ? 'online' : 'offline'}"></div>
+        <div class="flex items-center justify-between">
+          <div class="flex-1 grid grid-cols-5 gap-4">
             <div>
-              <p class="font-medium text-sm">${this.escapeHtml(device.name || `Device ${device.deviceId}`)}</p>
-              <p class="text-xs text-slate-400">${this.escapeHtml(device.ipAddress || 'N/A')}</p>
+              <p class="text-xs text-slate-400">Device</p>
+              <p class="font-bold text-brand-400">${device.deviceId}</p>
+              <p class="text-xs text-slate-500">${device.deviceName || 'Device ' + device.deviceId}</p>
             </div>
-          </div>
-          <div class="flex items-center gap-4">
-            <div class="text-right">
-                <p class="text-sm font-medium">${device.activeSignalCount} / ${device.totalSignalCount}</p>
-                <p class="text-xs text-slate-400">Signaux activés</p>
+            <div>
+              <p class="text-xs text-slate-400">Mesures</p>
+              <p class="font-mono text-sm">${this.formatNumber(device.nbMeasures)}</p>
             </div>
-            <div class="flex gap-2">
-              <button onclick="window.dirisManager.testDevice(${device.deviceId})" 
-                      class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors" title="Tester la connexion">
-                🔍 Test
-              </button>
-              <button onclick="window.dirisManager.manageSignals(${device.deviceId})" 
-                      class="px-2 py-1 text-xs rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors" title="Gérer les signaux (activer/désactiver)">
-                🏷️ Signaux
-              </button>
-              <button onclick="window.dirisManager.toggleDevice(${device.deviceId}, ${!device.enabled})" 
-                      class="px-2 py-1 text-xs rounded ${device.enabled ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'} hover:opacity-80 transition-colors">
-                ${device.enabled ? '⏸️ Désactiver' : '▶️ Activer'}
-              </button>
+            <div>
+              <p class="text-xs text-slate-400">Signaux</p>
+              <p class="font-mono text-sm">${device.nbSignals}</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Débit</p>
+              <p class="font-mono text-sm">${device.measuresPerSecond?.toFixed(2) || '0'} pts/s</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Durée</p>
+              <p class="font-mono text-sm">${Math.round(device.durationSeconds / 60)}min</p>
             </div>
           </div>
         </div>
       </div>
     `).join('');
+  }
+
+  displayGaps(gaps) {
+    const container = document.getElementById('coherenceGaps');
+    if (!container || !gaps) return;
+
+    if (gaps.length === 0) {
+      container.innerHTML = '<p class="text-center text-green-400 py-4">✅ Aucune interruption détectée</p>';
+      return;
+    }
+
+    container.innerHTML = gaps.map(gap => {
+      const severity = gap.gapSeconds > 60 ? 'danger' : gap.gapSeconds > 30 ? 'warning' : 'good';
+      
+      const prevDate = new Date(gap.prevTs + 'Z');
+      const currentDate = new Date(gap.utcTs + 'Z');
+      
+      return `
+      <div class="p-3 bg-white/5 rounded-lg border ${
+        severity === 'danger' ? 'border-red-500/30' : 
+        severity === 'warning' ? 'border-orange-500/30' : 'border-yellow-500/30'
+      }">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium">Device ${gap.deviceId} - ${gap.deviceName || 'Device ' + gap.deviceId}</p>
+            <p class="text-xs text-slate-400 font-mono">
+              ${prevDate.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} → 
+              ${currentDate.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </p>
+          </div>
+          <span class="px-3 py-1 rounded-lg text-sm font-bold ${
+            severity === 'danger' ? 'bg-red-500/20 text-red-400' : 
+            severity === 'warning' ? 'bg-orange-500/20 text-orange-400' : 'bg-yellow-500/20 text-yellow-400'
+          }">
+            ${gap.gapSeconds}s
+          </span>
+        </div>
+      </div>
+    `}).join('');
   }
 
   getUnitDescription(unit) {
