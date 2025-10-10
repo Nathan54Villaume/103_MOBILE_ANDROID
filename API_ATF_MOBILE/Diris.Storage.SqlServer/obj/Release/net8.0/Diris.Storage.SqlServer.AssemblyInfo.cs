@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Diris.Storage.SqlServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+98477556914270c328203e784e353fa7bd6186e7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4022021574496b399f3b6d07f0d863cff67942bb")]
 [assembly: System.Reflection.AssemblyProductAttribute("Diris.Storage.SqlServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Diris.Storage.SqlServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
