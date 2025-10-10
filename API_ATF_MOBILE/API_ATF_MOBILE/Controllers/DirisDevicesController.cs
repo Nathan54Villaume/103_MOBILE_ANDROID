@@ -32,7 +32,19 @@ public class DirisDevicesController : ControllerBase
     public async Task<IActionResult> GetDevices()
     {
         var devices = await _deviceRegistry.GetAllDevicesAsync();
-        return Ok(devices);
+        var deviceDtos = new List<DeviceDto>();
+
+        foreach (var device in devices)
+        {
+            var tagMappings = await _deviceRegistry.GetTagMappingsAsync(device.DeviceId);
+            deviceDtos.Add(new DeviceDto(device)
+            {
+                TotalSignalCount = tagMappings.Count(),
+                ActiveSignalCount = tagMappings.Count(t => t.Enabled)
+            });
+        }
+        
+        return Ok(deviceDtos);
     }
 
     /// <summary>
@@ -663,6 +675,29 @@ public class DirisDevicesController : ControllerBase
         _logger.LogInformation("Created {Count} complete tag mappings for device {DeviceId}", defaultTagMappings.Count, deviceId);
 
         return defaultTagMappings;
+    }
+}
+
+/// <summary>
+/// Data Transfer Object for a Device, including signal counts.
+/// </summary>
+public class DeviceDto : Device
+{
+    public int TotalSignalCount { get; set; }
+    public int ActiveSignalCount { get; set; }
+
+    public DeviceDto(Device device)
+    {
+        DeviceId = device.DeviceId;
+        Name = device.Name;
+        IpAddress = device.IpAddress;
+        Protocol = device.Protocol;
+        Enabled = device.Enabled;
+        PollIntervalMs = device.PollIntervalMs;
+        LastSeenUtc = device.LastSeenUtc;
+        MetaJson = device.MetaJson;
+        CreatedUtc = device.CreatedUtc;
+        UpdatedUtc = device.UpdatedUtc;
     }
 }
 

@@ -548,22 +548,28 @@ export class DirisManager {
               <div class="status-dot ${device.enabled ? 'online' : 'offline'}"></div>
               <div>
                 <p class="font-medium text-sm">${this.escapeHtml(device.name || `Device ${device.deviceId}`)}</p>
-                <p class="text-xs text-slate-400">${this.escapeHtml(device.ipAddress || 'N/A')} • Poll: ${device.pollIntervalMs || 1500}ms</p>
+                <p class="text-xs text-slate-400">${this.escapeHtml(device.ipAddress || 'N/A')}</p>
               </div>
             </div>
-            <div class="flex gap-2">
-              <button onclick="window.dirisManager.testDevice(${device.deviceId})" 
-                      class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors" title="Tester la connexion">
-                🔍 Test
-              </button>
-              <button onclick="window.dirisManager.manageSignals(${device.deviceId})" 
-                      class="px-2 py-1 text-xs rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors" title="Gérer les signaux (activer/désactiver)">
-                🏷️ Signaux
-              </button>
-              <button onclick="window.dirisManager.toggleDevice(${device.deviceId}, ${!device.enabled})" 
-                      class="px-2 py-1 text-xs rounded ${device.enabled ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'} hover:opacity-80 transition-colors">
-                ${device.enabled ? '⏸️ Désactiver' : '▶️ Activer'}
-              </button>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                  <p class="text-sm font-medium">${device.activeSignalCount} / ${device.totalSignalCount}</p>
+                  <p class="text-xs text-slate-400">Signaux activés</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="window.dirisManager.testDevice(${device.deviceId})" 
+                        class="px-2 py-1 text-xs rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-colors" title="Tester la connexion">
+                  🔍 Test
+                </button>
+                <button onclick="window.dirisManager.manageSignals(${device.deviceId})" 
+                        class="px-2 py-1 text-xs rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-colors" title="Gérer les signaux (activer/désactiver)">
+                  🏷️ Signaux
+                </button>
+                <button onclick="window.dirisManager.toggleDevice(${device.deviceId}, ${!device.enabled})" 
+                        class="px-2 py-1 text-xs rounded ${device.enabled ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'} hover:opacity-80 transition-colors">
+                  ${device.enabled ? '⏸️ Désactiver' : '▶️ Activer'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -682,6 +688,61 @@ export class DirisManager {
     // Créer la modal
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+    
+    // Group signals by unit for better display
+    const groupedSignals = (tagMappings || []).reduce((acc, tag) => {
+      const unit = tag.unit || 'Autres';
+      if (!acc[unit]) {
+        acc[unit] = [];
+      }
+      acc[unit].push(tag);
+      return acc;
+    }, {});
+
+    const unitOrder = ['V', 'A', 'Hz', 'kW', 'kVAR', 'kVA', '%', 'kWh'];
+    const sortedUnits = Object.keys(groupedSignals).sort((a, b) => {
+        const indexA = unitOrder.indexOf(a);
+        const indexB = unitOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        if (a === 'Autres') return 1;
+        if (b === 'Autres') return -1;
+        return a.localeCompare(b);
+    });
+
+    let signalsHtml = '';
+    for (const unit of sortedUnits) {
+      signalsHtml += `
+        <tr class="bg-white/10 sticky top-0">
+          <td colspan="6" class="px-3 py-2 text-sm font-semibold text-white">${this.getUnitDescription(unit)}</td>
+        </tr>
+      `;
+      signalsHtml += groupedSignals[unit].map(tag => `
+        <tr class="border-b border-white/5 hover:bg-white/5">
+          <td class="px-3 py-2 font-mono text-xs">${this.escapeHtml(tag.signal)}</td>
+          <td class="px-3 py-2">${this.escapeHtml(tag.description || 'N/A')}</td>
+          <td class="px-3 py-2">${this.escapeHtml(tag.unit || '')}</td>
+          <td class="px-3 py-2">${tag.scale}</td>
+          <td class="px-3 py-2 text-center">
+            <select class="signal-frequency w-full px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white" data-signal="${this.escapeHtml(tag.signal)}">
+              <option value="1000" ${tag.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
+              <option value="2000" ${tag.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
+              <option value="5000" ${tag.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
+              <option value="10000" ${tag.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
+              <option value="30000" ${tag.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
+              <option value="60000" ${tag.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
+              <option value="300000" ${tag.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
+              <option value="600000" ${tag.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
+            </select>
+          </td>
+          <td class="px-3 py-2 text-center">
+            <input type="checkbox" class="signal-enabled" data-signal="${this.escapeHtml(tag.signal)}" ${tag.enabled ? 'checked' : ''}>
+          </td>
+        </tr>
+      `).join('');
+    }
+
     modal.innerHTML = `
       <div class="bg-slate-800 rounded-xl p-6 w-full max-w-6xl max-h-[90vh] border border-white/10 overflow-hidden">
         <div class="flex items-center justify-between mb-4">
@@ -717,29 +778,7 @@ export class DirisManager {
               </tr>
             </thead>
             <tbody id="signalsTableBody">
-              ${tagMappings.map(tag => `
-                <tr class="border-b border-white/5 hover:bg-white/5">
-                  <td class="px-3 py-2 font-mono text-xs">${this.escapeHtml(tag.signal)}</td>
-                  <td class="px-3 py-2">${this.escapeHtml(tag.description || 'N/A')}</td>
-                  <td class="px-3 py-2">${this.escapeHtml(tag.unit || '')}</td>
-                  <td class="px-3 py-2">${tag.scale}</td>
-                  <td class="px-3 py-2 text-center">
-                    <select class="signal-frequency w-full px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white" data-signal="${this.escapeHtml(tag.signal)}">
-                      <option value="1000" ${tag.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
-                      <option value="2000" ${tag.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
-                      <option value="5000" ${tag.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
-                      <option value="10000" ${tag.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
-                      <option value="30000" ${tag.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
-                      <option value="60000" ${tag.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
-                      <option value="300000" ${tag.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
-                      <option value="600000" ${tag.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
-                    </select>
-                  </td>
-                  <td class="px-3 py-2 text-center">
-                    <input type="checkbox" class="signal-enabled" data-signal="${this.escapeHtml(tag.signal)}" ${tag.enabled ? 'checked' : ''}>
-                  </td>
-                </tr>
-              `).join('')}
+              ${signalsHtml}
             </tbody>
           </table>
         </div>
@@ -1647,10 +1686,10 @@ export class DirisManager {
     modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
     
     modal.innerHTML = `
-      <div class="bg-slate-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+      <div class="bg-slate-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div class="bg-slate-700 px-6 py-4 border-b border-slate-600">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-white">⚙️ Configuration du Preset Universel (81 signaux)</h3>
+            <h3 class="text-lg font-semibold text-white">⚙️ Configuration du Preset Universel</h3>
             <button id="btnClosePresetConfig" class="text-slate-400 hover:text-white">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1676,8 +1715,8 @@ export class DirisManager {
                   <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Signal</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Description</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Unité</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Fréquence Actuelle</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Nouvelle Fréquence</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Fréquence</th>
+                  <th class="px-4 py-3 text-center text-xs font-medium text-slate-300 uppercase tracking-wider">Activé par défaut</th>
                 </tr>
               </thead>
               <tbody id="presetSignalsTableBody" class="divide-y divide-slate-600">
@@ -1757,27 +1796,61 @@ export class DirisManager {
     const totalCount = modal.querySelector('#totalSignals');
     
     totalCount.textContent = signals.length;
+
+    // Group signals by unit
+    const groupedSignals = (signals || []).reduce((acc, tag) => {
+      const unit = tag.unit || 'Autres';
+      if (!acc[unit]) {
+        acc[unit] = [];
+      }
+      acc[unit].push(tag);
+      return acc;
+    }, {});
+
+    const unitOrder = ['V', 'A', 'Hz', 'kW', 'kVAR', 'kVA', '%', 'kWh'];
+    const sortedUnits = Object.keys(groupedSignals).sort((a, b) => {
+        const indexA = unitOrder.indexOf(a);
+        const indexB = unitOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        if (a === 'Autres') return 1;
+        if (b === 'Autres') return -1;
+        return a.localeCompare(b);
+    });
+
+    let signalsHtml = '';
+    for (const unit of sortedUnits) {
+      signalsHtml += `
+        <tr class="bg-slate-600/50 sticky top-0">
+          <td colspan="5" class="px-3 py-2 text-sm font-semibold text-white">${this.getUnitDescription(unit)}</td>
+        </tr>
+      `;
+      signalsHtml += groupedSignals[unit].map(signal => `
+        <tr class="hover:bg-slate-600/50">
+          <td class="px-4 py-3 text-sm text-white font-mono">${signal.signal}</td>
+          <td class="px-4 py-3 text-sm text-slate-300">${signal.description || '-'}</td>
+          <td class="px-4 py-3 text-sm text-slate-400">${signal.unit || '-'}</td>
+          <td class="px-4 py-3">
+            <select class="signal-frequency-select px-2 py-1 bg-slate-700 border border-slate-500 rounded text-white text-sm" data-signal="${signal.signal}">
+              <option value="1000" ${signal.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
+              <option value="2000" ${signal.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
+              <option value="5000" ${signal.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
+              <option value="10000" ${signal.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
+              <option value="30000" ${signal.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
+              <option value="60000" ${signal.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
+              <option value="300000" ${signal.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
+              <option value="600000" ${signal.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
+            </select>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <input type="checkbox" class="signal-enabled-preset" data-signal="${signal.signal}" ${signal.enabled ? 'checked' : ''}>
+          </td>
+        </tr>
+      `).join('');
+    }
     
-    tbody.innerHTML = signals.map(signal => `
-      <tr class="hover:bg-slate-600/50">
-        <td class="px-4 py-3 text-sm text-white font-mono">${signal.signal}</td>
-        <td class="px-4 py-3 text-sm text-slate-300">${signal.description || '-'}</td>
-        <td class="px-4 py-3 text-sm text-slate-400">${signal.unit || '-'}</td>
-        <td class="px-4 py-3 text-sm text-blue-300">${signal.frequencyDescription}</td>
-        <td class="px-4 py-3">
-          <select class="signal-frequency-select px-2 py-1 bg-slate-700 border border-slate-500 rounded text-white text-sm" data-signal="${signal.signal}">
-            <option value="1000" ${signal.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
-            <option value="2000" ${signal.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
-            <option value="5000" ${signal.recordingFrequencyMs === 5000 ? 'selected' : ''}>5 secondes</option>
-            <option value="10000" ${signal.recordingFrequencyMs === 10000 ? 'selected' : ''}>10 secondes</option>
-            <option value="30000" ${signal.recordingFrequencyMs === 30000 ? 'selected' : ''}>30 secondes</option>
-            <option value="60000" ${signal.recordingFrequencyMs === 60000 ? 'selected' : ''}>1 minute</option>
-            <option value="300000" ${signal.recordingFrequencyMs === 300000 ? 'selected' : ''}>5 minutes</option>
-            <option value="600000" ${signal.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
-          </select>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = signalsHtml;
   }
 
   loadCurrentPresets(modal) {
@@ -1801,13 +1874,15 @@ export class DirisManager {
 
   async savePresetConfiguration(modal) {
     try {
-      // Collecter tous les signaux avec leurs nouvelles fréquences
+      // Collecter tous les signaux avec leurs nouvelles fréquences et leur statut
       const allSignals = [];
       modal.querySelectorAll('.signal-frequency-select').forEach(select => {
         const signal = select.dataset.signal;
+        const enabledCheckbox = modal.querySelector(`.signal-enabled-preset[data-signal="${signal}"]`);
         allSignals.push({
           signal: signal,
-          recordingFrequencyMs: parseInt(select.value)
+          recordingFrequencyMs: parseInt(select.value),
+          enabled: enabledCheckbox ? enabledCheckbox.checked : true
         });
       });
 
@@ -1840,35 +1915,17 @@ export class DirisManager {
   }
 
   generatePresetsFromSignals(selectedSignals) {
-    // Analyser les signaux sélectionnés pour générer les presets par type
-    const presets = {
-      currents: 1000,    // Par défaut
-      voltages: 1000,    // Par défaut
-      powers: 2000,      // Par défaut
-      thd: 5000,         // Par défaut
-      energies: 30000,   // Par défaut
-      averages: 10000    // Par défaut
-    };
+    // This function will now need to return both frequency and enabled status presets
+    const presets = {};
 
-    // Analyser chaque signal pour déterminer le type et la fréquence
     selectedSignals.forEach(signalData => {
-      const signal = signalData.signal;
-      const frequency = signalData.recordingFrequencyMs;
-
-      if (signal.startsWith('I_') || signal.startsWith('PV') || signal.startsWith('LV_') || signal === 'F_255') {
-        presets.currents = frequency;
-      } else if (signal.includes('RP') || signal.includes('IP') || signal.includes('AP')) {
-        presets.powers = frequency;
-      } else if (signal.startsWith('THD_')) {
-        presets.thd = frequency;
-      } else if (signal.startsWith('E') && signal.endsWith('_255')) {
-        presets.energies = frequency;
-      } else if (signal.startsWith('AVG_') || signal.startsWith('MAXAVG')) {
-        presets.averages = frequency;
-      }
+      presets[signalData.signal] = {
+        recordingFrequencyMs: signalData.recordingFrequencyMs,
+        enabled: signalData.enabled
+      };
     });
 
-    return presets;
+    return { signals: presets };
   }
 
   showSuccess(message) {
@@ -2224,6 +2281,21 @@ export class DirisManager {
       document.getElementById('dirisAlertsCount').textContent = '0';
       this.showSuccess('Alertes vidées');
     }
+  }
+
+  getUnitDescription(unit) {
+    const descriptions = {
+      'V': 'Tensions (V)',
+      'A': 'Courants (A)',
+      'Hz': 'Fréquence (Hz)',
+      'kW': 'Puissances Actives (kW)',
+      'kVAR': 'Puissances Réactives (kVAR)',
+      'kVA': 'Puissances Apparentes (kVA)',
+      '%': 'Facteurs de Puissance & THD (%)',
+      'kWh': 'Énergies (kWh)',
+      '': 'Autres'
+    };
+    return descriptions[unit] || `Autres (${unit})`;
   }
 }
 

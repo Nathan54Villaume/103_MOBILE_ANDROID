@@ -17,8 +17,8 @@ public class DirisSignalFrequencyController : ControllerBase
     private readonly ILogger<DirisSignalFrequencyController> _logger;
     private readonly string _connectionString;
     
-    // Stockage temporaire des presets (en attendant une table de configuration)
-    private static SavePresetsRequest _currentPresets = new SavePresetsRequest();
+    // Stockage temporaire des presets
+    private static Dictionary<string, SignalPreset> _signalPresets = new();
 
     public DirisSignalFrequencyController(
         IDeviceRegistry deviceRegistry,
@@ -215,7 +215,7 @@ public class DirisSignalFrequencyController : ControllerBase
     /// Applique des fréquences prédéfinies par type de signal
     /// </summary>
     [HttpPost("device/{deviceId}/apply-presets")]
-    public async Task<IActionResult> ApplyFrequencyPresets(int deviceId)
+    public async Task<IActionResult> ApplyPresetsToDevice(int deviceId)
     {
         try
         {
@@ -225,47 +225,65 @@ public class DirisSignalFrequencyController : ControllerBase
                 return NotFound(new { success = false, message = "Device not found" });
             }
 
+            if (_signalPresets == null || !_signalPresets.Any())
+            {
+                return BadRequest(new { success = false, message = "No presets configured. Please save a preset configuration first." });
+            }
+
             var tagMappings = await _deviceRegistry.GetTagMappingsAsync(deviceId);
             var updatedCount = 0;
+            var signalsNotFound = new List<string>();
 
             using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var transaction = connection.BeginTransaction();
 
             foreach (var mapping in tagMappings)
             {
-                var frequency = GetConfiguredFrequencyForSignal(mapping.Signal);
-                
-                var sql = @"
-                    UPDATE [DIRIS].[TagMap] 
-                    SET RecordingFrequencyMs = @Frequency 
-                    WHERE DeviceId = @DeviceId AND Signal = @Signal";
-                
-                var rowsAffected = await connection.ExecuteAsync(sql, new
+                if (_signalPresets.TryGetValue(mapping.Signal, out var preset))
                 {
-                    DeviceId = deviceId,
-                    Signal = mapping.Signal,
-                    Frequency = frequency
-                });
+                    var sql = @"
+                        UPDATE [DIRIS].[TagMap] 
+                        SET RecordingFrequencyMs = @Frequency, Enabled = @Enabled
+                        WHERE DeviceId = @DeviceId AND Signal = @Signal";
+                    
+                    var rowsAffected = await connection.ExecuteAsync(sql, new
+                    {
+                        DeviceId = deviceId,
+                        Signal = mapping.Signal,
+                        Frequency = preset.RecordingFrequencyMs,
+                        Enabled = preset.Enabled
+                    }, transaction);
 
-                if (rowsAffected > 0)
+                    if (rowsAffected > 0)
+                    {
+                        updatedCount++;
+                    }
+                }
+                else
                 {
-                    updatedCount++;
+                    signalsNotFound.Add(mapping.Signal);
                 }
             }
 
-            _logger.LogInformation("Applied frequency presets to {Count} signals for device {DeviceId}", updatedCount, deviceId);
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Applied presets to {Count} signals for device {DeviceId}", updatedCount, deviceId);
 
             return Ok(new
             {
                 success = true,
-                message = $"Applied frequency presets to {updatedCount} signals",
+                message = $"Applied presets to {updatedCount} signals",
                 deviceId = deviceId,
-                updatedCount = updatedCount
+                updatedCount = updatedCount,
+                signalsNotFoundInPreset = signalsNotFound
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error applying frequency presets for device {DeviceId}", deviceId);
-            return StatusCode(500, new { success = false, message = "Error applying frequency presets" });
+            _logger.LogError(ex, "Error applying presets for device {DeviceId}", deviceId);
+            return StatusCode(500, new { success = false, message = "Error applying presets" });
         }
     }
 
@@ -291,15 +309,10 @@ public class DirisSignalFrequencyController : ControllerBase
         {
             success = true,
             presets = presets,
-            currentPresets = new
-            {
-                currents = _currentPresets.Currents,
-                voltages = _currentPresets.Voltages,
-                powers = _currentPresets.Powers,
-                thd = _currentPresets.Thd,
-                energies = _currentPresets.Energies,
-                averages = _currentPresets.Averages
-            }
+            currentPresets = _signalPresets.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new { kvp.Value.RecordingFrequencyMs, kvp.Value.Enabled }
+            )
         });
     }
 
@@ -307,29 +320,20 @@ public class DirisSignalFrequencyController : ControllerBase
     /// Sauvegarde la configuration des presets par défaut
     /// </summary>
     [HttpPost("presets")]
-    public async Task<IActionResult> SaveFrequencyPresets([FromBody] SavePresetsRequest request)
+    public async Task<IActionResult> SaveFrequencyPresets([FromBody] SavePresetsWithSignalsRequest request)
     {
         try
         {
             // Sauvegarder les presets dans la variable statique
-            _currentPresets = request;
+            _signalPresets = request.Signals ?? new Dictionary<string, SignalPreset>();
             
-            _logger.LogInformation("Presets mis à jour: Courants={Currents}ms, Voltages={Voltages}ms, Puissances={Powers}ms, THD={Thd}ms, Énergies={Energies}ms, Moyennes={Averages}ms",
-                request.Currents, request.Voltages, request.Powers, request.Thd, request.Energies, request.Averages);
+            _logger.LogInformation("Signal presets updated for {Count} signals.", _signalPresets.Count);
 
             return Ok(new
             {
                 success = true,
                 message = "Configuration des presets sauvegardée",
-                presets = new
-                {
-                    currents = request.Currents,
-                    voltages = request.Voltages,
-                    powers = request.Powers,
-                    thd = request.Thd,
-                    energies = request.Energies,
-                    averages = request.Averages
-                }
+                presetsCount = _signalPresets.Count
             });
         }
         catch (Exception ex)
@@ -362,15 +366,7 @@ public class DirisSignalFrequencyController : ControllerBase
     /// </summary>
     private int GetConfiguredFrequencyForSignal(string signal)
     {
-        return signal switch
-        {
-            var s when s.StartsWith("I_") || s.StartsWith("PV") || s.StartsWith("LV_") || s == "F_255" => _currentPresets.Currents,
-            var s when s.Contains("RP") || s.Contains("IP") || s.Contains("AP") => _currentPresets.Powers,
-            var s when s.StartsWith("THD_") => _currentPresets.Thd,
-            var s when s.StartsWith("E") && s.EndsWith("_255") => _currentPresets.Energies,
-            var s when s.StartsWith("AVG_") || s.StartsWith("MAXAVG") => _currentPresets.Averages,
-            _ => 5000 // 5s - Par défaut
-        };
+        return _signalPresets.TryGetValue(signal, out var preset) ? preset.RecordingFrequencyMs : GetDefaultFrequencyForSignal(signal);
     }
 
     /// <summary>
@@ -421,14 +417,18 @@ public class SignalFrequencyUpdate
 }
 
 /// <summary>
-/// Modèle pour sauvegarder la configuration des presets
+/// Modèle pour un preset de signal individuel
 /// </summary>
-public class SavePresetsRequest
+public class SignalPreset
 {
-    public int Currents { get; set; } = 1000;
-    public int Voltages { get; set; } = 1000;
-    public int Powers { get; set; } = 2000;
-    public int Thd { get; set; } = 5000;
-    public int Energies { get; set; } = 30000;
-    public int Averages { get; set; } = 10000;
+    public int RecordingFrequencyMs { get; set; }
+    public bool Enabled { get; set; }
+}
+
+/// <summary>
+/// Modèle pour sauvegarder la configuration complète des presets
+/// </summary>
+public class SavePresetsWithSignalsRequest
+{
+    public Dictionary<string, SignalPreset> Signals { get; set; } = new();
 }
