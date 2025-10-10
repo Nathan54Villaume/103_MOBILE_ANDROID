@@ -450,6 +450,9 @@ function updateCharts(data, systemData) {
     
     // Chart CPU Serveur vs Machine
     updateCpuUsageChart(systemData);
+    
+    // Chart Statistiques Logs
+    updateLogsChart(data.LogStats);
 }
 
 function updateMemoryUsageChart(systemData) {
