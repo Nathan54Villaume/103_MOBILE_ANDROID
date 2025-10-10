@@ -717,27 +717,30 @@ export class DirisManager {
       const activeSignalsInGroup = signalsInGroup.filter(s => s.enabled).length;
 
       signalsHtml += `
-        <tbody class="collapsible-group border-b-8 border-slate-800">
-          <tr class="collapsible-header bg-white/10 cursor-pointer hover:bg-white/20 transition-colors">
-            <td colspan="6" class="px-3 py-3 text-sm font-semibold text-white">
+        <tbody class="collapsible-group border-b-2 border-slate-900">
+          <tr class="collapsible-header bg-slate-700/50 cursor-pointer hover:bg-slate-700 transition-colors sticky top-0 z-[1]">
+            <td colspan="6" class="px-4 py-3 text-sm font-semibold text-white">
               <div class="flex justify-between items-center">
                 <span>${this.getUnitDescription(unit)}</span>
-                <span class="px-2 py-1 text-xs rounded-full bg-slate-700 text-slate-300">
-                  ${activeSignalsInGroup} / ${signalsInGroup.length} activés
-                </span>
+                <div class="flex items-center gap-3">
+                  <span class="px-2 py-1 text-xs rounded-full bg-slate-600 text-slate-300 font-medium">
+                    ${activeSignalsInGroup} / ${signalsInGroup.length} activés
+                  </span>
+                  <svg class="w-5 h-5 transform transition-transform duration-200 chevron-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                </div>
               </div>
             </td>
           </tr>
         </tbody>
-        <tbody class="collapsible-content hidden">
+        <tbody class="collapsible-content hidden bg-slate-800">
       `;
       signalsHtml += signalsInGroup.map(tag => `
-        <tr class="border-b border-white/5 hover:bg-white/5">
-          <td class="px-3 py-2 font-mono text-xs">${this.escapeHtml(tag.signal)}</td>
-          <td class="px-3 py-2">${this.escapeHtml(tag.description || 'N/A')}</td>
-          <td class="px-3 py-2">${this.escapeHtml(tag.unit || '')}</td>
-          <td class="px-3 py-2">${tag.scale}</td>
-          <td class="px-3 py-2 text-center">
+        <tr class="signal-row border-b border-slate-700/50 hover:bg-slate-700/50">
+          <td class="px-4 py-2 font-mono text-xs text-slate-300">${this.escapeHtml(tag.signal)}</td>
+          <td class="px-4 py-2 text-sm text-slate-300">${this.escapeHtml(tag.description || 'N/A')}</td>
+          <td class="px-4 py-2 text-sm text-slate-400">${this.escapeHtml(tag.unit || '')}</td>
+          <td class="px-4 py-2">${tag.scale}</td>
+          <td class="px-4 py-2 text-center">
             <select class="signal-frequency w-full px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white" data-signal="${this.escapeHtml(tag.signal)}">
               <option value="1000" ${tag.recordingFrequencyMs === 1000 ? 'selected' : ''}>1 seconde</option>
               <option value="2000" ${tag.recordingFrequencyMs === 2000 ? 'selected' : ''}>2 secondes</option>
@@ -749,14 +752,13 @@ export class DirisManager {
               <option value="600000" ${tag.recordingFrequencyMs === 600000 ? 'selected' : ''}>10 minutes</option>
             </select>
           </td>
-          <td class="px-3 py-2 text-center">
+          <td class="px-4 py-2 text-center">
             <input type="checkbox" class="signal-enabled" data-signal="${this.escapeHtml(tag.signal)}" ${tag.enabled ? 'checked' : ''}>
           </td>
         </tr>
       `).join('');
-      signalsHtml += `</tbody>`;
     }
-
+    
     modal.innerHTML = `
       <div class="bg-slate-800 rounded-xl p-6 w-full max-w-6xl max-h-[90vh] border border-white/10 overflow-hidden flex flex-col">
         <div class="flex items-center justify-between mb-4">
@@ -779,9 +781,16 @@ export class DirisManager {
           </button>
         </div>
         
-        <div class="overflow-y-auto max-h-[60vh] border border-white/10 rounded-lg">
+        <div class="relative mb-4">
+          <input type="text" id="signalSearchInput" class="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Rechercher un signal par nom ou description...">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+          </div>
+        </div>
+        
+        <div class="overflow-y-auto max-h-[55vh] border border-slate-700/50 rounded-lg">
           <table class="w-full text-sm">
-            <thead class="bg-white/5 sticky top-0 z-10">
+            <thead class="bg-slate-700 sticky top-0 z-10">
               <tr>
                 <th class="px-3 py-2 text-left">Signal</th>
                 <th class="px-3 py-2 text-left">Description</th>
@@ -818,11 +827,40 @@ export class DirisManager {
       if (e.target === modal) modal.remove();
     });
     
+    // Search functionality
+    modal.querySelector('#signalSearchInput').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      modal.querySelectorAll('.signal-row').forEach(row => {
+        const signalName = row.cells[0].textContent.toLowerCase();
+        const signalDesc = row.cells[1].textContent.toLowerCase();
+        const isVisible = signalName.includes(query) || signalDesc.includes(query);
+        row.style.display = isVisible ? '' : 'none';
+      });
+
+      // Show/hide group headers based on visible rows
+      modal.querySelectorAll('.collapsible-group').forEach(group => {
+        const content = group.nextElementSibling;
+        const hasVisibleRows = content.querySelector('.signal-row:not([style*="display: none"])');
+        group.style.display = hasVisibleRows ? '' : 'none';
+        
+        // If searching, expand groups that have matches
+        if (query.length > 0 && hasVisibleRows) {
+            content.classList.remove('hidden');
+            group.querySelector('.chevron-icon').classList.add('rotate-180');
+        } else if (query.length === 0) {
+            content.classList.add('hidden');
+            group.querySelector('.chevron-icon').classList.remove('rotate-180');
+        }
+      });
+    });
+    
     // Collapsible sections
     modal.querySelectorAll('.collapsible-header').forEach(header => {
       header.addEventListener('click', () => {
         const content = header.closest('.collapsible-group').nextElementSibling;
+        const icon = header.querySelector('.chevron-icon');
         content.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
       });
     });
     
@@ -1721,12 +1759,10 @@ export class DirisManager {
         </div>
         
         <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div class="mb-4 flex justify-between items-center">
-            <div class="text-sm text-slate-400">
-              Configuration des fréquences pour tous les signaux du preset universel
-            </div>
-            <div class="text-sm text-slate-400">
-              <span id="totalSignals">0</span> signaux au total
+          <div class="relative mb-4">
+            <input type="text" id="presetSearchInput" class="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Rechercher un signal par nom ou description...">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
             </div>
           </div>
           
@@ -1768,6 +1804,43 @@ export class DirisManager {
     modal.querySelector('#btnCancelPresetConfig').addEventListener('click', () => modal.remove());
     modal.querySelector('#btnSavePresetConfig').addEventListener('click', () => {
       this.savePresetConfiguration(modal);
+    });
+
+    // Search functionality
+    modal.querySelector('#presetSearchInput').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      modal.querySelectorAll('.preset-signal-row').forEach(row => {
+        const signalName = row.cells[0].textContent.toLowerCase();
+        const signalDesc = row.cells[1].textContent.toLowerCase();
+        const isVisible = signalName.includes(query) || signalDesc.includes(query);
+        row.style.display = isVisible ? '' : 'none';
+      });
+
+      // Show/hide group headers based on visible rows
+      modal.querySelectorAll('.collapsible-group-preset').forEach(group => {
+        const content = group.nextElementSibling;
+        const hasVisibleRows = content.querySelector('.preset-signal-row:not([style*="display: none"])');
+        group.style.display = hasVisibleRows ? '' : 'none';
+        
+        // If searching, expand groups that have matches
+        if (query.length > 0 && hasVisibleRows) {
+            content.classList.remove('hidden');
+            group.querySelector('.chevron-icon').classList.add('rotate-180');
+        } else if (query.length === 0) {
+            content.classList.add('hidden');
+            group.querySelector('.chevron-icon').classList.remove('rotate-180');
+        }
+      });
+    });
+
+    // Collapsible sections
+    modal.querySelectorAll('.collapsible-header-preset').forEach(header => {
+      header.addEventListener('click', () => {
+        const content = header.closest('.collapsible-group-preset').nextElementSibling;
+        const icon = header.querySelector('.chevron-icon');
+        content.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+      });
     });
 
     // Charger les signaux d'un device de référence (le premier device disponible)
@@ -1843,13 +1916,29 @@ export class DirisManager {
 
     let signalsHtml = '';
     for (const unit of sortedUnits) {
+      const signalsInGroup = groupedSignals[unit];
+      const activeSignalsInGroup = signalsInGroup.filter(s => s.enabled).length;
+
       signalsHtml += `
-        <tr class="bg-slate-600/50 sticky top-0">
-          <td colspan="5" class="px-3 py-2 text-sm font-semibold text-white">${this.getUnitDescription(unit)}</td>
-        </tr>
+        <tbody class="collapsible-group-preset border-b-2 border-slate-900">
+          <tr class="collapsible-header-preset bg-slate-700/50 cursor-pointer hover:bg-slate-700 transition-colors sticky top-0 z-[1]">
+            <td colspan="5" class="px-4 py-3 text-sm font-semibold text-white">
+              <div class="flex justify-between items-center">
+                <span>${this.getUnitDescription(unit)}</span>
+                <div class="flex items-center gap-3">
+                  <span class="px-2 py-1 text-xs rounded-full bg-slate-600 text-slate-300 font-medium">
+                    ${activeSignalsInGroup} / ${signalsInGroup.length} activés
+                  </span>
+                  <svg class="w-5 h-5 transform transition-transform duration-200 chevron-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tbody class="collapsible-content hidden bg-slate-800">
       `;
-      signalsHtml += groupedSignals[unit].map(signal => `
-        <tr class="hover:bg-slate-600/50">
+      signalsHtml += signalsInGroup.map(signal => `
+        <tr class="preset-signal-row hover:bg-slate-600/50">
           <td class="px-4 py-3 text-sm text-white font-mono">${signal.signal}</td>
           <td class="px-4 py-3 text-sm text-slate-300">${signal.description || '-'}</td>
           <td class="px-4 py-3 text-sm text-slate-400">${signal.unit || '-'}</td>
@@ -1870,6 +1959,7 @@ export class DirisManager {
           </td>
         </tr>
       `).join('');
+      signalsHtml += `</tbody>`;
     }
     
     tbody.innerHTML = signalsHtml;
@@ -2136,191 +2226,3 @@ export class DirisManager {
     }
 
     container.innerHTML = deviceStats.map(device => `
-      <div class="p-3 bg-white/5 rounded-lg border border-white/10">
-        <div class="flex items-center justify-between">
-          <div class="flex-1 grid grid-cols-5 gap-4">
-            <div>
-              <p class="text-xs text-slate-400">Device</p>
-              <p class="font-bold text-brand-400">${device.deviceId}</p>
-              <p class="text-xs text-slate-500">${device.deviceName || 'Device ' + device.deviceId}</p>
-            </div>
-            <div>
-              <p class="text-xs text-slate-400">Mesures</p>
-              <p class="font-mono text-sm">${this.formatNumber(device.nbMeasures)}</p>
-            </div>
-            <div>
-              <p class="text-xs text-slate-400">Signaux</p>
-              <p class="font-mono text-sm">${device.nbSignals}</p>
-            </div>
-            <div>
-              <p class="text-xs text-slate-400">Débit</p>
-              <p class="font-mono text-sm">${device.measuresPerSecond?.toFixed(2) || '0'} pts/s</p>
-            </div>
-            <div>
-              <p class="text-xs text-slate-400">Durée</p>
-              <p class="font-mono text-sm">${Math.round(device.durationSeconds / 60)}min</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  displayGaps(gaps) {
-    const container = document.getElementById('coherenceGaps');
-    if (!container || !gaps) return;
-
-    if (gaps.length === 0) {
-      container.innerHTML = '<p class="text-center text-green-400 py-4">✅ Aucune interruption détectée</p>';
-      return;
-    }
-
-    container.innerHTML = gaps.map(gap => {
-      const severity = gap.gapSeconds > 60 ? 'danger' : gap.gapSeconds > 30 ? 'warning' : 'good';
-      
-      // Convertir UTC vers heure locale
-      const prevDate = new Date(gap.prevTs + 'Z'); // Ajouter 'Z' pour forcer UTC
-      const currentDate = new Date(gap.utcTs + 'Z'); // Ajouter 'Z' pour forcer UTC
-      
-      return `
-      <div class="p-3 bg-white/5 rounded-lg border ${
-        severity === 'danger' ? 'border-red-500/30' : 
-        severity === 'warning' ? 'border-orange-500/30' : 'border-yellow-500/30'
-      }">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium">Device ${gap.deviceId} - ${gap.deviceName || 'Device ' + gap.deviceId}</p>
-            <p class="text-xs text-slate-400 font-mono">
-              ${prevDate.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} → 
-              ${currentDate.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </p>
-          </div>
-          <span class="px-3 py-1 rounded-lg text-sm font-bold ${
-            severity === 'danger' ? 'bg-red-500/20 text-red-400' : 
-            severity === 'warning' ? 'bg-orange-500/20 text-orange-400' : 'bg-yellow-500/20 text-yellow-400'
-          }">
-            ${gap.gapSeconds}s
-          </span>
-        </div>
-      </div>
-    `}).join('');
-  }
-
-  startCoherenceAutoRefresh() {
-    // Refresh toutes les 10 secondes
-    if (this.coherenceRefreshInterval) {
-      clearInterval(this.coherenceRefreshInterval);
-    }
-    
-    this.coherenceRefreshInterval = setInterval(() => {
-      this.loadCoherenceStats();
-    }, 10000);
-  }
-
-  stopCoherenceAutoRefresh() {
-    if (this.coherenceRefreshInterval) {
-      clearInterval(this.coherenceRefreshInterval);
-      this.coherenceRefreshInterval = null;
-    }
-  }
-
-  resetCoherence() {
-    if (confirm('Réinitialiser le calcul de cohérence ?\n\n• Les statistiques seront recalculées depuis maintenant\n• L\'historique précédent sera ignoré\n• Nouveau point de départ pour le score')) {
-      // Marquer le nouveau point de départ
-      this.coherenceStartTime = new Date().toISOString();
-      localStorage.setItem('dirisCoherenceStartTime', this.coherenceStartTime);
-      
-      // Réinitialiser les KPIs
-      document.getElementById('coherenceQuality').textContent = '-%';
-      document.getElementById('coherenceQuality').className = 'text-2xl font-bold text-slate-400';
-      
-      document.getElementById('coherenceFrequency').textContent = '-';
-      document.getElementById('coherenceFrequency').className = 'text-2xl font-bold text-slate-400';
-      
-      document.getElementById('coherenceRegularity').textContent = '-';
-      document.getElementById('coherenceRegularity').className = 'text-2xl font-bold text-slate-400';
-      
-      document.getElementById('coherenceScore').textContent = '-/100';
-      document.getElementById('coherenceScore').className = 'text-2xl font-bold text-slate-400';
-      
-      // Vider les stats par device
-      const deviceStatsContainer = document.getElementById('coherenceDeviceStats');
-      if (deviceStatsContainer) {
-        deviceStatsContainer.innerHTML = '<p class="text-center text-slate-400 py-4">Nouveau calcul depuis ' + new Date(this.coherenceStartTime).toLocaleTimeString() + '</p>';
-      }
-      
-      // Vider les interruptions
-      this.clearGaps();
-      
-      this.showSuccess('✅ Nouveau point de départ défini pour le calcul de cohérence');
-      this.addHistoryEvent('info', 'Cohérence réinitialisée', 'Nouveau calcul depuis ' + new Date(this.coherenceStartTime).toLocaleString());
-      
-      // Recharger immédiatement avec le nouveau point de départ
-      this.loadCoherenceStats();
-    }
-  }
-
-  async clearCoherenceData() {
-    if (confirm('⚠️ ATTENTION : Supprimer les données de cohérence de la base ?\n\n' +
-                '• Cela va supprimer les mesures anciennes\n' +
-                '• Seules les 5 dernières minutes seront conservées\n' +
-                '• Le score de cohérence sera recalculé\n\n' +
-                'Continuer ?')) {
-      
-      try {
-        const response = await this.apiClient.request('/api/diris/coherence/clear-data?minutesToKeep=5', { method: 'POST' });
-        
-        if (response.success) {
-          this.showSuccess(`✅ Données nettoyées : ${response.deletedRows} mesures supprimées`);
-          this.addHistoryEvent('info', 'Données cohérence', `Nettoyage : ${response.deletedRows} mesures supprimées`);
-          
-          // Recharger les statistiques après nettoyage
-          setTimeout(() => {
-            this.loadCoherenceStats();
-          }, 1000);
-        } else {
-          throw new Error('Réponse inattendue du serveur');
-        }
-      } catch (error) {
-        console.error('Erreur nettoyage données:', error);
-        this.showError('❌ Erreur lors du nettoyage des données');
-      }
-    }
-  }
-
-  clearGaps() {
-    const container = document.getElementById('coherenceGaps');
-    if (container) {
-      container.innerHTML = '<p class="text-center text-green-400 py-4">✅ Affichage vidé (actualiser pour recharger)</p>';
-    }
-  }
-
-  clearAlerts() {
-    const container = document.getElementById('dirisAlertsList');
-    if (container) {
-      this.alerts = [];
-      container.innerHTML = '<p class="text-center text-slate-400 py-4">Aucune alerte récente</p>';
-      document.getElementById('dirisAlertsCount').textContent = '0';
-      this.showSuccess('Alertes vidées');
-    }
-  }
-
-  getUnitDescription(unit) {
-    const descriptions = {
-      'V': 'Tensions (V)',
-      'A': 'Courants (A)',
-      'Hz': 'Fréquence (Hz)',
-      'kW': 'Puissances Actives (kW)',
-      'kVAR': 'Puissances Réactives (kVAR)',
-      'kVA': 'Puissances Apparentes (kVA)',
-      '%': 'Facteurs de Puissance & THD (%)',
-      'kWh': 'Énergies (kWh)',
-      '': 'Autres'
-    };
-    return descriptions[unit] || `Autres (${unit})`;
-  }
-}
-
-// Make it globally accessible for inline onclick handlers
-window.dirisManager = null;
-
