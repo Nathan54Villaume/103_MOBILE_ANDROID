@@ -125,6 +125,9 @@ export class DirisManager {
     
     // Alerts
     document.getElementById('btnClearAlerts')?.addEventListener('click', () => this.clearAlerts());
+    
+    // Console DIRIS - Copier
+    document.getElementById('dirisLogsCopyBtn')?.addEventListener('click', () => this.copyDirisConsole());
   }
 
   // ========================================
@@ -2354,6 +2357,46 @@ export class DirisManager {
       document.getElementById('dirisAlertsCount').textContent = '0';
       this.showSuccess('Alertes vidées');
     }
+  }
+
+  copyDirisConsole() {
+    const logsContainer = document.getElementById('dirisLogsContainer');
+    if (!logsContainer) {
+      this.showWarning('Console DIRIS introuvable');
+      return;
+    }
+    
+    // Récupérer tous les logs de la console DIRIS
+    const logLines = Array.from(logsContainer.children);
+    const logsText = logLines.map(line => line.textContent).join('\n');
+    
+    if (!logsText.trim()) {
+      this.showWarning('Aucun log dans la console');
+      return;
+    }
+    
+    // Copier dans le presse-papiers
+    navigator.clipboard.writeText(logsText).then(() => {
+      // Feedback visuel
+      const btnCopy = document.getElementById('dirisLogsCopyBtn');
+      if (btnCopy) {
+        const originalHTML = btnCopy.innerHTML;
+        btnCopy.innerHTML = '✅ Copié !';
+        btnCopy.classList.add('bg-green-500/20', 'border-green-500/30');
+        
+        setTimeout(() => {
+          btnCopy.innerHTML = originalHTML;
+          btnCopy.classList.remove('bg-green-500/20', 'border-green-500/30');
+        }, 2000);
+      }
+      
+      const lineCount = logLines.length;
+      this.showSuccess(`📋 Console DIRIS copiée (${lineCount} lignes)`);
+      console.log(`Console DIRIS copiée: ${lineCount} lignes`);
+    }).catch(err => {
+      console.error('Erreur copie console:', err);
+      this.showError('❌ Erreur lors de la copie de la console');
+    });
   }
 
   showSuccess(message) {
