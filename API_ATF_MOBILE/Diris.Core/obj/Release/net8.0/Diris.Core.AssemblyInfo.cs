@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Diris.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ee4b6b0c04baf93d87388dcf0f59a4f8b5f2e99e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8db7c24139444813c16856f9a4a5115f7d43b8d2")]
 [assembly: System.Reflection.AssemblyProductAttribute("Diris.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Diris.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

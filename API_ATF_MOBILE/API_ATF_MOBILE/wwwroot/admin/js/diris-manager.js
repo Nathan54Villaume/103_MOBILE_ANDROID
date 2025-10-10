@@ -1887,6 +1887,16 @@ export class DirisManager {
         } else {
           this.renderPresetSignalsTable(modal, []);
         }
+
+        // Attach event listeners AFTER the content is rendered
+        modal.querySelectorAll('.collapsible-header-preset').forEach(header => {
+          header.addEventListener('click', () => {
+            const content = header.closest('.collapsible-group-preset').nextElementSibling;
+            const icon = header.querySelector('.chevron-icon');
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+          });
+        });
       })
       .catch(error => {
         console.error('Erreur chargement signaux:', error);
